@@ -15,7 +15,7 @@ import type { DamageNumbers } from './DamageNumbers';
 import { burstSpec, type ParticleSystem } from './ParticleSystem';
 import type { ShockwaveSystem } from './ShockwaveSystem';
 import type { TransientList } from './TransientList';
-import { emitContinuous } from './continuous';
+import { ContinuousEmitter } from './continuous';
 
 export interface CameraCues {
   trauma(amount: number): void;
@@ -64,6 +64,7 @@ export class FxDirector {
   chromatic = 0;
   private reduceFlashes = false;
   private readonly d: FxDirectorDeps;
+  private readonly continuous = new ContinuousEmitter();
 
   constructor(deps: FxDirectorDeps) {
     this.d = deps;
@@ -285,7 +286,9 @@ export class FxDirector {
 
   /** Per-frame: continuous emitters, hurt decay (plus low-HP floor), ring uploads. */
   update(ctx: FrameContext): void {
-    emitContinuous(this.d.particles, ctx);
+    this.continuous.emit(this.d.particles, ctx);
+    this.d.arcs.expire(ctx.time);
+    this.d.telegraphs.expire(ctx.time);
     const w = ctx.world;
     let low = 0;
     for (let i = 0; i < 2; i++) {

@@ -76,6 +76,11 @@ export class ParticleSystem {
     this.capScale = s > 1 ? 1 : s < 0.1 ? 0.1 : s;
   }
 
+  /** Uniform [0, 1) from the fx rng. */
+  random(): number {
+    return this.rng.next();
+  }
+
   scaledCount(n: number): number {
     const c = Math.round(n * this.capScale);
     return n > 0 && c < 1 ? 1 : c;
