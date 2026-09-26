@@ -105,10 +105,10 @@ export class ShopPanel {
     this.wallet = new NumSlot(walletEl, formatShards);
     this.hp = new TextSlot(hpEl);
 
-    const rowsEl = h(doc, 'div', { className: 'kp-shop-section kp-shop-stats' });
-    this.rows = new ViewPool(rowsEl, () => new ShopRowView(doc, 'stat', player));
+    const statList = h(doc, 'div', { className: 'kp-shop-stat-list' });
+    this.rows = new ViewPool(statList, () => new ShopRowView(doc, 'stat', player));
     this.repair = new ShopRowView(doc, 'plain', player);
-    rowsEl.appendChild(this.repair.el);
+    const rowsEl = h(doc, 'div', { className: 'kp-shop-section kp-shop-stats' }, statList, this.repair.el);
     const cardsEl = h(doc, 'div', { className: 'kp-shop-section kp-shop-cards' });
     this.cards = new ViewPool(cardsEl, () => new ShopRowView(doc, 'card', player));
     const teamList = h(doc, 'div', { className: 'kp-shop-team-list' });

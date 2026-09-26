@@ -8,7 +8,9 @@ import { HangarScreen } from '../../src/ui/screens/HangarScreen';
 
 function makeShop() {
   const s = new ShopScreen({ doc: asDocument(new FakeDocument()), theme: KERNEL_PANIC });
-  return { s, el: asFake(s.el) };
+  const el = asFake(s.el);
+  el.hidden = false;
+  return { s, el };
 }
 
 const visibleRows = (panel: FakeElement): FakeElement[] => panel.byClass('kp-row').filter((r) => r.visible);
@@ -185,6 +187,7 @@ describe('ui/HangarScreen', () => {
   it('renders items, cursor detail, respec refund and read-only', () => {
     const h = new HangarScreen({ doc: asDocument(new FakeDocument()), theme: KERNEL_PANIC });
     const el = asFake(h.el);
+    el.hidden = false;
     h.render(hangarVM());
     const rows = el.byClass('kp-row').filter((r) => r.visible);
     expect(rows.length).toBe(3);

@@ -161,6 +161,7 @@ describe('ui/MainMenu and Pause sub-panels', () => {
   it('settings panel replaces the menu list', () => {
     const s = new MainMenuScreen(ctx());
     const el = asFake(s.el);
+    el.hidden = false;
     s.render(mainMenuVM({ panel: 'settings', settings: SETTINGS }));
     expect(el.first('kp-menu-box').hidden).toBe(true);
     expect(el.first('kp-settings').hidden).toBe(false);
