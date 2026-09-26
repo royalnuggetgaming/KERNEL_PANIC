@@ -29,14 +29,21 @@ export function envelope(param: AudioParam, t: number, env: Adsr, peak: number, 
   param.cancelScheduledValues(t);
   param.setValueAtTime(SILENCE, t);
   param.linearRampToValueAtTime(peak, t + a);
-  if (gateEnd > t + a) param.exponentialRampToValueAtTime(Math.max(SILENCE, sus), Math.min(t + a + d, gateEnd));
+  if (gateEnd > t + a)
+    param.exponentialRampToValueAtTime(Math.max(SILENCE, sus), Math.min(t + a + d, gateEnd));
   if (gateEnd > t + a + d) param.setValueAtTime(sus, gateEnd);
   param.exponentialRampToValueAtTime(SILENCE, gateEnd + r);
   return gateEnd + r;
 }
 
 /** Percussive envelope: instant-ish attack then an exponential decay over `decay` seconds. */
-export function percEnvelope(param: AudioParam, t: number, peak: number, attack: number, decay: number): number {
+export function percEnvelope(
+  param: AudioParam,
+  t: number,
+  peak: number,
+  attack: number,
+  decay: number,
+): number {
   param.cancelScheduledValues(t);
   param.setValueAtTime(SILENCE, t);
   param.linearRampToValueAtTime(peak, t + Math.max(0.001, attack));
@@ -154,7 +161,12 @@ export function fillNoise(data: Float32Array, kind: NoiseKind, rng: Rng): void {
 }
 
 /** A mono noise AudioBuffer of the given length. */
-export function makeNoiseBuffer(ctx: BaseAudioContext, kind: NoiseKind, seconds: number, rng: Rng): AudioBuffer {
+export function makeNoiseBuffer(
+  ctx: BaseAudioContext,
+  kind: NoiseKind,
+  seconds: number,
+  rng: Rng,
+): AudioBuffer {
   const len = Math.max(1, Math.ceil(seconds * ctx.sampleRate));
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   fillNoise(buf.getChannelData(0), kind, rng);

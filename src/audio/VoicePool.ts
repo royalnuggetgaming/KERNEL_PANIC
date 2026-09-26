@@ -39,8 +39,8 @@ export class VoicePool {
   private lastNow = 0;
   /** True when the last successful acquire() replaced a still-playing voice (the caller fades it out). */
   lastStolen = false;
-  stolen = 0;
-  coalesced = 0;
+  private stolenCount = 0;
+  private coalescedCount = 0;
 
   constructor(size: number, limits: Readonly<Record<SfxCategory, number>>) {
     let total = 0;
@@ -76,7 +76,7 @@ export class VoicePool {
     let oldest = lo;
     for (let i = lo; i < hi; i++) {
       if (this.ids[i] === id && nowS - this.startS[i]! < COALESCE_S && nowS >= this.startS[i]!) {
-        this.coalesced++;
+        this.coalescedCount++;
         return -1;
       }
       if (free < 0 && this.endS[i]! <= nowS) free = i;
@@ -87,12 +87,22 @@ export class VoicePool {
     if (v < 0) {
       v = oldest;
       this.lastStolen = true;
-      this.stolen++;
+      this.stolenCount++;
     }
     this.ids[v] = id;
     this.startS[v] = nowS;
     this.endS[v] = nowS + (durationS > 0 ? durationS : 0);
     return v;
+  }
+
+  /** Voices replaced while still sounding. */
+  get stolen(): number {
+    return this.stolenCount;
+  }
+
+  /** Requests dropped because the same id started within COALESCE_S. */
+  get coalesced(): number {
+    return this.coalescedCount;
   }
 
   /** Voices still sounding at `nowS`. */

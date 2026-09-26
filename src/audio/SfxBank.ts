@@ -10,7 +10,11 @@ import { RecipeContextImpl, SFX_VARIANTS, type SfxRecipe } from './sfxRecipeKit'
 import { SFX_RECIPES, recipeSeconds } from './sfxRecipes';
 import type { TimbrePreset } from './timbre';
 
-export type OfflineContextFactory = (channels: number, length: number, sampleRate: number) => OfflineAudioContext;
+export type OfflineContextFactory = (
+  channels: number,
+  length: number,
+  sampleRate: number,
+) => OfflineAudioContext;
 
 /** Offline renders started at once; keeps memory and thread pressure bounded at unlock. */
 export const RENDER_CONCURRENCY = 12;
@@ -119,7 +123,11 @@ export class SfxBank {
     this.done = true;
   }
 
-  private async renderOne(createOffline: OfflineContextFactory, sampleRate: number, slot: number): Promise<void> {
+  private async renderOne(
+    createOffline: OfflineContextFactory,
+    sampleRate: number,
+    slot: number,
+  ): Promise<void> {
     const id = SFX_IDS[Math.floor(slot / SFX_VARIANTS)]!;
     const variant = slot % SFX_VARIANTS;
     const recipe = this.recipes[id];

@@ -83,7 +83,7 @@ export function chordTones(
 /** Key tonic (MIDI) for a sector, optionally shifted for a boss wave. */
 export function keyRoot(theme: ThemeDef, sector: 1 | 2 | 3, boss: boolean): number {
   const a = theme.audio;
-  return a.rootMidi + a.sectorKeyShift[sector - 1] + (boss ? a.bossKeyShift : 0);
+  return a.rootMidi + a.sectorKeyShift[sector - 1]! + (boss ? a.bossKeyShift : 0);
 }
 
 /** Chord root MIDI note per bar of the theme's progression in the given sector key. */

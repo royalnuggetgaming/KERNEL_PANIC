@@ -34,7 +34,7 @@ export const MAX_BAR_EVENTS = 112;
 
 const PAD_LO = 55;
 const BASS_LO = 33;
-const ARP_LO = 64;
+const ARP_LO = 60;
 const LEAD_LO = 69;
 const KICK_MIDI = 36;
 const SNARE_MIDI = 38;
@@ -274,7 +274,8 @@ class ComposerImpl implements SectorComposer {
     this.emit('snare', SNARE_MIDI, 1, 0.5, 0.8 * lvl);
     this.emit('snare', SNARE_MIDI, 3, 0.5, 0.85 * lvl);
     if (bar % 4 === 3 && a.x >= 0.6) {
-      for (let s = 13; s < 16; s++) this.emit('snare', SNARE_MIDI, s * 0.25, 0.2, (0.35 + (s - 13) * 0.15) * lvl);
+      for (let s = 13; s < 16; s++)
+        this.emit('snare', SNARE_MIDI, s * 0.25, 0.2, (0.35 + (s - 13) * 0.15) * lvl);
     }
   }
 

@@ -8,7 +8,13 @@ import type { Rng } from '../contracts/sim';
  * Fills one IR channel. `decay` is the exponential rate (amplitude e^(-decay * t)); a short pre-delay keeps
  * the direct sound clear. Pure and node-testable.
  */
-export function fillImpulse(data: Float32Array, sampleRate: number, decay: number, rng: Rng, preDelayS = 0.012): void {
+export function fillImpulse(
+  data: Float32Array,
+  sampleRate: number,
+  decay: number,
+  rng: Rng,
+  preDelayS = 0.012,
+): void {
   const n = data.length;
   const pre = Math.min(n, Math.floor(preDelayS * sampleRate));
   let lp = 0;
@@ -27,7 +33,12 @@ export function fillImpulse(data: Float32Array, sampleRate: number, decay: numbe
 }
 
 /** A stereo impulse response (independent noise per channel for width). */
-export function makeImpulseResponse(ctx: BaseAudioContext, seconds: number, decay: number, rng: Rng): AudioBuffer {
+export function makeImpulseResponse(
+  ctx: BaseAudioContext,
+  seconds: number,
+  decay: number,
+  rng: Rng,
+): AudioBuffer {
   const len = Math.max(1, Math.ceil(seconds * ctx.sampleRate));
   const buf = ctx.createBuffer(2, len, ctx.sampleRate);
   fillImpulse(buf.getChannelData(0), ctx.sampleRate, decay, rng);
