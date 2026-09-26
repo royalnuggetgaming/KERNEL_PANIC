@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": [],
+    "tsBuildInfoFile": "node_modules/.tmp/tsconfig.pure.tsbuildinfo"
+  },
+  "include": [
+    "src/globals.d.ts",
+    "src/contracts/**/*.ts",
+    "src/core/**/*.ts",
+    "src/config/**/*.ts",
+    "src/themes/**/*.ts",
+    "src/engine/**/*.ts",
+    "src/input/**/*.ts",
+    "src/entities/**/*.ts",
+    "src/sim/**/*.ts",
+    "src/upgrades/**/*.ts",
+    "src/save/**/*.ts",
+    "src/states/**/*.ts"
+  ]
+}

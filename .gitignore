@@ -10,3 +10,9 @@ node_modules/
 
 # Logs
 *.log
+
+# Build and tool output
+dist/
+coverage/
+.vite/
+*.tsbuildinfo

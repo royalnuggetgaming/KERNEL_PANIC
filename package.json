@@ -1,0 +1,43 @@
+{
+  "name": "kernel-panic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "KERNEL PANIC (codename LINKLINE): 1-2 player couch co-op / versus neon arena shooter.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b tsconfig.json tsconfig.pure.json tsconfig.node.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b tsconfig.json tsconfig.pure.json tsconfig.node.json",
+    "typecheck:scope": "node scripts/typecheck-scope.mjs",
+    "typecheck:ts7": "npx -y -p typescript@7.0.2 tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "check:arch": "node scripts/check-arch.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify:nobuild": "npm run format:check && npm run typecheck && npm run check:arch && npm run lint && npm run test",
+    "verify": "npm run verify:nobuild && vite build"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.0",
+    "@types/three": "0.186.0",
+    "@vitest/coverage-v8": "^5.0.2",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}
