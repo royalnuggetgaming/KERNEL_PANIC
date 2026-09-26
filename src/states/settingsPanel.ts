@@ -117,7 +117,9 @@ export function adjustSetting(s: Settings, id: SettingId, delta: number): Partia
       return { focusToggle: pair(s.focusToggle, 1, !s.focusToggle[1]) };
     case 'theme': {
       const next = cycle<ThemeId>(THEME_IDS, s.themeId, delta);
-      return next === s.themeId ? null : { themeId: next };
+      const before: string = s.themeId;
+      const after: string = next;
+      return after === before ? null : { themeId: next };
     }
   }
 }

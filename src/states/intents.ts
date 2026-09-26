@@ -89,12 +89,6 @@ export function wrapIndex(index: number, delta: number, count: number): number {
   return (((index + delta) % count) + count) % count;
 }
 
-/** Cursor clamp into [0, count). */
-export function clampIndex(index: number, count: number): number {
-  if (count <= 0) return 0;
-  return Math.min(Math.max(0, index), count - 1);
-}
-
 /** Index of the item with this id, or -1. */
 export function indexOfId(items: readonly { readonly id: string }[], id: string | null): number {
   if (id === null) return -1;

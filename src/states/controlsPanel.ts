@@ -103,8 +103,7 @@ export class ControlsController {
     if (this.capturing !== null) return false;
     if (this.pendingSwap !== null) return this.handleSwap(i);
     if (this.keyTest) {
-      const endTest =
-        (i.kind === 'back' && i.player === 'any') || (i.pointer && i.itemId === 'keyTest');
+      const endTest = (i.kind === 'back' && i.player === 'any') || (i.pointer && i.itemId === 'keyTest');
       if (!endTest) return false;
       this.keyTest = false;
       this.message = '';
