@@ -41,8 +41,9 @@ describe('collision: swept player shots', () => {
     for (let k = 0; k < 500; k++) {
       const w = createTestWorld({ mode: 'solo' });
       placePlayer(w, 0, 0, 30); // keep the player out of the way
-      const ex = rng.range(-20, 20);
-      const ez = rng.range(-20, 20);
+      // Enemy and shot origin stay inside the arena (shots outside it despawn at the wall).
+      const ex = rng.range(-14, 14);
+      const ez = rng.range(-14, 14);
       const e = addTestEnemy(w, 'shard', ex, ez, { hp: 1e6, maxHp: 1e6 });
       const a = rng.range(0, Math.PI * 2);
       const d = rng.range(3, 10);
@@ -115,7 +116,7 @@ describe('collision: swept player shots', () => {
     const next = addTestEnemy(w, 'spiker', 8, 0);
     const chained = addTestEnemy(w, 'spiker', 8, 5);
     addTestPlayerShot(w, 0, 0, 0, 60, 0, 12, { kind: PROJECTILE_KINDS.arc });
-    tick(w, 10);
+    tick(w, 20);
     expect(dying.hp).toBe(60);
     expect(next.hp).toBe(48);
     expect(chained.hp).toBe(48);
@@ -191,16 +192,16 @@ describe('collision: versus', () => {
     placePlayer(vs, 0, 0, 0);
     placePlayer(vs, 1, 5, 0);
     addTestPlayerShot(vs, 0, 1, 0, 60, 0, 10);
-    tick(vs, 5);
+    tick(vs, 10);
     expect(vs.players[1].hp).toBeCloseTo(100 - 10 * VERSUS.PVP_DAMAGE_MUL, 10);
     addTestPlayerShot(vs, 0, 1, 0, 60, 0, 10, { kind: PROJECTILE_KINDS.missile });
-    tick(vs, 5);
+    tick(vs, 10);
     expect(vs.players[1].hp).toBeCloseTo(100 - 10 * VERSUS.PVP_DAMAGE_MUL, 10);
     const co = createTestWorld({ mode: 'coop', vehicles: ['lancer', 'lancer'] });
     placePlayer(co, 0, 0, 0);
     placePlayer(co, 1, 5, 0);
     addTestPlayerShot(co, 0, 1, 0, 60, 0, 10);
-    tick(co, 5);
+    tick(co, 10);
     expect(co.players[1].hp).toBe(100);
   });
 
