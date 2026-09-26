@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { STATE_IDS, type StateId } from '../../src/contracts/states';
 import { InvalidTransitionError } from '../../src/engine/StateMachine';
-import { EDGES, MAX_STACK_DEPTH, findEdge } from '../../src/engine/transitions';
-import { STACK_WALKS, createRig, req, rigAt, validPayload, walk } from './fsmFixture';
+import { EDGES, findEdge } from '../../src/engine/transitions';
+import { createRig, req, rigAt, validPayload, walk } from './fsmFixture';
 
 /** Stack shapes per "from" state (UpgradesShop and Paused have two live shapes). */
 const SHAPES_FOR: Readonly<Record<StateId, readonly string[]>> = {
@@ -179,7 +179,7 @@ describe('StateMachine: queue semantics', () => {
     expect(fsm.applyPending()).toBe(1);
     expect(fsm.top).toBe('MainMenu');
     expect(fsm.pendingCount).toBe(1);
-    spies.MainMenu.hooks.onEnter = undefined;
+    delete spies.MainMenu.hooks.onEnter;
     expect(fsm.applyPending()).toBe(1);
     expect(fsm.top).toBe('CharacterSelect');
 

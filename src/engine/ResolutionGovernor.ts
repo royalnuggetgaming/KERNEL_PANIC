@@ -26,8 +26,8 @@ export interface ResolutionGovernor {
  */
 export const GOVERNOR_CLEAN_RATIO = 0.9;
 
-const ACT_SCALE: readonly GovernorAction[] = GOVERNOR.RENDER_SCALES.map(
-  (value): GovernorAction => Object.freeze({ kind: 'renderScale', value }),
+const ACT_SCALE: readonly GovernorAction[] = GOVERNOR.RENDER_SCALES.map((value): GovernorAction =>
+  Object.freeze({ kind: 'renderScale', value }),
 );
 const ACT_MSAA_2: GovernorAction = Object.freeze({ kind: 'msaa', value: 2 });
 const ACT_MSAA_4: GovernorAction = Object.freeze({ kind: 'msaa', value: 4 });
@@ -99,11 +99,7 @@ class StepGovernor implements ResolutionGovernor {
     if (p95Ms > GOVERNOR.STEP_DOWN_P95_MS) {
       this.cleanSince = -1;
       if (this.overSince < 0) this.overSince = nowS;
-      if (
-        canStep &&
-        this.current < this.down.length &&
-        nowS - this.overSince >= GOVERNOR.STEP_DOWN_AFTER_S
-      ) {
+      if (canStep && this.current < this.down.length && nowS - this.overSince >= GOVERNOR.STEP_DOWN_AFTER_S) {
         const action = this.down[this.current]!;
         this.current++;
         this.lastStepAt = nowS;
