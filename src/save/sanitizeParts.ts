@@ -1,11 +1,5 @@
 /** Type guards and coercions for the individual SaveDataV1 sections (used by sanitize.ts). */
-import {
-  ACTIONS,
-  type Action,
-  type Bindings,
-  type KeyCode,
-  type PlayerBindings,
-} from '../contracts/input';
+import { ACTIONS, type Action, type Bindings, type KeyCode, type PlayerBindings } from '../contracts/input';
 import {
   PLAYER_INDICES,
   RUN_MODES,
@@ -147,7 +141,8 @@ function sanitizeEntry(raw: unknown): LeaderboardEntry | null {
   if (!isRecord(raw)) return null;
   const vehicles: VehicleId[] = [];
   if (Array.isArray(raw.vehicles))
-    for (const v of raw.vehicles as readonly unknown[]) if (isVehicle(v) && vehicles.length < 2) vehicles.push(v);
+    for (const v of raw.vehicles as readonly unknown[])
+      if (isVehicle(v) && vehicles.length < 2) vehicles.push(v);
   const players = raw.players === 2 ? 2 : 1;
   if (typeof raw.score !== 'number' || !Number.isFinite(raw.score)) return null;
   return {

@@ -88,7 +88,7 @@ export function buildVoxelText(text: string): BufferGeometry {
   for (let ci = 0; ci < chars.length; ci++) {
     const glyph = glyphFor(chars[ci]!);
     for (let row = 0; row < GLYPH_H; row++) {
-      const line = glyph[row] as string;
+      const line = glyph[row]!;
       for (let col = 0; col < GLYPH_W; col++) {
         if (line.charAt(col) !== '#') continue;
         const x = x0 + (ci * GLYPH_ADVANCE + col) * v;

@@ -80,7 +80,8 @@ function sanitizeMeta(rawMeta: unknown, rawSpent: unknown): MetaResult {
 
 function sanitizeUnlocks(raw: unknown): VehicleId[] {
   const out: VehicleId[] = [...STARTER_VEHICLES];
-  if (Array.isArray(raw)) for (const v of raw as readonly unknown[]) if (isVehicle(v) && !out.includes(v)) out.push(v);
+  if (Array.isArray(raw))
+    for (const v of raw as readonly unknown[]) if (isVehicle(v) && !out.includes(v)) out.push(v);
   return out;
 }
 

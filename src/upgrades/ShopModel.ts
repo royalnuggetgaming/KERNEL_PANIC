@@ -15,13 +15,7 @@ import {
 } from '../contracts/ids';
 import type { ShopApi, ShopVisitSnapshot } from '../contracts/run';
 import type { Rng } from '../contracts/sim';
-import type {
-  FinalChoice,
-  PlayerRunState,
-  PurchaseResult,
-  ShopTx,
-  TeamState,
-} from '../contracts/upgrades';
+import type { FinalChoice, PlayerRunState, PurchaseResult, ShopTx, TeamState } from '../contracts/upgrades';
 import { assertNever } from '../core/assert';
 import { META_EFFECTS, metaLevel } from '../config/metaCatalog';
 import { UTILITY_PRICES } from '../config/runCatalog';

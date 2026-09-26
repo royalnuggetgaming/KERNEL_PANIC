@@ -34,7 +34,9 @@ export function isQuotaError(e: unknown): boolean {
   if (e instanceof StorageWriteError) return e.kind === 'quota';
   const name = errorName(e);
   const code = errorCode(e);
-  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014;
+  return (
+    name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014
+  );
 }
 
 /** Plain Map-backed storage used when localStorage is unavailable. */

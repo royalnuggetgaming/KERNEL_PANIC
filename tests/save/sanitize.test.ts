@@ -65,7 +65,14 @@ describe('sanitizeSave', () => {
       lifetimeCores: -5,
       meta: { hullFw: Number.NaN, magnetFw: 2.7, overclockFw: -1, fieldMedic: Number.POSITIVE_INFINITY },
       firmwareSpent: { magnetFw: 45.9, fieldMedic: 'x' },
-      settings: { master: 7, music: -1, sfx: Number.NaN, screenShake: 0.25, quality: 'extreme', frameCap: 144 },
+      settings: {
+        master: 7,
+        music: -1,
+        sfx: Number.NaN,
+        screenShake: 0.25,
+        quality: 'extreme',
+        frameCap: 144,
+      },
       records: { runs: 3.9, bestScore: -10, leaderboard: 'nope' },
       lastCommittedRunId: 12,
     });

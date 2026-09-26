@@ -41,7 +41,9 @@ describe('drawOffers', () => {
     const rng = createRng(11);
     for (let i = 0; i < 1000; i++) {
       for (const o of drawOffers(rng, ctx({ owned: own, sector: 3 }))) {
-        expect(['afterimage', 'doubleBuffer', 'overheat', 'splitShot', 'bounty', 'pierce']).not.toContain(o.id);
+        expect(['afterimage', 'doubleBuffer', 'overheat', 'splitShot', 'bounty', 'pierce']).not.toContain(
+          o.id,
+        );
         expect(cardDef(o.id).rarity === 'L').toBe(false);
       }
     }

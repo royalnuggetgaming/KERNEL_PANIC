@@ -23,13 +23,13 @@ export type TintSlot = (typeof TINT)[keyof typeof TINT];
 /** vec3 uniform storage (three uploads Float32Array uniforms with uniform3fv). */
 export type Vec3Uniform = UniformSlot<Float32Array>;
 
-/** Type alias (not interface) so it satisfies ShaderSource's Record<string, UniformSlot> bound. */
-export type CommonUniforms = {
+/** Extends Record<string, UniformSlot> so it satisfies ShaderSource's uniform bound. */
+export interface CommonUniforms extends Record<string, UniformSlot> {
   /** Theme pickup colour (linear RGB), written by assets/materials.ts. */
   readonly uPickupColor: Vec3Uniform;
   /** Theme link-beam colour (linear RGB), written by assets/materials.ts. */
   readonly uLinkColor: Vec3Uniform;
-};
+}
 
 export function vec3Uniform(x: number, y: number, z: number): Vec3Uniform {
   return { value: new Float32Array([x, y, z]) };

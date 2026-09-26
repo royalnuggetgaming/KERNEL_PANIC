@@ -143,7 +143,7 @@ const ADDITIVE = {
 } as const;
 
 function writeRgb(u: IUniform | undefined, hex: number): void {
-  const arr = u?.value;
+  const arr: unknown = u?.value;
   if (!(arr instanceof Float32Array)) return;
   const c = new Color(hex);
   arr[0] = c.r;
@@ -216,7 +216,7 @@ function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {
     case 'wall':
       return {
         ...additive(FORCE_FIELD, (u) => {
-          const scale = u.uUvScale?.value;
+          const scale: unknown = u.uUvScale?.value;
           if (scale instanceof Float32Array) {
             scale[0] = Math.round((2 * Math.PI * ARENA.RADIUS) / 1.4);
             scale[1] = 2.2;
@@ -228,7 +228,7 @@ function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {
     case 'shield':
       return {
         ...additive(FORCE_FIELD, (u) => {
-          const scale = u.uUvScale?.value;
+          const scale: unknown = u.uUvScale?.value;
           if (scale instanceof Float32Array) {
             scale[0] = 18;
             scale[1] = 5;

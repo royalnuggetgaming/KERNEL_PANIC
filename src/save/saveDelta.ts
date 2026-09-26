@@ -66,7 +66,8 @@ export function applySaveDelta(
   nowMs: number,
   runId: string | null = null,
 ): SaveDataV1 {
-  const coresDelta = d.coresDelta !== undefined && Number.isFinite(d.coresDelta) ? Math.trunc(d.coresDelta) : 0;
+  const coresDelta =
+    d.coresDelta !== undefined && Number.isFinite(d.coresDelta) ? Math.trunc(d.coresDelta) : 0;
   const earned = d.respec === true ? 0 : Math.max(0, coresDelta);
   return {
     cores: clampInt(s.cores + coresDelta, 0, ECONOMY.CORES_MAX),

@@ -18,11 +18,7 @@
       "preCharge": 80,
       "bogusUpgrade": 50
     },
-    "unlocks": [
-      "lancer",
-      "bulwark",
-      "specter"
-    ],
+    "unlocks": ["lancer", "bulwark", "specter"],
     "settings": {
       "master": 0.5,
       "music": 0.4,
@@ -33,82 +29,33 @@
       "reduceFlashes": true,
       "reduceMotion": false,
       "colorblind": true,
-      "autofire": [
-        true,
-        false
-      ],
-      "focusToggle": [
-        false,
-        true
-      ],
+      "autofire": [true, false],
+      "focusToggle": [false, true],
       "showFps": true,
       "themeId": "kernelPanic"
     },
     "bindings": {
       "players": [
         {
-          "up": [
-            "KeyW"
-          ],
-          "left": [
-            "KeyA"
-          ],
-          "down": [
-            "KeyS"
-          ],
-          "right": [
-            "KeyD"
-          ],
-          "fire": [
-            "KeyF",
-            "Space"
-          ],
-          "dash": [
-            "ShiftLeft",
-            "KeyQ"
-          ],
-          "special": [
-            "KeyE",
-            "KeyR"
-          ]
+          "up": ["KeyW"],
+          "left": ["KeyA"],
+          "down": ["KeyS"],
+          "right": ["KeyD"],
+          "fire": ["KeyF", "Space"],
+          "dash": ["ShiftLeft", "KeyQ"],
+          "special": ["KeyE", "KeyR"]
         },
         {
-          "up": [
-            "ArrowUp",
-            "Numpad8"
-          ],
-          "left": [
-            "ArrowLeft",
-            "Numpad4"
-          ],
-          "down": [
-            "ArrowDown",
-            "Numpad5",
-            "Numpad2"
-          ],
-          "right": [
-            "ArrowRight",
-            "Numpad6"
-          ],
-          "fire": [
-            "Period",
-            "Numpad0"
-          ],
-          "dash": [
-            "Slash",
-            "ShiftRight",
-            "NumpadDecimal"
-          ],
-          "special": [
-            "Comma",
-            "NumpadEnter"
-          ]
+          "up": ["ArrowUp", "Numpad8"],
+          "left": ["ArrowLeft", "Numpad4"],
+          "down": ["ArrowDown", "Numpad5", "Numpad2"],
+          "right": ["ArrowRight", "Numpad6"],
+          "fire": ["Period", "Numpad0"],
+          "dash": ["Slash", "ShiftRight", "NumpadDecimal"],
+          "special": ["Comma", "NumpadEnter"]
         }
       ],
-      "pause": [
-        "Escape",
-        "KeyP"
-      ]
+      "pause": ["Escape", "KeyP"]
     },
     "lastLoadout": [
       {
@@ -134,10 +81,7 @@
           "date": 1758800000000,
           "players": 2,
           "mode": "coop",
-          "vehicles": [
-            "specter",
-            "bulwark"
-          ]
+          "vehicles": ["specter", "bulwark"]
         },
         {
           "score": 40125,
@@ -145,9 +89,7 @@
           "date": 1758700000000,
           "players": 1,
           "mode": "solo",
-          "vehicles": [
-            "lancer"
-          ]
+          "vehicles": ["lancer"]
         }
       ]
     },

@@ -78,18 +78,24 @@ describe('computeRunRewards (versus)', () => {
   });
 
   it('a drawn match pays rounds only', () => {
-    const r = computeRunRewards(summary({ mode: 'versus', outcome: 'victory', roundWins: [2, 2], winner: null }));
+    const r = computeRunRewards(
+      summary({ mode: 'versus', outcome: 'victory', roundWins: [2, 2], winner: null }),
+    );
     expect(r.total).toBe(20);
   });
 
   it('an abandoned match pays the round part only', () => {
-    const r = computeRunRewards(summary({ mode: 'versus', outcome: 'abandoned', roundWins: [2, 1], winner: 0 }));
+    const r = computeRunRewards(
+      summary({ mode: 'versus', outcome: 'abandoned', roundWins: [2, 1], winner: 0 }),
+    );
     expect(r.lines.map((l) => l.id)).toEqual(['rounds']);
     expect(r.total).toBe(15);
   });
 
   it('caps at 60 per match', () => {
-    const r = computeRunRewards(summary({ mode: 'versus', outcome: 'victory', roundWins: [9, 9], winner: 1 }));
+    const r = computeRunRewards(
+      summary({ mode: 'versus', outcome: 'victory', roundWins: [9, 9], winner: 1 }),
+    );
     expect(r.uncapped).toBe(100);
     expect(r.total).toBe(60);
     expect(r.capped).toBe(true);

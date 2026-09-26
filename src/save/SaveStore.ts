@@ -181,10 +181,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
   };
 
   /** Delta commit against the freshly re-read stored value. */
-  const commitDelta = (
-    d: SaveDelta,
-    runId: string | null,
-  ): Result<SaveDataV1, SaveError | 'duplicate'> => {
+  const commitDelta = (d: SaveDelta, runId: string | null): Result<SaveDataV1, SaveError | 'duplicate'> => {
     if (readOnly) return err('readOnly');
     const stored = kv.get(SAVE_KEYS.main);
     let base = persisted;

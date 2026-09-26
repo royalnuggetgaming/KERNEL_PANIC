@@ -39,7 +39,8 @@ export function decodeEnvelope(
   if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0) return corrupt('bad version');
   if (v > target) return { kind: 'future', v };
   if (!('data' in env)) return corrupt('no data');
-  if (typeof env.crc !== 'number' || env.crc !== crc32(stableStringify(env.data))) return corrupt('crc mismatch');
+  if (typeof env.crc !== 'number' || env.crc !== crc32(stableStringify(env.data)))
+    return corrupt('crc mismatch');
   let migrated: unknown;
   try {
     migrated = migrate(env.data, v, migrations, target);

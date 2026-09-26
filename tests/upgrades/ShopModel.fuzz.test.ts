@@ -29,7 +29,9 @@ function randomTx(rng: Rng, p1Share: number): ShopTx {
     case 8:
       return rng.chance(0.5) ? { kind: 'lock', player: p, slot } : { kind: 'gift', player: p };
     default:
-      return rng.chance(0.3) ? { kind: 'toggleReady', player: p } : { kind: 'buyRow', player: p, id: 'magnet' };
+      return rng.chance(0.3)
+        ? { kind: 'toggleReady', player: p }
+        : { kind: 'buyRow', player: p, id: 'magnet' };
   }
 }
 

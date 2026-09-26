@@ -60,7 +60,12 @@ function playerSnapshot(s: ShopState, p: PlayerIndex): ShopPlayerSnapshot {
   const player = s.players[p];
   const rows: ShopRowSnapshot[] = [];
   for (const id of STAT_ROW_IDS) {
-    rows.push({ id, level: player.rows[id], maxLevel: statRowDef(id).maxLevel, ...rowStatus(checkRow(s, p, id)) });
+    rows.push({
+      id,
+      level: player.rows[id],
+      maxLevel: statRowDef(id).maxLevel,
+      ...rowStatus(checkRow(s, p, id)),
+    });
   }
   const cards: ShopCardSnapshot[] = [];
   const slots = s.offers[p];
