@@ -71,7 +71,7 @@ describe('sanitizeSave', () => {
     });
     expect(r.data.cores).toBe(1_000_000_000);
     expect(r.data.lifetimeCores).toBe(0);
-    expect(r.data.meta).toEqual({ magnetFw: 2, fieldMedic: 3 });
+    expect(r.data.meta).toEqual({ magnetFw: 2 }); // Infinity is not finite: level 0
     expect(r.data.firmwareSpent).toEqual({ magnetFw: 45 });
     expect(r.data.settings).toMatchObject({ master: 1, music: 0, sfx: 0.8, screenShake: 0.25 });
     expect(r.data.settings.quality).toBe('high');

@@ -51,7 +51,10 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
   const migrations = deps.migrations ?? MIGRATIONS;
   const baseStatus: SaveStatus = deps.memoryOnly ? 'memoryOnly' : 'ok';
 
-  let data: SaveDataV1 = createDefaultSave();
+  /** Last state known to be in storage (or kept in memory after a failed write), without pending edits. */
+  let persisted: SaveDataV1 = createDefaultSave();
+  /** What the game sees: persisted plus the pending debounced delta. */
+  let data: SaveDataV1 = persisted;
   let status: SaveStatus = baseStatus;
   let readOnly = false;
   let rev = 0;
@@ -113,6 +116,11 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     pending = null;
   };
 
+  const setLoaded = (d: SaveDataV1): void => {
+    persisted = d;
+    data = d;
+  };
+
   const load = (): { readonly data: SaveDataV1; readonly status: SaveStatus } => {
     readOnly = false;
     pending = null;
@@ -122,7 +130,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     const rawMain = kv.get(SAVE_KEYS.main);
     const rawBak = kv.get(SAVE_KEYS.backup);
     if (rawMain === null && rawBak === null) {
-      data = createDefaultSave();
+      setLoaded(createDefaultSave());
       status = baseStatus;
       const w = write(data, null, 0);
       if (!w.ok) log.warn('save: could not write the fresh profile', w.error);
@@ -130,7 +138,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     }
     const main = rawMain === null ? null : decode(rawMain);
     if (main?.kind === 'ok') {
-      data = main.data;
+      setLoaded(main.data);
       rev = main.rev;
       lastGoodRaw = rawMain;
       status = baseStatus;
@@ -142,7 +150,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     }
     if (main?.kind === 'future') {
       enterReadOnly();
-      data = createDefaultSave();
+      setLoaded(createDefaultSave());
       log.warn('save: written by a newer build; running read-only on defaults', main.v);
       return { data, status };
     }
@@ -152,7 +160,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     }
     const bak = decode(rawBak);
     if (bak.kind === 'ok') {
-      data = bak.data;
+      setLoaded(bak.data);
       rev = bak.rev;
       lastGoodRaw = rawBak;
       status = deps.memoryOnly ? baseStatus : 'restoredBackup';
@@ -162,10 +170,10 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     }
     if (bak.kind === 'future') {
       enterReadOnly();
-      data = createDefaultSave();
+      setLoaded(createDefaultSave());
       return { data, status };
     }
-    data = createDefaultSave();
+    setLoaded(createDefaultSave());
     status = deps.memoryOnly ? baseStatus : 'reset';
     const w = write(data, null, 0);
     if (!w.ok) log.warn('save: could not write the reset profile', w.error);
@@ -179,7 +187,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
   ): Result<SaveDataV1, SaveError | 'duplicate'> => {
     if (readOnly) return err('readOnly');
     const stored = kv.get(SAVE_KEYS.main);
-    let base = data;
+    let base = persisted;
     let baseRev = rev;
     let prevGood = lastGoodRaw;
     if (stored !== null && stored !== lastGoodRaw) {
@@ -195,11 +203,12 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
         quarantine(stored);
       }
     }
-    if (runId !== null && (base.lastCommittedRunId === runId || data.lastCommittedRunId === runId))
+    if (runId !== null && (base.lastCommittedRunId === runId || persisted.lastCommittedRunId === runId))
       return err('duplicate');
     const next = sanitizeSave(applySaveDelta(base, d, deps.clock.now(), runId)).data;
     const w = write(next, prevGood, baseRev);
     // The in-memory state always moves on (even when storage failed) so the session stays consistent.
+    persisted = next;
     data = withPending(next);
     if (!w.ok) return err(w.error);
     return ok(data);
@@ -226,6 +235,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     if (dec.kind !== 'ok') return;
     rev = Math.max(rev, dec.rev);
     lastGoodRaw = raw;
+    persisted = dec.data;
     data = withPending(dec.data);
     for (const cb of [...listeners]) cb(data);
   };
@@ -248,7 +258,10 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     },
     commitDebounced(d: SaveDelta): void {
       data = sanitizeSave(applySaveDelta(data, d, deps.clock.now())).data;
-      if (readOnly) return;
+      if (readOnly) {
+        persisted = data;
+        return;
+      }
       pending = mergeSaveDelta(pending, d);
       dueAt = deps.clock.now() + SAVE_DEBOUNCE_MS;
     },

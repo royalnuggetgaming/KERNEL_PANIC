@@ -23,6 +23,7 @@ interface Harness {
 
 function harness(mem = new MemoryStorage(), clock = new FakeClock(1000)): Harness {
   const { kv, memoryOnly } = createKeyValueStorage(mem);
+  mem.writes.length = 0; // drop the availability probe
   const h: { mem: MemoryStorage; clock: FakeClock; store: SaveStore | null; inRun: boolean } = {
     mem,
     clock,
