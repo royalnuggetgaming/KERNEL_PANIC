@@ -7,7 +7,7 @@
 import type { PlayerIndex } from '../../contracts/ids';
 import type { Rng } from '../../contracts/sim';
 import type { SimEvents } from '../../contracts/simEvents';
-import { SOURCE_LINK, SOURCE_WORLD, type DamageSource } from '../../contracts/simEvents';
+import { SOURCE_LINK, type DamageSource } from '../../contracts/simEvents';
 import { DECAL_KIND } from '../../shaders/decal';
 import { TINT } from '../../shaders/tints';
 import type { FrameContext } from '../views/types';
@@ -50,7 +50,7 @@ export function sourceTint(src: DamageSource | -1): number {
   if (src === 0) return TINT.P1;
   if (src === 1) return TINT.P2;
   if (src === SOURCE_LINK) return TINT.LINK;
-  return src === SOURCE_WORLD ? TINT.ENEMY_SHOT : TINT.WHITE;
+  return TINT.ENEMY_SHOT;
 }
 
 function playerTint(p: PlayerIndex): number {

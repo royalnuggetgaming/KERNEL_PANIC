@@ -6,13 +6,7 @@
  * - fullscreen: one oversized clip-space triangle (post passes)
  * - trail ribbons: TRAIL_SEGMENTS segments, indexed, dynamic positions written by TrailRenderer
  */
-import {
-  BufferGeometry,
-  DynamicDrawUsage,
-  Float32BufferAttribute,
-  PlaneGeometry,
-  RingGeometry,
-} from 'three';
+import { BufferGeometry, DynamicDrawUsage, Float32BufferAttribute, PlaneGeometry, RingGeometry } from 'three';
 import type { PlayerIndex } from '../../contracts/ids';
 import { TINT } from '../../shaders/tints';
 import { MeshBuilder } from './MeshBuilder';

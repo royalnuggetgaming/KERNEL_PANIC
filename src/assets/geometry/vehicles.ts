@@ -133,9 +133,15 @@ function addSled(mb: MeshBuilder, r: SledRecipe): void {
   const f = r.fin;
   const baseY = SLED_BELLY_Y + 0.2;
   const finTris = [
-    f.x, baseY, -0.2 + f.chord * 0.5,
-    f.x + f.span, baseY + 0.12, -0.2 - f.sweep,
-    f.x, baseY, -0.2 - f.chord * 0.5,
+    f.x,
+    baseY,
+    -0.2 + f.chord * 0.5,
+    f.x + f.span,
+    baseY + 0.12,
+    -0.2 - f.sweep,
+    f.x,
+    baseY,
+    -0.2 - f.chord * 0.5,
   ];
   mb.addMirroredX(triangleGeometry(finTris, 0.03), { color: HULL_PANEL, emissive: 0.35 });
 }
@@ -166,7 +172,7 @@ function addDetails(mb: MeshBuilder, id: VehicleId, r: SledRecipe): void {
     case 'specter': {
       mb.add(new CylinderGeometry(0.03, 0.05, 0.6, 6, 1), {
         matrix: new Matrix4()
-          .makeTranslation(0, SLED_BELLY_Y + 0.18, r.noseZ - 0.05)
+          .makeTranslation(0, SLED_BELLY_Y + 0.18, r.noseZ - 0.35)
           .multiply(new Matrix4().makeRotationX(Math.PI / 2)),
         color: TRIM,
         emissive: 0.9,

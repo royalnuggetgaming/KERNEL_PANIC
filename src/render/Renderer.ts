@@ -77,6 +77,12 @@ class RenderSystemImpl implements RenderSystem {
   private readonly lostCbs: (() => void)[] = [];
   private readonly restoredCbs: (() => void)[] = [];
   private observer: ResizeObserver | null = null;
+  /** matchMedia query for the current DPR (fires when the window moves to a display with another DPR). */
+  private dprQuery: MediaQueryList | null = null;
+  private readonly onDprChange = (): void => {
+    this.watchDpr();
+    this.resizeNow();
+  };
   private debounce: ReturnType<typeof setTimeout> | null = null;
   private readonly onObserved = (): void => {
     if (this.debounce !== null) clearTimeout(this.debounce);
@@ -135,7 +141,17 @@ class RenderSystemImpl implements RenderSystem {
       this.observer = new ResizeObserver(this.onObserved);
       this.observer.observe(this.host);
     }
+    this.watchDpr();
     this.resizeNow();
+  }
+
+  private watchDpr(): void {
+    this.dprQuery?.removeEventListener('change', this.onDprChange);
+    this.dprQuery = null;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const q = window.matchMedia(`(resolution: ${String(window.devicePixelRatio)}dppx)`);
+    q.addEventListener('change', this.onDprChange);
+    this.dprQuery = q;
   }
 
   get contextLost(): boolean {
@@ -203,6 +219,8 @@ class RenderSystemImpl implements RenderSystem {
     this.debounce = null;
     this.observer?.disconnect();
     this.observer = null;
+    this.dprQuery?.removeEventListener('change', this.onDprChange);
+    this.dprQuery = null;
     this.canvas.removeEventListener('webglcontextlost', this.onLost, false);
     this.canvas.removeEventListener('webglcontextrestored', this.onRestored, false);
     this.renderer.dispose();

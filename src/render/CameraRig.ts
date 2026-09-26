@@ -54,7 +54,7 @@ export class CameraRig implements CameraCues {
   private bossX = 0;
   private bossZ = 0;
   private gameoverT = 0;
-  private gameoverStart = CAMERA.MIN_DIST;
+  private gameoverStart: number = CAMERA.MIN_DIST;
   private attractAngle = 0;
   private reduceMotion = false;
 

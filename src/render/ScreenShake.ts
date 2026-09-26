@@ -49,8 +49,7 @@ export class ScreenShake {
   /** Adds trauma from one event (clamped per event and in total). Ignores non-positive amounts. */
   add(amount: number): void {
     if (!(amount > 0)) return;
-    const a =
-      amount > CAMERA.SHAKE_MAX_TRAUMA_PER_EVENT ? CAMERA.SHAKE_MAX_TRAUMA_PER_EVENT : amount;
+    const a = amount > CAMERA.SHAKE_MAX_TRAUMA_PER_EVENT ? CAMERA.SHAKE_MAX_TRAUMA_PER_EVENT : amount;
     const t = this.trauma + a;
     this.trauma = t > 1 ? 1 : t;
   }

@@ -7,7 +7,7 @@
  */
 import { NO_HANDLE } from '../../contracts/ids';
 import { PROJECTILE_KINDS, type PoolView, type ProjectileEntity } from '../../contracts/sim';
-import { SOURCE_LINK, SOURCE_WORLD, type DamageSource } from '../../contracts/simEvents';
+import { SOURCE_LINK, type DamageSource } from '../../contracts/simEvents';
 import { TINT } from '../../shaders/tints';
 import { lerp1, seed01, type BatchSink, type FrameContext } from './types';
 
@@ -18,7 +18,7 @@ export function projectileTint(owner: DamageSource): number {
   if (owner === 0) return TINT.P1;
   if (owner === 1) return TINT.P2;
   if (owner === SOURCE_LINK) return TINT.LINK;
-  return owner === SOURCE_WORLD ? TINT.ENEMY_SHOT : TINT.WHITE;
+  return TINT.ENEMY_SHOT;
 }
 
 /** True for kinds drawn by the dense missiles batch. */

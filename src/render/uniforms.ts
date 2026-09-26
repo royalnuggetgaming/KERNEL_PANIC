@@ -6,8 +6,7 @@
 import type { IUniform, ShaderMaterial } from 'three';
 
 export function findUniform(mat: ShaderMaterial, name: string): IUniform | null {
-  const u = mat.uniforms[name];
-  return u === undefined ? null : u;
+  return mat.uniforms[name] ?? null;
 }
 
 export function requireUniform(mat: ShaderMaterial, name: string): IUniform {

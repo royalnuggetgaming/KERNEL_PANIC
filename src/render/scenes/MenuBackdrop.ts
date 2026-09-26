@@ -24,7 +24,10 @@ export class MenuBackdrop {
     this.root.add(this.title);
     for (let i = 0; i < DRONE_COUNT; i++) {
       const v = VEHICLE_IDS[i % VEHICLE_IDS.length]!;
-      const m = new Mesh(assets.getGeometry(`vehicle:${v}`), assets.getMaterial(i % 2 === 0 ? 'hull:0' : 'hull:1'));
+      const m = new Mesh(
+        assets.getGeometry(`vehicle:${v}`),
+        assets.getMaterial(i % 2 === 0 ? 'hull:0' : 'hull:1'),
+      );
       m.name = `drone:${String(i)}`;
       m.frustumCulled = false;
       m.matrixAutoUpdate = false;

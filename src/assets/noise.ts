@@ -60,8 +60,7 @@ export function createNoise(seed: number): Noise {
   for (let i = 0; i < 512; i++) perm[i] = base[i & 255]!;
   for (let i = 0; i < 256; i++) values[i] = rng.next();
 
-  const hash2 = (ix: number, iy: number): number =>
-    values[perm[(perm[ix & 255]! + (iy & 255)) & 511]!]!;
+  const hash2 = (ix: number, iy: number): number => values[perm[(perm[ix & 255]! + (iy & 255)) & 511]!]!;
 
   const lattice = (ix: number, iy: number, fx: number, fy: number): number => {
     const u = fade(fx);

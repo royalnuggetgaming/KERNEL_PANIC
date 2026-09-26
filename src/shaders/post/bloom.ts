@@ -24,7 +24,7 @@ void main() {
 `;
 
 export interface BlitUniforms extends Record<string, UniformSlot> {
-  tInput: UniformSlot<unknown>;
+  tInput: UniformSlot;
   uIntensity: UniformSlot<number>;
 }
 
@@ -46,7 +46,7 @@ void main() {
 };
 
 export interface PrefilterUniforms extends Record<string, UniformSlot> {
-  tInput: UniformSlot<unknown>;
+  tInput: UniformSlot;
   /** Source texel size (1 / source pixels). */
   uTexel: UniformSlot<Vec2Value>;
   uThreshold: UniformSlot<number>;
@@ -105,7 +105,7 @@ void main() {
 };
 
 export interface KawaseUniforms extends Record<string, UniformSlot> {
-  tInput: UniformSlot<unknown>;
+  tInput: UniformSlot;
   /** Source texel size. */
   uTexel: UniformSlot<Vec2Value>;
   /** Tap offset in source texels (1 = classic dual filter). */
@@ -142,7 +142,7 @@ void main() {
 
 export interface KawaseUpUniforms extends KawaseUniforms {
   /** Same-resolution level of the down chain, added back (progressive upsample). */
-  tSkip: UniformSlot<unknown>;
+  tSkip: UniformSlot;
   uSkipWeight: UniformSlot<number>;
 }
 

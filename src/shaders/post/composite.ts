@@ -10,8 +10,8 @@ import type { ShaderSource, UniformSlot } from '../shaderSource';
 import { BLOOM_LEVELS, FULLSCREEN_VERT, type Vec2Value } from './bloom';
 
 export interface CompositeUniforms extends Record<string, UniformSlot> {
-  tScene: UniformSlot<unknown>;
-  tBloom: UniformSlot<unknown>;
+  tScene: UniformSlot;
+  tBloom: UniformSlot;
   /** Scene target size in pixels (FXAA texel). */
   uSceneSize: UniformSlot<Vec2Value>;
   uBloomStrength: UniformSlot<number>;

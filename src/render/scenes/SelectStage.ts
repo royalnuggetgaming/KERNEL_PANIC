@@ -21,7 +21,10 @@ export class SelectStage {
     this.assets = assets;
     this.root.name = 'selectStage';
     for (let i = 0; i < 2; i++) {
-      const m = new Mesh(assets.getGeometry('vehicle:lancer'), assets.getMaterial(i === 0 ? 'hull:0' : 'hull:1'));
+      const m = new Mesh(
+        assets.getGeometry('vehicle:lancer'),
+        assets.getMaterial(i === 0 ? 'hull:0' : 'hull:1'),
+      );
       m.name = `pedestal:${String(i)}`;
       m.frustumCulled = false;
       m.matrixAutoUpdate = false;

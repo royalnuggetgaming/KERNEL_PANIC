@@ -66,16 +66,7 @@ export class DecalView {
       const r = telegraphs.items[i]!;
       const prog = r.life > 0 ? (t - r.t0) / r.life : 1;
       if (prog > 1) continue;
-      b.push(
-        r.x0,
-        r.z0,
-        r.x1,
-        r.size,
-        prog < 0 ? 0 : prog,
-        r.t0,
-        encodeStyle(r.kind, r.tint),
-        r.seed,
-      );
+      b.push(r.x0, r.z0, r.x1, r.size, prog < 0 ? 0 : prog, r.t0, encodeStyle(r.kind, r.tint), r.seed);
     }
     b.commit();
   }

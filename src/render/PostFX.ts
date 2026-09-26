@@ -135,12 +135,7 @@ export class PostFX {
   private readonly uFxaa: IUniform;
   private readonly uBlitInput: IUniform;
 
-  constructor(
-    renderer: WebGLRenderer,
-    fullscreen: BufferGeometry,
-    mats: PostMaterials,
-    opts: PostFXOptions,
-  ) {
+  constructor(renderer: WebGLRenderer, fullscreen: BufferGeometry, mats: PostMaterials, opts: PostFXOptions) {
     this.renderer = renderer;
     this.mats = mats;
     this.float = opts.floatTargets;

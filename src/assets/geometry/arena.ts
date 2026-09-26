@@ -64,7 +64,12 @@ export function buildArena(theme: ThemeDef): {
   });
   const pylon = mb.build('arena:pylon');
 
-  mb.add(new SphereGeometry(SKY_RADIUS, 48, 24), { color: pal.sky, invert: true, flat: false, edges: 'none' });
+  mb.add(new SphereGeometry(SKY_RADIUS, 48, 24), {
+    color: pal.sky,
+    invert: true,
+    flat: false,
+    edges: 'none',
+  });
   const sky = mb.build('arena:sky');
 
   return { floor, wall, pylon, sky };

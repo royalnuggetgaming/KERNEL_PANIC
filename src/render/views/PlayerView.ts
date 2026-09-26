@@ -119,8 +119,15 @@ export class PlayerView {
     sh.commit();
   }
 
+  /** Hidden hulls and neutral hull uniforms (the hull materials are shared with menu/select meshes). */
   clear(): void {
-    for (let i = 0; i < this.hulls.length; i++) this.hulls[i]!.mesh.visible = false;
+    for (let i = 0; i < this.hulls.length; i++) {
+      const h = this.hulls[i]!;
+      h.mesh.visible = false;
+      if (h.uFlash !== null) h.uFlash.value = 0;
+      if (h.uDissolve !== null) h.uDissolve.value = 0;
+      if (h.uGlitch !== null) h.uGlitch.value = 0;
+    }
     this.shields.begin();
     this.shields.commit();
   }

@@ -25,10 +25,9 @@ export function bleedTotal(downsThisWave: number): number {
   return t > COOP.BLEED_MIN ? t : COOP.BLEED_MIN;
 }
 
-/** Pure: revive progress as a 0..1 fraction (reviveProgress is seconds of reviveTime). */
+/** Pure: revive progress clamped to 0..1 (entities/revive.ts stores a fraction of reviveTime). */
 export function reviveFraction(p: Readonly<PlayerEntity>): number {
-  const need = p.stats.reviveTime > 0 ? p.stats.reviveTime : COOP.REVIVE_TIME;
-  const f = p.reviveProgress / need;
+  const f = p.reviveProgress;
   return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
@@ -66,13 +65,40 @@ export class MarkerView {
       const z = lerp1(p.prevZ, p.z, a);
       const fade = this.fade[i]!;
       if (fade > 0.01) {
-        b.push(x, z, 0, CAMERA.MARKER_PX * (0.6 + 0.4 * fade), fade, CHEVRON_HEIGHT, encodeStyle(MARKER_KIND.CHEVRON, tint), i);
+        b.push(
+          x,
+          z,
+          0,
+          CAMERA.MARKER_PX * (0.6 + 0.4 * fade),
+          fade,
+          CHEVRON_HEIGHT,
+          encodeStyle(MARKER_KIND.CHEVRON, tint),
+          i,
+        );
       }
       if (p.life === 'downed') {
         if (w.mode !== 'versus') {
           const bleed = p.bleedLeft / bleedTotal(p.downsThisWave);
-          b.push(x, z, 0, DOWNED_PX, bleed < 0 ? 0 : bleed > 1 ? 1 : bleed, RING_HEIGHT, encodeStyle(MARKER_KIND.BLEED, tint), i);
-          b.push(x, z, 0, DOWNED_PX * 0.72, reviveFraction(p), RING_HEIGHT, encodeStyle(MARKER_KIND.REVIVE, tint), i);
+          b.push(
+            x,
+            z,
+            0,
+            DOWNED_PX,
+            bleed < 0 ? 0 : bleed > 1 ? 1 : bleed,
+            RING_HEIGHT,
+            encodeStyle(MARKER_KIND.BLEED, tint),
+            i,
+          );
+          b.push(
+            x,
+            z,
+            0,
+            DOWNED_PX * 0.72,
+            reviveFraction(p),
+            RING_HEIGHT,
+            encodeStyle(MARKER_KIND.REVIVE, tint),
+            i,
+          );
         }
         continue;
       }
@@ -83,7 +109,16 @@ export class MarkerView {
       }
       if (p.overdrive > 0) {
         const prog = p.overdrive / OVERDRIVE.MAX;
-        b.push(x, z, 0, SPECIAL_PX, prog > 1 ? 1 : prog, RING_HEIGHT, encodeStyle(MARKER_KIND.SPECIAL, tint), i);
+        b.push(
+          x,
+          z,
+          0,
+          SPECIAL_PX,
+          prog > 1 ? 1 : prog,
+          RING_HEIGHT,
+          encodeStyle(MARKER_KIND.SPECIAL, tint),
+          i,
+        );
       }
     }
     b.commit();

@@ -84,7 +84,6 @@ export function buildVoxelText(text: string): BufferGeometry {
   const widthVox = Math.max(chars.length * GLYPH_ADVANCE - 1, 1);
   const x0 = (-widthVox * v) / 2 + v / 2;
   const y0 = ((GLYPH_H - 1) * v) / 2;
-  const front = depth / 2 - 1e-3;
   for (let ci = 0; ci < chars.length; ci++) {
     const glyph = glyphFor(chars[ci]!);
     for (let row = 0; row < GLYPH_H; row++) {
@@ -96,7 +95,7 @@ export function buildVoxelText(text: string): BufferGeometry {
         mb.add(new BoxGeometry(v * 0.9, v * 0.9, depth), {
           matrix: trs(x, y, 0),
           color: 0x2c3448,
-          emissiveFn: (p) => (p.z > front ? 0.9 : 0.12),
+          emissiveFn: (_p, n) => (n.z > 0.5 ? 0.9 : 0.12),
         });
       }
     }

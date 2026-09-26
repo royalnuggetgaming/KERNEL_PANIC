@@ -227,7 +227,12 @@ class AssetLibrary implements ThreeAssetLibrary {
   /** One object per material x geometry x instancing variant, each with exactly one live instance. */
   private buildWarmScene(): void {
     for (const s of BATCH_SPECS) {
-      const b = new InstanceBatch(this.getGeometry(s.geometry), this.getMaterial(s.material), 1, `warm:${s.key}`);
+      const b = new InstanceBatch(
+        this.getGeometry(s.geometry),
+        this.getMaterial(s.material),
+        1,
+        `warm:${s.key}`,
+      );
       b.begin();
       b.push(0, 0, 0, 1, 0, 0, 0, 0);
       b.commit();

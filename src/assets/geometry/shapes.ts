@@ -81,7 +81,10 @@ export function spikeGeometry(base: Vector3, dir: Vector3, r: number, len: numbe
     const p0 = q[i]!;
     const p1 = q[(i + 1) % 4]!;
     // Orient outward: normal must point away from the spike axis.
-    const nrm = new Vector3().crossVectors(new Vector3().subVectors(p1, p0), new Vector3().subVectors(tip, p0));
+    const nrm = new Vector3().crossVectors(
+      new Vector3().subVectors(p1, p0),
+      new Vector3().subVectors(tip, p0),
+    );
     const mid = new Vector3().addVectors(p0, p1).multiplyScalar(0.5).sub(base);
     if (nrm.dot(mid) >= 0) pushTri(out, p0, p1, tip);
     else pushTri(out, p1, p0, tip);

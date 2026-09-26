@@ -56,13 +56,21 @@ function buildPlatonic(mb: MeshBuilder, kind: EnemyKind): void {
   const y = enemyHoverY(kind);
   switch (kind) {
     case 'shard': {
-      mb.add(new TetrahedronGeometry(r, 0), { matrix: trs(0, y, 0, 0, Math.PI / 4, 0), color: BODY, emissive: 0.1 });
+      mb.add(new TetrahedronGeometry(r, 0), {
+        matrix: trs(0, y, 0, 0, Math.PI / 4, 0),
+        color: BODY,
+        emissive: 0.1,
+      });
       mb.add(new OctahedronGeometry(r * 0.28, 0), { matrix: trs(0, y, 0), color: PLATE, emissive: 1 });
       return;
     }
     case 'dart': {
-      mb.add(new OctahedronGeometry(r, 0), { matrix: trs(0, y, 0, 0, 0, 0, 0.5, 0.45, 1), color: BODY, emissive: 0.1 });
-      const fin = [0, y, -0.1, 0, y + r * 0.7, -r * 0.85, 0, y, -r * 0.7];
+      mb.add(new OctahedronGeometry(r, 0), {
+        matrix: trs(0, y, 0, 0, 0, 0, 0.5, 0.45, 1),
+        color: BODY,
+        emissive: 0.1,
+      });
+      const fin = [0, y, -0.1, 0, y + r * 0.55, -r * 0.6, 0, y, -r * 0.7];
       mb.add(triangleGeometry(fin, 0.04), { color: PLATE, emissive: 0.6 });
       const side = [0.12, y, 0.1, r * 0.72, y - 0.05, -r * 0.6, 0.12, y, -r * 0.55];
       mb.addMirroredX(triangleGeometry(side, 0.04), { color: PLATE, emissive: 0.4 });
@@ -77,7 +85,11 @@ function buildPlatonic(mb: MeshBuilder, kind: EnemyKind): void {
         color: BODY,
         emissiveFn: (p) => (Math.abs(p.x) < gap + 0.02 ? 1 : 0.05),
       });
-      mb.add(new BoxGeometry(gap * 1.6, h * 1.4, h * 1.4), { matrix: trs(0, y, 0), color: PLATE, emissive: 1 });
+      mb.add(new BoxGeometry(gap * 1.6, h * 1.4, h * 1.4), {
+        matrix: trs(0, y, 0),
+        color: PLATE,
+        emissive: 1,
+      });
       return;
     }
     case 'spiker': {
@@ -97,10 +109,10 @@ function buildPlatonic(mb: MeshBuilder, kind: EnemyKind): void {
     case 'warden': {
       mb.add(new IcosahedronGeometry(r * 0.72, 0), { matrix: trs(0, y, 0), color: BODY, emissive: 0.1 });
       const arc = (100 * Math.PI) / 180;
-      const shield = new CylinderGeometry(r * 0.96, r * 0.96, r * 0.9, 10, 1, true, -arc / 2, arc);
+      const shield = new CylinderGeometry(r * 0.94, r * 0.94, r * 0.6, 10, 1, true, -arc / 2, arc);
       mb.add(shield, { matrix: trs(0, y, 0), color: PLATE, emissive: 0.85, flat: true });
-      const inner = new CylinderGeometry(r * 0.9, r * 0.9, r * 0.9, 10, 1, true, -arc / 2, arc);
-      // Inner face of the shield (mirrored in z then rotated back gives inward-facing winding).
+      const inner = new CylinderGeometry(r * 0.88, r * 0.88, r * 0.6, 10, 1, true, -arc / 2, arc);
+      // Inner face of the shield: the x-mirror of a symmetric arc keeps its shape but faces inward.
       mb.add(inner, {
         matrix: new Matrix4().makeTranslation(0, y, 0).multiply(new Matrix4().makeScale(-1, 1, 1)),
         color: BODY,

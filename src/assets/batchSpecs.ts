@@ -33,14 +33,12 @@ export const MISSILE_CAPACITY = 256;
 export const MARKER_CAPACITY = CAPACITY.markers * 2;
 
 export const BATCH_SPECS: readonly BatchSpec[] = [
-  ...ENEMY_KINDS.map(
-    (k): BatchSpec => ({
-      key: `enemy:${k}`,
-      geometry: `enemy:${k}`,
-      material: 'enemy',
-      capacity: CAPACITY.enemies,
-    }),
-  ),
+  ...ENEMY_KINDS.map((k): BatchSpec => ({
+    key: `enemy:${k}`,
+    geometry: `enemy:${k}`,
+    material: 'enemy',
+    capacity: CAPACITY.enemies,
+  })),
   { key: 'playerShots', geometry: 'fx:capsule', material: 'projectile', capacity: CAPACITY.playerShots },
   { key: 'enemyShots', geometry: 'fx:capsule', material: 'projectile', capacity: CAPACITY.enemyShots },
   { key: 'missiles', geometry: 'fx:capsule', material: 'projectile', capacity: MISSILE_CAPACITY },

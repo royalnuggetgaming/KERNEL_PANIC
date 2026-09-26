@@ -43,7 +43,20 @@ export class ContinuousEmitter {
         for (let k = 0; k < n; k++) {
           const a = ps.random() * Math.PI * 2;
           const r = ps.random() * 0.6;
-          ps.emit(x + Math.sin(a) * r, 0.6 + ps.random() * 0.6, z + Math.cos(a) * r, 0, 0.6, 0, t, 0.8, 0.26, 1.5, -1.5, tint);
+          ps.emit(
+            x + Math.sin(a) * r,
+            0.6 + ps.random() * 0.6,
+            z + Math.cos(a) * r,
+            0,
+            0.6,
+            0,
+            t,
+            0.8,
+            0.26,
+            1.5,
+            -1.5,
+            tint,
+          );
         }
       } else if (p.life === 'alive') {
         const speed = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
@@ -53,14 +66,40 @@ export class ContinuousEmitter {
           const bz = -Math.cos(p.yaw);
           for (let k = 0; k < n; k++) {
             const j = (ps.random() - 0.5) * 0.5;
-            ps.emit(x + bx * 0.9 - bz * j, 0.35, z + bz * 0.9 + bx * j, bx * 3, 0.2, bz * 3, t, 0.25, 0.14, 4, 0, tint);
+            ps.emit(
+              x + bx * 0.9 - bz * j,
+              0.35,
+              z + bz * 0.9 + bx * j,
+              bx * 3,
+              0.2,
+              bz * 3,
+              t,
+              0.25,
+              0.14,
+              4,
+              0,
+              tint,
+            );
           }
         }
       } else if (p.life === 'downed') {
         const n = this.due(base + 2, DOWNED_RATE, dt);
         for (let k = 0; k < n; k++) {
           const a = ps.random() * Math.PI * 2;
-          ps.emit(x, 0.3, z, Math.sin(a) * 2, 2.5 + ps.random() * 2, Math.cos(a) * 2, t, 0.5, 0.12, 1, 9, tint);
+          ps.emit(
+            x,
+            0.3,
+            z,
+            Math.sin(a) * 2,
+            2.5 + ps.random() * 2,
+            Math.cos(a) * 2,
+            t,
+            0.5,
+            0.12,
+            1,
+            9,
+            tint,
+          );
         }
       }
       const sp = p.special;
@@ -69,7 +108,20 @@ export class ContinuousEmitter {
         for (let k = 0; k < n; k++) {
           const a = ps.random() * Math.PI * 2;
           const r = ps.random() * sp.radius;
-          ps.emit(sp.x + Math.sin(a) * r, 0.2, sp.z + Math.cos(a) * r, 0, 1.2, 0, t, 0.9, 0.16, 0.5, -0.5, TINT.PICKUP);
+          ps.emit(
+            sp.x + Math.sin(a) * r,
+            0.2,
+            sp.z + Math.cos(a) * r,
+            0,
+            1.2,
+            0,
+            t,
+            0.9,
+            0.16,
+            0.5,
+            -0.5,
+            TINT.PICKUP,
+          );
         }
       }
     }
