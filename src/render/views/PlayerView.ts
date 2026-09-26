@@ -13,7 +13,6 @@ import { TINT } from '../../shaders/tints';
 import { findUniform } from '../uniforms';
 import { lerp1, type BatchSink, type FrameContext } from './types';
 
-const HOVER = 0.35;
 const DOWNED_SCALE = 0.6;
 const NANOSHIELD_RADIUS = 1.5;
 
@@ -94,7 +93,8 @@ export class PlayerView {
       const yaw = lerpAngle(p.prevYaw, p.yaw, a);
       const downed = p.life === 'downed';
       const bob = Math.sin(ctx.time * 3.1 + i * 1.7) * 0.06;
-      m.position.set(x, downed ? 0.15 : HOVER + bob, z);
+      // Hull geometry has the hover height baked in (belly above the floor); add only a bob.
+      m.position.set(x, downed ? -0.1 : bob, z);
       // Bank into lateral velocity (visual only).
       const lateral = p.vx * Math.cos(yaw) - p.vz * Math.sin(yaw);
       const bank = downed ? 0 : Math.max(-0.35, Math.min(0.35, -lateral * 0.025));

@@ -228,9 +228,10 @@ class RenderBridgeImpl implements RenderBridge {
     const gameplay = this.mode === 'follow' || this.mode === 'gameover';
     live.uniforms.update(this.clock.time, gameplay ? w : null, alpha);
     const rm = this.settings.reduceMotion;
-    live.backdrop.update(dt, rm);
-    live.stage.update(dt, rm);
     this.rig.update(gameplay ? w : null, alpha, dt);
+    const cam = this.rig.camera.position;
+    live.backdrop.update(dt, rm, cam.x, cam.z);
+    live.stage.update(dt, rm);
     if (w !== null && gameplay) {
       this.ctx ??= { world: w, alpha, frameDt: dt, time: 0, simTime: 0 };
       const c = this.ctx;

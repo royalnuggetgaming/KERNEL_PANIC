@@ -91,10 +91,23 @@ describe('EnemyView', () => {
 
   it('writes a negative spawnT (death dissolve) for dying enemies', () => {
     const w = createTestWorld();
-    addTestEnemy(w, 'fork', 0, 0, { dying: true });
+    const e = addTestEnemy(w, 'fork', 0, 0);
     const b = enemyBatches();
-    new EnemyView(b).sync(frameCtx(w, 1, 50));
+    const v = new EnemyView(b);
+    v.sync(frameCtx(w, 1, 40));
+    expect(b['enemy:fork'].rec(0)[5]).toBeGreaterThan(0);
+    e.dying = true;
+    v.sync(frameCtx(w, 1, 50));
     expect(b['enemy:fork'].rec(0)[5]).toBe(-50);
+    // Latched: the death start does not move while the dissolve plays.
+    v.sync(frameCtx(w, 1, 50.3));
+    expect(b['enemy:fork'].rec(0)[5]).toBe(-50);
+    // A new enemy in the same slot starts alive again.
+    w.enemies.despawn(e);
+    const e2 = addTestEnemy(w, 'fork', 1, 1);
+    expect(e2.slot).toBe(e.slot);
+    v.sync(frameCtx(w, 1, 51));
+    expect(b['enemy:fork'].rec(0)[5]).toBeGreaterThan(0);
   });
 });
 

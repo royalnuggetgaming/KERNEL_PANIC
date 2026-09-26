@@ -15,7 +15,6 @@ import { lerp1, type FrameContext } from './types';
 
 /** Seconds the death dissolve stays visible after a part dies. */
 export const BOSS_DEATH_FADE = 0.7;
-const HOVER = 0.6;
 
 interface PartState {
   flash: number;
@@ -92,7 +91,8 @@ export class BossView {
       const geo = this.geometries[b.id];
       if (m.geometry !== geo) m.geometry = geo;
       const s = b.radius / BOSS_DEFS[b.id].radius;
-      m.position.set(lerp1(b.prevX, b.x, a), HOVER, lerp1(b.prevZ, b.z, a));
+      // Geometry is authored at world size with the hover height baked in.
+      m.position.set(lerp1(b.prevX, b.x, a), 0, lerp1(b.prevZ, b.z, a));
       m.rotation.set(0, lerpAngle(b.prevYaw, b.yaw, a), 0);
       m.scale.setScalar(s > 0 ? s : 1);
       m.updateMatrix();

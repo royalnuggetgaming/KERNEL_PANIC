@@ -8,6 +8,7 @@ import type { AssetSource } from './ArenaScene';
 
 export const DRONE_COUNT = 6;
 const TITLE_HEIGHT = 9;
+const TITLE_SCALE = 1.5;
 
 export class MenuBackdrop {
   readonly root = new Group();
@@ -34,7 +35,7 @@ export class MenuBackdrop {
       this.drones.push(m);
       this.root.add(m);
     }
-    this.update(0, false);
+    this.update(0, false, 0, 1);
   }
 
   get visible(): boolean {
@@ -45,12 +46,14 @@ export class MenuBackdrop {
     this.root.visible = v;
   }
 
-  update(dt: number, reduceMotion: boolean): void {
+  /** Animates drones; the title turns to face the camera at (camX, camZ). */
+  update(dt: number, reduceMotion: boolean, camX: number, camZ: number): void {
     if (!this.root.visible) return;
     this.t += reduceMotion ? dt * 0.25 : dt;
     const t = this.t;
-    this.title.position.set(0, TITLE_HEIGHT + Math.sin(t * 0.8) * 0.4, -6);
-    this.title.rotation.set(-0.12, Math.sin(t * 0.3) * 0.12, 0);
+    this.title.position.set(0, TITLE_HEIGHT + Math.sin(t * 0.8) * 0.4, 0);
+    this.title.rotation.set(0, Math.atan2(camX, camZ) + Math.sin(t * 0.3) * 0.1, 0, 'YXZ');
+    this.title.scale.setScalar(TITLE_SCALE);
     this.title.updateMatrix();
     for (let i = 0; i < this.drones.length; i++) {
       const m = this.drones[i]!;
