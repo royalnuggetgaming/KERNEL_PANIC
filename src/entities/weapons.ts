@@ -5,7 +5,12 @@
  */
 import { NO_HANDLE, type PlayerIndex } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
-import { PROJECTILE_KINDS, type PlayerEntity, type ProjectileKind, type ProjectileSpec } from '../contracts/sim';
+import {
+  PROJECTILE_KINDS,
+  type PlayerEntity,
+  type ProjectileKind,
+  type ProjectileSpec,
+} from '../contracts/sim';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { DEG2RAD } from '../core/math';
 import { CARD_PARAMS } from '../config/cards';

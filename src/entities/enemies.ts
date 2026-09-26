@@ -3,7 +3,7 @@
  * staggered retarget, behaviours, separation over at most 6 grid neighbours, integration) and
  * resolveEnemyDeaths (despawn, Fork splits, Leech unlatch). Allocation-free per tick.
  */
-import { ENEMY_KINDS, type EnemyKind, type PlayerIndex } from '../contracts/ids';
+import { ENEMY_KINDS, type EnemyKind } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
 import type { EnemyEntity } from '../contracts/sim';
 import { SOURCE_WORLD } from '../contracts/simEvents';
@@ -168,7 +168,7 @@ export const stepEnemies: SimSystem = stepEnemiesImpl;
 
 function spawnForkChildren(w: WorldState, x: number, z: number, seed: number, splitGen: number): void {
   const p = ENEMY_DEFS.fork.params;
-  const kind = ENEMY_KINDS[p.splitInto] ?? 'shard';
+  const kind = ENEMY_KINDS[p.splitInto];
   const base = (seed % 360) * DEG2RAD;
   for (let i = 0; i < p.splitCount; i++) {
     const a = base + (i * Math.PI * 2) / p.splitCount;
@@ -211,9 +211,4 @@ export function clearEnemies(w: WorldState): void {
   w.enemies.clear();
   w.director.pending.clear();
   w.link.latchedCount = 0;
-}
-
-/** Player index an enemy is currently chasing, or -1 when that player cannot be targeted. */
-export function enemyTarget(w: WorldState, e: EnemyEntity): PlayerIndex | -1 {
-  return w.players[e.target].life === 'alive' ? e.target : -1;
 }

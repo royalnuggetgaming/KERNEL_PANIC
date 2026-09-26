@@ -224,7 +224,7 @@ function stepPart(w: WorldState, b: BossEntity, dt: number): void {
   if (b.id === 'forkBomb') forkSplit(w, b);
   setPhase(w, b, phaseForFraction(b.maxHp > 0 ? b.hp / b.maxHp : 0));
   drift(w, b, def.speed);
-  const steps = def.phases[b.phase]?.steps ?? def.phases[0].steps;
+  const steps = def.phases[b.phase].steps;
   const step = steps[b.patternStep % steps.length]!;
   const rate = b.enraged ? BOSS_COMMON.ENRAGE_RATE_MUL : 1;
   if (runPattern(w, b, step, dt * rate)) {

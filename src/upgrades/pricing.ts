@@ -86,12 +86,3 @@ export function metaPrice(id: MetaUpgradeId, level: number): number | null {
   assertLevel(level, id);
   return metaDef(id).prices[level] ?? null;
 }
-
-/** Sum of the Firmware prices for levels [0, level). */
-export function metaCostUpTo(id: MetaUpgradeId, level: number): number {
-  const prices = metaDef(id).prices;
-  let sum = 0;
-  const n = Math.min(Math.max(0, Math.floor(level)), prices.length);
-  for (let i = 0; i < n; i++) sum += prices[i]!;
-  return sum;
-}

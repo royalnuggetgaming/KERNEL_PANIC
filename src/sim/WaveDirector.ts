@@ -11,14 +11,7 @@ import { BOSS_COMMON } from '../config/bosses';
 import { ENEMY_DEFS, eliteChance } from '../config/enemies';
 import { ARENA } from '../config/tuning';
 import { VERSUS } from '../config/versus';
-import {
-  WAVES,
-  bossForWave,
-  pulseInterval,
-  waveBudget,
-  waveDuration,
-  waveHpMul,
-} from '../config/waves';
+import { WAVES, bossForWave, pulseInterval, waveBudget, waveDuration, waveHpMul } from '../config/waves';
 import { spawnBoss } from '../entities/bosses';
 import { emitTelegraph } from '../entities/contentShared';
 import { choosePortals, formationPoint, portalPosition } from './formations';

@@ -214,21 +214,27 @@ function stepAlive(w: WorldState, p: PlayerEntity, it: PlayerIntent, dt: number)
   if (it.dashPressed && p.dashTimer <= 0 && p.dashCharges >= 1) startDash(w, p, it);
   const moving = it.moveX !== 0 || it.moveZ !== 0;
   if (p.dashTimer > 0) {
+    // The dash covers exactly DASH.DISTANCE: only the remaining dash time moves at dash speed.
+    const dashStep = p.dashTimer < dt ? p.dashTimer : dt;
     p.dashTimer -= dt;
-    p.vx = p.dashDirX * DASH_SPEED;
-    p.vz = p.dashDirZ * DASH_SPEED;
+    const sp = p.stats.moveSpeed;
+    p.x += p.dashDirX * (DASH_SPEED * dashStep + sp * (dt - dashStep));
+    p.z += p.dashDirZ * (DASH_SPEED * dashStep + sp * (dt - dashStep));
     if (p.dashTimer <= 0) {
       p.dashTimer = 0;
-      p.vx = p.dashDirX * p.stats.moveSpeed;
-      p.vz = p.dashDirZ * p.stats.moveSpeed;
+      p.vx = p.dashDirX * sp;
+      p.vz = p.dashDirZ * sp;
+    } else {
+      p.vx = p.dashDirX * DASH_SPEED;
+      p.vz = p.dashDirZ * DASH_SPEED;
     }
+    stepRam(w, p);
   } else {
     const speed = p.stats.moveSpeed * (it.focusHeld ? MOVEMENT.FOCUS_MOVE_MUL : 1);
     accelerate(p, it.moveX * speed, it.moveZ * speed, moving ? MOVEMENT.ACCEL : MOVEMENT.DECEL, dt);
+    p.x += p.vx * dt;
+    p.z += p.vz * dt;
   }
-  p.x += p.vx * dt;
-  p.z += p.vz * dt;
-  if (p.dashTimer > 0) stepRam(w, p);
   if (!it.focusHeld && moving) p.yaw = turnToward(p.yaw, Math.atan2(it.moveX, it.moveZ), TURN_RATE * dt);
   clampToArena(p);
   updateAim(w, p);

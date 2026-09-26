@@ -1,0 +1,367 @@
+/*
+ * In-game HUD. The root uses contain: strict; bars are transform-driven meters; nothing here depends on layout
+ * reads. Player corners sit at the bottom, the cycle/round readout and boss bar at the top (the camera keeps the
+ * top band clear), the banner in the centre.
+ */
+.kp-hud {
+  contain: strict;
+  pointer-events: none;
+  padding: max(0.9em, env(safe-area-inset-top)) 1.2em max(0.9em, env(safe-area-inset-bottom));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.kp-hud-top {
+  position: absolute;
+  top: 0.8em;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  transform: translateX(-50%);
+}
+
+.kp-hud-wave {
+  color: var(--kp-accent);
+  font-size: 0.85em;
+  letter-spacing: 0.25em;
+}
+
+.kp-hud-timer {
+  font-size: 1.6em;
+  font-weight: 700;
+}
+
+.kp-hud-kernels {
+  color: var(--kp-dim);
+  font-size: 0.8em;
+}
+
+.kp-hud-kernels-num {
+  color: var(--kp-good);
+  font-weight: 700;
+}
+
+.kp-hud-versus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.kp-vs-line {
+  font-size: 1.5em;
+  font-weight: 800;
+}
+
+.kp-vs-score {
+  display: inline-block;
+  min-width: 1.2em;
+  color: var(--kp-pc);
+  text-align: center;
+  text-shadow: 0 0 10px rgba(var(--kp-pc-rgb), 0.8);
+}
+
+.kp-vs-sep {
+  margin: 0 0.3em;
+  color: var(--kp-dim);
+}
+
+.kp-vs-sudden {
+  color: var(--kp-danger);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  opacity: 0;
+}
+
+.is-sudden-death .kp-vs-sudden {
+  opacity: 1;
+  animation: kp-blink 0.6s steps(2, end) infinite;
+}
+
+.kp-hud-fps {
+  position: absolute;
+  top: 0.6em;
+  right: 0.9em;
+  color: var(--kp-dim);
+  font-size: 0.75em;
+}
+
+/* ------------------------------------------------------------------ boss bar */
+
+.kp-boss {
+  position: absolute;
+  top: 5.2em;
+  left: 50%;
+  width: min(46em, 70vw);
+  opacity: 0;
+  transform: translate(-50%, -0.6em);
+  transition:
+    opacity 250ms var(--kp-ease),
+    transform 250ms var(--kp-ease);
+  --kp-pc: var(--kp-danger);
+  --kp-pc-rgb: var(--kp-danger-rgb);
+}
+
+.kp-boss.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.kp-boss-name {
+  display: block;
+  margin-bottom: 0.25em;
+  color: var(--kp-danger);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.kp-boss-hp {
+  height: 0.7em;
+  border: 1px solid rgba(var(--kp-danger-rgb), 0.6);
+}
+
+/* ------------------------------------------------------------------ banner */
+
+.kp-banner {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  transition:
+    opacity 220ms var(--kp-ease),
+    transform 220ms var(--kp-ease);
+}
+
+.kp-banner.is-on {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.kp-banner-text {
+  font-size: clamp(1.8em, 4.5vw, 3.6em);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  text-shadow:
+    -2px 0 rgba(var(--kp-p2-rgb), 0.6),
+    2px 0 rgba(var(--kp-p1-rgb), 0.6),
+    0 0 20px rgba(var(--kp-accent-rgb), 0.6);
+}
+
+.kp-banner-sub {
+  color: var(--kp-accent);
+  letter-spacing: 0.3em;
+}
+
+/* ------------------------------------------------------------------ player panels */
+
+.kp-hud-bottom {
+  position: absolute;
+  right: 1.2em;
+  bottom: 1em;
+  left: 1.2em;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.kp-pp {
+  width: min(21em, 40vw);
+  padding: 0.55em 0.75em;
+  border-left: 3px solid var(--kp-pc);
+  background: linear-gradient(90deg, rgba(var(--kp-bg-rgb), 0.72), rgba(var(--kp-bg-rgb), 0.2));
+}
+
+.kp-pp.kp-p2 {
+  border-left: 0;
+  border-right: 3px solid var(--kp-pc);
+  background: linear-gradient(270deg, rgba(var(--kp-bg-rgb), 0.72), rgba(var(--kp-bg-rgb), 0.2));
+}
+
+.kp-pp-head {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin-bottom: 0.3em;
+}
+
+.kp-pp-name {
+  color: var(--kp-pc);
+  font-weight: 700;
+}
+
+.kp-pp-life {
+  color: var(--kp-danger);
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.life-offline .kp-pp-life,
+.life-respawning .kp-pp-life {
+  color: var(--kp-dim);
+}
+
+.life-downed .kp-pp-life {
+  animation: kp-blink 0.8s ease-in-out infinite;
+}
+
+.kp-pp-wins {
+  display: flex;
+  gap: 0.25em;
+  margin-left: auto;
+}
+
+.kp-win-pip {
+  width: 0.7em;
+  height: 0.7em;
+  border: 1px solid var(--kp-pc);
+  transform: rotate(45deg);
+}
+
+.kp-win-pip.is-full {
+  background: var(--kp-pc);
+  box-shadow: 0 0 8px var(--kp-pc);
+}
+
+.kp-pp-hp-row {
+  display: flex;
+  gap: 0.6em;
+  align-items: center;
+}
+
+.kp-pp-hp {
+  flex: 1;
+  height: 0.75em;
+}
+
+.is-low-hp .kp-pp-hp {
+  --kp-pc: var(--kp-danger);
+  --kp-pc-rgb: var(--kp-danger-rgb);
+  animation: kp-blink 0.9s ease-in-out infinite;
+}
+
+.kp-pp-hp-text {
+  min-width: 5.5em;
+  font-size: 0.85em;
+  text-align: right;
+}
+
+.kp-pp-row {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.35em;
+}
+
+.kp-pp-key {
+  color: var(--kp-dim);
+  font-size: 0.7em;
+  letter-spacing: 0.15em;
+}
+
+.kp-pp-dash {
+  display: flex;
+  gap: 0.2em;
+}
+
+.kp-dash-pip {
+  width: 1.6em;
+  height: 0.4em;
+}
+
+.kp-pp-od {
+  flex: 1;
+  height: 0.4em;
+  --kp-pc: var(--kp-link);
+}
+
+.is-od-ready .kp-pp-od {
+  --kp-pc: #ffffff;
+  animation: kp-blink 0.7s ease-in-out infinite;
+}
+
+.kp-pp-nums {
+  justify-content: space-between;
+  font-size: 0.9em;
+}
+
+.kp-pp-wallet-num {
+  color: var(--kp-good);
+  font-weight: 700;
+}
+
+.kp-pp-score {
+  color: var(--kp-text);
+}
+
+.kp-pp-combo {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.3em;
+}
+
+.kp-pp-combo-text {
+  min-width: 3em;
+  font-weight: 800;
+}
+
+.kp-pp-combo-bar {
+  flex: 1;
+  height: 0.25em;
+}
+
+.kp-pp-combo.tier-1 .kp-pp-combo-text {
+  color: #ffe14a;
+}
+
+.kp-pp-combo.tier-2 .kp-pp-combo-text {
+  color: #ff9a1f;
+}
+
+.kp-pp-combo.tier-3 .kp-pp-combo-text,
+.kp-pp-combo.tier-4 .kp-pp-combo-text,
+.kp-pp-combo.tier-5 .kp-pp-combo-text {
+  color: var(--kp-danger);
+  text-shadow: 0 0 10px rgba(var(--kp-danger-rgb), 0.8);
+}
+
+.kp-pp-status {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.3em;
+  font-size: 0.75em;
+  letter-spacing: 0.15em;
+}
+
+.kp-pp-status .kp-meter {
+  flex: 1;
+}
+
+.kp-pp-bleed-box {
+  color: var(--kp-danger);
+  --kp-pc: var(--kp-danger);
+  --kp-pc-rgb: var(--kp-danger-rgb);
+}
+
+.kp-pp-revive-box {
+  color: var(--kp-good);
+  --kp-pc: var(--kp-good);
+}
+
+.life-offline,
+.life-eliminated {
+  opacity: 0.55;
+}
+
+.kp-reduce-flashes .is-low-hp .kp-pp-hp,
+.kp-reduce-flashes .is-od-ready .kp-pp-od,
+.kp-reduce-flashes .life-downed .kp-pp-life,
+.kp-reduce-flashes .is-sudden-death .kp-vs-sudden {
+  animation: none;
+}

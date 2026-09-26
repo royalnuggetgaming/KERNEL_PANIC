@@ -48,17 +48,6 @@ float kpGridLine(vec2 p, float cell, float width) {
   return 1.0 - smoothstep(width, width + 1.0, l);
 }
 
-// Distance to the nearest hex-cell edge (flat-top hexes of circumradius 1) and the cell centre.
-vec3 kpHex(vec2 p) {
-  const vec2 s = vec2(1.0, 1.7320508);
-  vec4 hc = floor(vec4(p, p - vec2(0.5, 1.0)) / s.xyxy) + 0.5;
-  vec4 h = vec4(p - hc.xy * s, p - (hc.zw + 0.5) * s);
-  vec4 c = dot(h.xy, h.xy) < dot(h.zw, h.zw) ? vec4(h.xy, hc.xy) : vec4(h.zw, hc.zw + 0.5);
-  vec2 a = abs(c.xy);
-  float edge = 0.5 - max(dot(a, s * 0.5), a.x);
-  return vec3(edge, c.zw);
-}
-
 void main() {
   vec2 p = vWorld.xz;
   vec3 floorC = uPalette[PAL_FLOOR];

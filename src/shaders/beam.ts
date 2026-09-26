@@ -7,6 +7,7 @@
  * style = encodeStyle(BEAM_KIND.*, tint slot), seed).
  */
 import { GLSL_COMMON } from './chunks/common';
+import { GLSL_INSTANCING } from './chunks/instancing';
 import { GLSL_LIGHTING } from './chunks/lighting';
 import { GLSL_NOISE } from './chunks/noise';
 import type { ShaderSource, UniformSlot } from './shaderSource';
@@ -21,8 +22,7 @@ export type BeamUniforms = CommonUniforms & {
 const VERTEX = /* glsl */ `
 ${GLSL_COMMON}
 uniform float uHeight;
-in vec4 aT;
-in vec4 aS;
+${GLSL_INSTANCING}
 
 out vec2 vUv;
 out float vLen;
