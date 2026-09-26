@@ -19,8 +19,8 @@ const TICKS = 72_000;
 const GOLDEN: Readonly<Record<string, number>> = {
   'coop:1': 770314458,
   'solo:2': 2419331212,
-  'versus:3': 2926405718,
-  'coop-god:4': 5210356,
+  'versus:3': 1973061818,
+  'coop-god:4': 665878800,
 };
 
 function finite(...xs: number[]): boolean {

@@ -127,6 +127,10 @@ export class EntityPool<T extends PooledRecord> implements EntityPoolApi<T> {
 
   clear(): void {
     for (let i = this.liveCount - 1; i >= 0; i--) this.despawn(this.dense[i]!);
+    // Restore the construction-time free order so a cleared pool hands out slots exactly like a fresh one.
+    const capacity = this.freeSlots.length;
+    for (let i = 0; i < capacity; i++) this.freeSlots[i] = capacity - 1 - i;
+    this.freeTop = capacity;
     this.exhaustedCount = 0;
   }
 }
