@@ -27,7 +27,8 @@ import type { DerivedStats } from './upgrades';
  * versus:     idle -> countdown -> combat -> (suddenDeath flag) -> roundOutro -> done (roundOver | matchOver)
  * 'done' also follows a team wipe (defeat).
  */
-export type WavePhase = 'idle' | 'countdown' | 'combat' | 'boss' | 'purge' | 'clearOutro' | 'roundOutro' | 'done';
+export type WavePhase =
+  'idle' | 'countdown' | 'combat' | 'boss' | 'purge' | 'clearOutro' | 'roundOutro' | 'done';
 
 export interface RunCounters {
   readonly mode: RunMode;
