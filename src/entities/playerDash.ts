@@ -14,16 +14,39 @@ export const LEECH_SHED_DISTANCE = ENEMY_DEFS.leech.params.latchRange + 1.5;
 
 const STRIDE = CAPACITY.enemies + CAPACITY.bossParts;
 
-/** Per-world ram bookkeeping: [dash stamp p0, p1, hit stamps p0 (enemies + bosses), hit stamps p1]. */
-const ramState = new WeakMap<WorldState, Int32Array>();
+/**
+ * Per-world ram bookkeeping: [dash stamp p0, p1, hit stamps p0 (enemies + bosses), hit stamps p1]. The entry
+ * remembers the run (world config identity) and the last tick it was used, so a world recycled by resetWorld
+ * (tick back to 0) never matches stale stamps from the previous run.
+ */
+interface RamMemory {
+  config: WorldState['config'];
+  tick: number;
+  readonly stamps: Int32Array;
+}
+const ramState = new WeakMap<WorldState, RamMemory>();
+
+function isStale(m: RamMemory, w: WorldState): boolean {
+  return m.config !== w.config || w.tick < m.tick;
+}
 
 function ramOf(w: WorldState): Int32Array {
   let s = ramState.get(w);
   if (s === undefined) {
-    s = new Int32Array(2 + 2 * STRIDE);
+    s = { config: w.config, tick: w.tick, stamps: new Int32Array(2 + 2 * STRIDE) };
     ramState.set(w, s);
+  } else if (isStale(s, w)) {
+    s.config = w.config;
+    s.stamps.fill(0);
   }
-  return s;
+  s.tick = w.tick;
+  return s.stamps;
+}
+
+/** This run's ram stamps (read-only; used by sim/stateHash), null when none were recorded. */
+export function ramStamps(w: WorldState): Readonly<Int32Array> | null {
+  const s = ramState.get(w);
+  return s === undefined || isStale(s, w) ? null : s.stamps;
 }
 
 /** Starts a new ram window for p (each enemy/boss part is rammed at most once per dash). */

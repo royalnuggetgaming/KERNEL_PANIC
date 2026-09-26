@@ -39,17 +39,38 @@ export function comboShardBonus(p: Readonly<PlayerEntity>): number {
   return COMBO.SHARD_BONUS[effectiveComboTier(p)] ?? 0;
 }
 
-/** Sim time of the last sync kill per world (each kill takes part in at most one sync). */
-const lastSync = new WeakMap<WorldState, Float64Array>();
+/**
+ * Sim time of the last sync kill per world (each kill takes part in at most one sync). The entry remembers
+ * the run it belongs to (world config identity) so a world recycled by resetWorld starts clean.
+ */
+interface SyncMemory {
+  config: WorldState['config'];
+  /** [last sync time]. */
+  readonly last: Float64Array;
+}
+const lastSync = new WeakMap<WorldState, SyncMemory>();
+
+function isStale(m: SyncMemory, w: WorldState): boolean {
+  return m.config !== w.config || m.last[0]! > w.time;
+}
 
 function syncState(w: WorldState): Float64Array {
   let s = lastSync.get(w);
   if (s === undefined) {
-    s = new Float64Array(1);
-    s[0] = -1;
+    s = { config: w.config, last: new Float64Array(1) };
+    s.last[0] = -1;
     lastSync.set(w, s);
+  } else if (isStale(s, w)) {
+    s.config = w.config;
+    s.last[0] = -1;
   }
-  return s;
+  return s.last;
+}
+
+/** Sim time of this run's last sync kill, -1 when none (read-only; used by sim/stateHash). */
+export function lastSyncTime(w: WorldState): number {
+  const s = lastSync.get(w);
+  return s === undefined || isStale(s, w) ? -1 : s.last[0]!;
 }
 
 function extendChain(w: WorldState, p: PlayerEntity): void {
