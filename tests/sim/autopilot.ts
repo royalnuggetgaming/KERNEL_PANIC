@@ -1,7 +1,9 @@
 /**
- * Autopilot-like scripted intents for sim soak/determinism tests: every living player keeps firing, is
- * repelled by nearby enemies, enemy bullets, bosses and lasers, drifts back toward the arena centre, strafes
- * around the threat centroid, dashes out of imminent contact and fires the special when the meter is full.
+ * Autopilot-like scripted intents for sim soak/determinism tests: every living player keeps firing. In a
+ * 1 s cycle it first steers toward the nearest enemy/boss for 0.25 s (facing follows movement), then holds
+ * FOCUS (facing locked) while it is repelled by nearby enemies, enemy bullets and bosses, drifts back toward
+ * the arena centre and strafes around the threat. It dashes out of imminent contact and fires the special
+ * when the meter is full.
  * Deterministic (reads only the world) and allocation-free per tick.
  */
 import type { Intents, PlayerIntent } from '../../src/contracts/input';
@@ -83,6 +85,13 @@ export class Autopilot {
       fz += pz * wgt;
       if (d < 1.5) danger = true;
     }
+    const aimPhase = (w.tick + i * 60) % 120 < 30;
+    if (aimPhase && this.aimAt(w, p, out)) {
+      out.dashPressed = danger && p.dashCharges > 0 && w.tick % 6 === i;
+      out.specialPressed = p.overdrive >= OVERDRIVE.MAX;
+      return;
+    }
+    out.focusHeld = true;
     // Strafe around the threat, and drift back to the centre when far out.
     const fl = Math.sqrt(fx * fx + fz * fz);
     if (fl > 1e-6) {
@@ -105,5 +114,37 @@ export class Autopilot {
     }
     out.dashPressed = danger && p.dashCharges > 0 && w.tick % 6 === i;
     out.specialPressed = p.overdrive >= OVERDRIVE.MAX;
+  }
+
+  /** Steers toward the nearest enemy or boss part; false when there is none. */
+  private aimAt(w: WorldState, p: Readonly<PlayerEntity>, out: PlayerIntent): boolean {
+    let best = Infinity;
+    let tx = 0;
+    let tz = 0;
+    const enemies = w.enemies;
+    for (let k = 0; k < enemies.count; k++) {
+      const e = enemies.active[k]!;
+      const d = (e.x - p.x) * (e.x - p.x) + (e.z - p.z) * (e.z - p.z);
+      if (d < best) {
+        best = d;
+        tx = e.x;
+        tz = e.z;
+      }
+    }
+    for (let b = 0; b < w.bosses.length; b++) {
+      const e = w.bosses[b]!;
+      if (!e.alive) continue;
+      const d = (e.x - p.x) * (e.x - p.x) + (e.z - p.z) * (e.z - p.z);
+      if (d < best) {
+        best = d;
+        tx = e.x;
+        tz = e.z;
+      }
+    }
+    if (best === Infinity || best < 1e-6) return false;
+    const l = Math.sqrt(best);
+    out.moveX = (tx - p.x) / l;
+    out.moveZ = (tz - p.z) / l;
+    return true;
   }
 }

@@ -35,9 +35,11 @@ export function validateRunConfig(config: RunConfig): void {
   invariant(Number.isFinite(config.seed), 'RunConfig: seed must be finite');
   const seen = [false, false];
   for (const pick of config.players) {
-    invariant(pick.player === 0 || pick.player === 1, 'RunConfig: player index must be 0 or 1');
-    invariant(!seen[pick.player], `RunConfig: player ${pick.player} listed twice`);
-    seen[pick.player] = true;
+    // RunConfig comes from the states layer at runtime: re-check the index range.
+    const idx: number = pick.player;
+    invariant(idx === 0 || idx === 1, 'RunConfig: player index must be 0 or 1');
+    invariant(seen[idx] === false, `RunConfig: player ${idx} listed twice`);
+    seen[idx] = true;
   }
   invariant(seen[0] === true, 'RunConfig: player 0 is always joined');
 }
@@ -55,13 +57,7 @@ export function vehiclesOf(config: RunConfig): readonly [VehicleId, VehicleId] {
 
 /** Run-start stats: vehicle base + Firmware snapshot, no rows, cards or team items yet. */
 export function startStats(vehicle: VehicleId, meta: MetaLevels): DerivedStats {
-  return computeStats(
-    vehicle,
-    meta,
-    emptyRowLevels(),
-    new Uint8Array(CARD_IDS.length),
-    emptyTeamLevels(),
-  );
+  return computeStats(vehicle, meta, emptyRowLevels(), new Uint8Array(CARD_IDS.length), emptyTeamLevels());
 }
 
 /** Boot Cache: +25 starting Shards per level. */
