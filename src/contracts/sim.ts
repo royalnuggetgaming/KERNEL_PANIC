@@ -2,10 +2,11 @@
  * Simulation world contracts (no three, no DOM). Positions are on the ground plane: x right, z toward camera.
  * Time is in seconds of SIM time (world.time = tick * SIM.DT). FROZEN after Wave 0.
  */
-import type { BossId, EnemyKind, EntityHandle, PlayerIndex, RunMode, SpecialKind, VehicleId } from './ids';
-import type { Intents } from './input';
-import type { DamageSource, EventChannel, SimEvents } from './simEvents';
+import type { BossId, EnemyKind, EntityHandle, PlayerIndex, SpecialKind, VehicleId } from './ids';
+import type { DamageSource } from './simEvents';
 import type { DerivedStats } from './upgrades';
+
+// World aggregate types (WorldState, WorldView, RunCounters, SimSystem, ...) live in contracts/world.ts.
 
 // ---------------------------------------------------------------- infrastructure ports (implemented in core/)
 
