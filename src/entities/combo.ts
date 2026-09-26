@@ -88,7 +88,13 @@ function creditKiller(w: WorldState, p: PlayerEntity, baseScore: number): void {
 }
 
 /** Called by applyDamage on every kill; handles chains, tiers, sync kills (co-op only), score. */
-export function registerKill(w: WorldState, by: DamageSource, _x: number, _z: number, baseScore: number): void {
+export function registerKill(
+  w: WorldState,
+  by: DamageSource,
+  _x: number,
+  _z: number,
+  baseScore: number,
+): void {
   if (by === 0 || by === 1) {
     const p = w.players[by];
     if (p.life !== 'absent') creditKiller(w, p, baseScore);

@@ -17,6 +17,8 @@ export interface ScreenView<S extends ScreenId> {
    * the screen wants another render on the next flush even without a new VM (throttled text, timed flashes).
    */
   render(vm: ScreenVMs[S], nowMs: number): boolean;
+  /** Called when the screen is (re)shown, before its first render of that showing. */
+  onShow?(): void;
 }
 
 export type ScreenViews = { readonly [S in ScreenId]: ScreenView<S> };

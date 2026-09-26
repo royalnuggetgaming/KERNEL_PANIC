@@ -165,6 +165,12 @@ export class ShopPanel {
     this.fx = new ClassSwitch(this.el);
   }
 
+  /** New visit: the first render adopts lastResult without replaying its flash. */
+  reset(): void {
+    this.primed = false;
+    this.fxUntil = 0;
+  }
+
   /** Returns true while a buy flash / deny shake is running (the screen re-renders to end it). */
   render(vm: ShopPanelVM, nowMs: number): boolean {
     this.name.set(vm.name);

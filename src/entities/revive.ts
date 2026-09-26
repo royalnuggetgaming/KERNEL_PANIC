@@ -155,11 +155,13 @@ export function rebootAtWaveEnd(w: WorldState): void {
     const p = w.players[i as PlayerIndex];
     if (p.life === 'absent') continue;
     p.downsThisWave = 0;
-    let frac = 0;
-    if (p.life === 'downed') frac = COOP.REBOOT_DOWNED_HP;
-    else if (p.life === 'offline') frac = COOP.REBOOT_OFFLINE_HP;
-    else if (p.life === 'respawning') frac = COOP.KERNEL_HP_FRAC;
-    else continue;
+    if (p.life === 'alive') continue;
+    const frac =
+      p.life === 'downed'
+        ? COOP.REBOOT_DOWNED_HP
+        : p.life === 'offline'
+          ? COOP.REBOOT_OFFLINE_HP
+          : COOP.KERNEL_HP_FRAC;
     if (p.life === 'respawning') respawnPosition(w, p);
     revive(w, p, frac, 0);
     emitPlayer(w, p.index, 'reboot', p.hp, p.x, p.z);

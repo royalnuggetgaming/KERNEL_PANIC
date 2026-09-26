@@ -19,6 +19,15 @@ const LIFE_LABEL: Readonly<Record<HudPlayerVM['life'], string>> = {
   eliminated: 'ELIMINATED',
 };
 
+const LIFE_CLASS: Readonly<Record<HudPlayerVM['life'], string>> = {
+  alive: 'life-alive',
+  downed: 'life-downed',
+  offline: 'life-offline',
+  respawning: 'life-respawning',
+  absent: 'life-absent',
+  eliminated: 'life-eliminated',
+};
+
 const TIER_CLASS = ['tier-0', 'tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5'] as const;
 
 class Pip {
@@ -169,7 +178,7 @@ export class PlayerPanel {
     // Every render: bars, pips, flags.
     this.hpMeter.set(vm.hpFrac);
     this.lowHp.set(vm.life === 'alive' && vm.hpFrac <= 0.25);
-    this.lifeClass.set(`life-${vm.life}`);
+    this.lifeClass.set(LIFE_CLASS[vm.life]);
     const dashMax = Math.max(0, Math.floor(vm.dashMax));
     this.dash.ensure(dashMax);
     for (let i = 0; i < dashMax; i++) {

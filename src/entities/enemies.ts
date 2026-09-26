@@ -166,13 +166,7 @@ function stepEnemiesImpl(w: WorldState, _intents: Intents, dt: number): void {
 /** behaviours, separation (<= 6 neighbours), staggered retarget (slot % 30), pending spawns. */
 export const stepEnemies: SimSystem = stepEnemiesImpl;
 
-function spawnForkChildren(
-  w: WorldState,
-  x: number,
-  z: number,
-  seed: number,
-  splitGen: number,
-): void {
+function spawnForkChildren(w: WorldState, x: number, z: number, seed: number, splitGen: number): void {
   const p = ENEMY_DEFS.fork.params;
   const kind = ENEMY_KINDS[p.splitInto] ?? 'shard';
   const base = (seed % 360) * DEG2RAD;
