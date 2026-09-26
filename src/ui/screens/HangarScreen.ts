@@ -55,7 +55,12 @@ export class HangarScreen implements ScreenView<'hangar'> {
         detailEl,
         refundEl,
         msgEl,
-        h(doc, 'div', { className: 'kp-btn-row' }, button(doc, 'kp-btn kp-back', 'BACK', 'back', 'any', 'back')),
+        h(
+          doc,
+          'div',
+          { className: 'kp-btn-row' },
+          button(doc, 'kp-btn kp-back', 'BACK', 'back', 'any', 'back'),
+        ),
       ),
     );
     this.title = new TextSlot(titleEl);

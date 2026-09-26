@@ -53,7 +53,10 @@ describe('ui/ShopScreen', () => {
       shopVM({
         panels: [
           shopPanelVM(0, {
-            rows: [row('thrusters', { status: 'maxed', price: null }), row('plating', { status: 'unaffordable' })],
+            rows: [
+              row('thrusters', { status: 'maxed', price: null }),
+              row('plating', { status: 'unaffordable' }),
+            ],
           }),
           shopPanelVM(1),
         ],
@@ -92,7 +95,10 @@ describe('ui/ShopScreen', () => {
     expect(pierce.first('kp-row-lock').getAttribute('data-player')).toBe('0');
     expect(pierce.first('kp-row-buy').getAttribute('data-item')).toBe('pierce');
     expect(p1.first('kp-shop-detail').textContent).toBe('pierce blurb');
-    s.render(shopVM({ panels: [shopPanelVM(0, { cursor: { row: 10, col: 0 }, ready: true }), shopPanelVM(1)] }), 0);
+    s.render(
+      shopVM({ panels: [shopPanelVM(0, { cursor: { row: 10, col: 0 }, ready: true }), shopPanelVM(1)] }),
+      0,
+    );
     const ready = p1.first('kp-shop-ready');
     expect(ready.classList.contains('is-cursor')).toBe(true);
     expect(ready.classList.contains('is-ready')).toBe(true);
@@ -130,7 +136,10 @@ describe('ui/ShopScreen', () => {
     s.render(shopVM(), 0);
     const p1 = el.byClass('kp-shop-panel')[0]!;
     const denied = shopVM({
-      panels: [shopPanelVM(0, { lastResult: { ok: false, reason: 'funds' }, toast: 'Not enough Bits' }), shopPanelVM(1)],
+      panels: [
+        shopPanelVM(0, { lastResult: { ok: false, reason: 'funds' }, toast: 'Not enough Bits' }),
+        shopPanelVM(1),
+      ],
     });
     expect(s.render(denied, 100)).toBe(true);
     expect(p1.classList.contains('fx-deny')).toBe(true);
@@ -138,7 +147,10 @@ describe('ui/ShopScreen', () => {
     expect(s.render(denied, 500)).toBe(false);
     expect(p1.classList.contains('fx-deny')).toBe(false);
     const bought = shopVM({
-      panels: [shopPanelVM(0, { lastResult: { ok: true, price: 40, balance: 210, txId: 3 }, canUndo: true }), shopPanelVM(1)],
+      panels: [
+        shopPanelVM(0, { lastResult: { ok: true, price: 40, balance: 210, txId: 3 }, canUndo: true }),
+        shopPanelVM(1),
+      ],
     });
     expect(s.render(bought, 600)).toBe(true);
     expect(p1.classList.contains('fx-buy')).toBe(true);
@@ -148,7 +160,9 @@ describe('ui/ShopScreen', () => {
   it('a result present on the first render of a visit does not replay its flash', () => {
     const { s, el } = makeShop();
     s.onShow();
-    const vm = shopVM({ panels: [shopPanelVM(0, { lastResult: { ok: false, reason: 'funds' } }), shopPanelVM(1)] });
+    const vm = shopVM({
+      panels: [shopPanelVM(0, { lastResult: { ok: false, reason: 'funds' } }), shopPanelVM(1)],
+    });
     expect(s.render(vm, 0)).toBe(false);
     expect(el.byClass('kp-shop-panel')[0]!.classList.contains('fx-deny')).toBe(false);
   });
@@ -157,7 +171,12 @@ describe('ui/ShopScreen', () => {
     const { s, el } = makeShop();
     s.render(
       shopVM({
-        finalChoice: { visible: true, selected: 'pushDeeper', extractLabel: 'EXTRACT', pushLabel: 'PUSH DEEPER' },
+        finalChoice: {
+          visible: true,
+          selected: 'pushDeeper',
+          extractLabel: 'EXTRACT',
+          pushLabel: 'PUSH DEEPER',
+        },
         countdown: 1.2,
       }),
       0,
@@ -177,7 +196,10 @@ describe('ui/ShopScreen', () => {
       }),
       0,
     );
-    const cards = el.byClass('kp-shop-panel')[0]!.byClass('kp-row-card').filter((r) => r.visible);
+    const cards = el
+      .byClass('kp-shop-panel')[0]!
+      .byClass('kp-row-card')
+      .filter((r) => r.visible);
     expect(cards.length).toBe(1);
     expect(cards[0]!.first('kp-row-price').textContent).toBe('SOLD OUT');
   });

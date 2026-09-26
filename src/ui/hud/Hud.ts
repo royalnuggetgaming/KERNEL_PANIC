@@ -59,7 +59,14 @@ export class Hud implements ScreenView<'hud'> {
       doc,
       'div',
       { className: 'kp-hud-versus' },
-      h(doc, 'div', { className: 'kp-vs-line' }, s0, h(doc, 'span', { className: 'kp-vs-sep', text: ':' }), s1),
+      h(
+        doc,
+        'div',
+        { className: 'kp-vs-line' },
+        s0,
+        h(doc, 'span', { className: 'kp-vs-sep', text: ':' }),
+        s1,
+      ),
       suddenEl,
     );
     const fpsEl = h(doc, 'div', { className: 'kp-hud-fps' });

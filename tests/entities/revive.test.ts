@@ -4,7 +4,13 @@ import { COOP, SIM } from '../../src/config/tuning';
 import { damagePlayer } from '../../src/entities/damage';
 import { stepPickups } from '../../src/entities/pickups';
 import { livingPlayerCount, rebootAtWaveEnd, stepRevive } from '../../src/entities/revive';
-import { addTestEnemy, addTestPickup, createTestWorld, placePlayer, stepSystem } from '../helpers/worldFixture';
+import {
+  addTestEnemy,
+  addTestPickup,
+  createTestWorld,
+  placePlayer,
+  stepSystem,
+} from '../helpers/worldFixture';
 
 type W = ReturnType<typeof createTestWorld>;
 

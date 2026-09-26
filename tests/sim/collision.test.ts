@@ -53,7 +53,9 @@ describe('collision: swept player shots', () => {
       const off = rng.range(-0.95, 0.95) * (e.radius + 0.18);
       const ox = Math.cos(a) * off;
       const oz = -Math.sin(a) * off;
-      addTestPlayerShot(w, 0, sx + ox, sz + oz, Math.sin(a) * speed, Math.cos(a) * speed, 10, { radius: 0.18 });
+      addTestPlayerShot(w, 0, sx + ox, sz + oz, Math.sin(a) * speed, Math.cos(a) * speed, 10, {
+        radius: 0.18,
+      });
       tick(w, 20);
       if (e.hp < 1e6) hits++;
     }

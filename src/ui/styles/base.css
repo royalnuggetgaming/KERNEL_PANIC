@@ -2,6 +2,8 @@
  * KERNEL PANIC UI base: palette variables (overwritten at runtime from the ThemeDef by UIRoot), system monospace
  * stack, shared widgets (panels, buttons, meters, keycaps, toasts). Animations touch transform/opacity only.
  */
+@import './widgets.css';
+
 .kp-ui {
   --kp-bg: #05060d;
   --kp-panel: #0c1022;
@@ -340,68 +342,6 @@
   transform: scaleX(0);
   will-change: transform;
   box-shadow: 0 0 8px currentColor;
-}
-
-/* ------------------------------------------------------------------ keycaps */
-
-.kp-keycap {
-  display: inline-block;
-  min-width: 1.9em;
-  margin: 0 0.15em;
-  padding: 0.05em 0.4em;
-  border: 1px solid rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.45);
-  border-bottom-width: 3px;
-  color: var(--kp-text);
-  font-size: 0.85em;
-  text-align: center;
-}
-
-.kp-keycap.is-held {
-  border-color: var(--kp-pc, var(--kp-accent));
-  background: rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.35);
-  transform: translateY(2px);
-}
-
-/* ------------------------------------------------------------------ toasts */
-
-.kp-toasts {
-  position: absolute;
-  top: 1em;
-  right: 1em;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4em;
-  align-items: flex-end;
-  pointer-events: none;
-}
-
-.kp-toast {
-  max-width: 28em;
-  padding: 0.45em 0.9em;
-  border-left: 3px solid var(--kp-accent);
-  background: rgba(var(--kp-panel-rgb), 0.94);
-  animation: kp-toast-in 220ms var(--kp-ease);
-}
-
-.kp-toast.kind-warn {
-  border-left-color: #ffd166;
-}
-
-.kp-toast.kind-error {
-  border-left-color: var(--kp-danger);
-  color: #ffd2c2;
-}
-
-@keyframes kp-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(1.5em);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 /* ------------------------------------------------------------------ accessibility */

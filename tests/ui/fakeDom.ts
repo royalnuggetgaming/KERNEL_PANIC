@@ -176,12 +176,17 @@ export class FakeElement {
   /** Dispatches an event at this element, bubbling to the ancestors. */
   dispatch(type: string): FakeEvent {
     const e = new FakeEvent(type, this);
-    let node: FakeElement | null = this;
+    this.fire(type, e);
+    let node = this.parentElement;
     while (node !== null) {
-      for (const fn of [...(node.listeners.get(type) ?? [])]) fn(e);
+      node.fire(type, e);
       node = node.parentElement;
     }
     return e;
+  }
+
+  private fire(type: string, e: FakeEvent): void {
+    for (const fn of [...(this.listeners.get(type) ?? [])]) fn(e);
   }
 
   /** Depth-first descendants (inclusive) matching a predicate. */
@@ -211,7 +216,8 @@ export class FakeElement {
 
   /** True when neither this element nor an ancestor is hidden. */
   get visible(): boolean {
-    let node: FakeElement | null = this;
+    if (this.hidden) return false;
+    let node = this.parentElement;
     while (node !== null) {
       if (node.hidden) return false;
       node = node.parentElement;

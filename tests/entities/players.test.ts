@@ -126,6 +126,21 @@ describe('players: dash', () => {
     it[0].dashPressed = true;
     stepSystem(w, stepPlayers, 20, it);
     expect(e.hp).toBe(500 - DASH.RAM_DAMAGE);
+    const b = w.bosses[0]!;
+    Object.assign(b, {
+      alive: true,
+      hp: 300,
+      maxHp: 300,
+      radius: 2,
+      x: w.players[0].x + 3,
+      z: 0,
+      introTimer: 0,
+    });
+    const it2 = moving(1, 0);
+    it2[0].dashPressed = true;
+    stepSystem(w, stepPlayers, 200, moving(0, 0));
+    stepSystem(w, stepPlayers, 20, it2);
+    expect(b.hp).toBe(300 - DASH.RAM_DAMAGE);
   });
 });
 

@@ -25,7 +25,7 @@ export class ShockwaveSystem {
     this.ripples = ripples;
   }
 
-  ring2(
+  spawn(
     x: number,
     z: number,
     t0: number,

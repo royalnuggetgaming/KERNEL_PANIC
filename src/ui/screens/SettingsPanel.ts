@@ -29,7 +29,10 @@ class SettingRowView {
 
   constructor(doc: Document) {
     const labelEl = h(doc, 'span', { className: 'kp-set-label' });
-    const valueBtn = h(doc, 'button', { className: 'kp-set-value', attrs: { type: 'button', tabindex: '-1' } });
+    const valueBtn = h(doc, 'button', {
+      className: 'kp-set-value',
+      attrs: { type: 'button', tabindex: '-1' },
+    });
     markClick(valueBtn, 'confirm', 'any', null);
     const left = button(doc, 'kp-arrow', '◀', 'left', 'any', null);
     const right = button(doc, 'kp-arrow', '▶', 'right', 'any', null);

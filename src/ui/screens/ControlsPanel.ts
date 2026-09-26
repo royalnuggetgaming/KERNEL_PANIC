@@ -36,7 +36,10 @@ class ControlsRowView {
   constructor(doc: Document, player: PlayerIndex) {
     const labelEl = h(doc, 'span', { className: 'kp-ctl-label' });
     const capsEl = h(doc, 'span', { className: 'kp-ctl-caps' });
-    const promptEl = h(doc, 'span', { className: 'kp-ctl-prompt kp-blink', text: 'PRESS A KEY  (ESC CANCELS)' });
+    const promptEl = h(doc, 'span', {
+      className: 'kp-ctl-prompt kp-blink',
+      text: 'PRESS A KEY  (ESC CANCELS)',
+    });
     this.el = h(
       doc,
       'button',

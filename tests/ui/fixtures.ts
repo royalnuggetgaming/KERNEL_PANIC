@@ -18,7 +18,14 @@ import type {
 } from '../../src/contracts/ui';
 
 export function bootVM(patch: Partial<BootVM> = {}): BootVM {
-  return { phase: 'loading', title: 'KERNEL PANIC', progress: 0.4, label: 'Building shaders', error: null, ...patch };
+  return {
+    phase: 'loading',
+    title: 'KERNEL PANIC',
+    progress: 0.4,
+    label: 'Building shaders',
+    error: null,
+    ...patch,
+  };
 }
 
 export function mainMenuVM(patch: Partial<MainMenuVM> = {}): MainMenuVM {

@@ -15,7 +15,13 @@ function tree() {
   screen.appendChild(btn);
   screen.appendChild(plain);
   root.appendChild(screen);
-  return { root: asFake(root), screen: asFake(screen), btn: asFake(btn), label: asFake(label), plain: asFake(plain) };
+  return {
+    root: asFake(root),
+    screen: asFake(screen),
+    btn: asFake(btn),
+    label: asFake(label),
+    plain: asFake(plain),
+  };
 }
 
 describe('ui/pointer', () => {

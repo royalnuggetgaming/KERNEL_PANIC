@@ -82,7 +82,9 @@ describe('ui/hud', () => {
     const scores = el.byClass('kp-vs-score').map((s) => s.textContent);
     expect(scores).toEqual(['2', '1']);
     expect(el.classList.contains('is-sudden-death')).toBe(true);
-    const pips = panels(el)[0]!.byClass('kp-win-pip').filter((p) => !p.hidden);
+    const pips = panels(el)[0]!
+      .byClass('kp-win-pip')
+      .filter((p) => !p.hidden);
     expect(pips.length).toBe(3);
     expect(pips.filter((p) => p.classList.contains('is-full')).length).toBe(2);
   });
@@ -137,7 +139,10 @@ describe('ui/hud', () => {
     const fdoc = new FakeDocument();
     const root = fdoc.createElement('div');
     let t = 0;
-    const ui = createUiRootWithClock({ root: asElement(root), theme: KERNEL_PANIC, doc: asDocument(fdoc) }, () => t);
+    const ui = createUiRootWithClock(
+      { root: asElement(root), theme: KERNEL_PANIC, doc: asDocument(fdoc) },
+      () => t,
+    );
     const hudEl = root.byAttr('data-screen', 'hud')[0]!;
     ui.show('hud', hudVM());
     ui.flush();

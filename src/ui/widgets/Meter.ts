@@ -36,7 +36,12 @@ export class Meter {
 
   constructor(doc: Document, className: string) {
     this.fill = h(doc, 'div', { className: 'kp-meter-fill' });
-    this.el = h(doc, 'div', { className: className === '' ? 'kp-meter' : `kp-meter ${className}` }, this.fill);
+    this.el = h(
+      doc,
+      'div',
+      { className: className === '' ? 'kp-meter' : `kp-meter ${className}` },
+      this.fill,
+    );
     this.set(0);
   }
 

@@ -7,7 +7,13 @@ import { CARD_BIT } from '../../src/entities/cardBits';
 import { addOverdrive, firewallActive, stepSpecials } from '../../src/entities/specials';
 import { stepCollision } from '../../src/sim/collision';
 import { createIntents } from '../helpers/scriptedIntents';
-import { addTestEnemy, addTestEnemyShot, createTestWorld, placePlayer, stepSystem } from '../helpers/worldFixture';
+import {
+  addTestEnemy,
+  addTestEnemyShot,
+  createTestWorld,
+  placePlayer,
+  stepSystem,
+} from '../helpers/worldFixture';
 
 type Vehicle = 'lancer' | 'bulwark' | 'specter' | 'tinker';
 

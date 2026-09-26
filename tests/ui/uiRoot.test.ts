@@ -27,7 +27,10 @@ function setup() {
   const fdoc = new FakeDocument();
   const root = fdoc.createElement('div');
   let t = 1000;
-  const ui = createUiRootWithClock({ root: asElement(root), theme: KERNEL_PANIC, doc: asDocument(fdoc) }, () => t);
+  const ui = createUiRootWithClock(
+    { root: asElement(root), theme: KERNEL_PANIC, doc: asDocument(fdoc) },
+    () => t,
+  );
   const layer = root.children[0]!;
   const screen = (id: string): FakeElement => layer.byAttr('data-screen', id)[0]!;
   return {

@@ -95,7 +95,9 @@ describe('ui/CharacterSelectScreen', () => {
     expect(s2!.classList.contains('is-locked')).toBe(true);
     expect(s2!.first('kp-veh-lock-text').textContent).toBe('LOCKED · UNLOCK FOR 60 Cores');
     expect(el.first('kp-select-countdown').textContent).toBe('LAUNCHING 0.5');
-    s.render(selectVM({ slots: [slotVM(0), slotVM(1)], mode: 'coop', modeRowVisible: true, modeLabel: 'CO-OP' }));
+    s.render(
+      selectVM({ slots: [slotVM(0), slotVM(1)], mode: 'coop', modeRowVisible: true, modeLabel: 'CO-OP' }),
+    );
     expect(mode.classList.contains('mode-coop')).toBe(true);
     expect(el.first('kp-select-countdown').hidden).toBe(true);
   });
@@ -115,7 +117,10 @@ describe('ui/GameOverScreen', () => {
     expect(el.findAll((e) => e.tagName === 'TH').map((e) => e.textContent)).toContain('REVIVES');
     expect(el.findAll((e) => e.tagName === 'TH').map((e) => e.textContent)).toContain('BITS');
     expect(el.first('kp-go-wave').textContent).toContain('CYCLE 7');
-    expect(el.byClass('kp-cores-line').map((l) => l.textContent)).toEqual(['Bits earned+90', 'Cycles cleared+18']);
+    expect(el.byClass('kp-cores-line').map((l) => l.textContent)).toEqual([
+      'Bits earned+90',
+      'Cycles cleared+18',
+    ]);
     expect(el.first('kp-cores-total-num').textContent).toBe('108');
     expect(el.first('kp-new-best').hidden).toBe(false);
     expect(el.first('kp-cores-cap').hidden).toBe(true);
@@ -149,10 +154,14 @@ describe('ui/GameOverScreen', () => {
 
   it('matchResultText covers draw, abandon and non-versus', () => {
     expect(matchResultText(gameOverVM())).toBe('');
-    expect(matchResultText(gameOverVM({ mode: 'versus', outcome: 'victory', winner: null }))).toBe('MATCH DRAWN');
+    expect(matchResultText(gameOverVM({ mode: 'versus', outcome: 'victory', winner: null }))).toBe(
+      'MATCH DRAWN',
+    );
     expect(matchResultText(gameOverVM({ mode: 'versus', outcome: 'abandoned' }))).toBe('MATCH ABANDONED');
     expect(
-      matchResultText(gameOverVM({ mode: 'versus', outcome: 'victory', winner: 0, players: [goPlayer(0, { name: '' })] })),
+      matchResultText(
+        gameOverVM({ mode: 'versus', outcome: 'victory', winner: 0, players: [goPlayer(0, { name: '' })] }),
+      ),
     ).toBe('P1 WINS THE MATCH');
   });
 });

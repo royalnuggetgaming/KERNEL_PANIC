@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ECONOMY, PICKUPS } from '../../src/config/tuning';
-import { dropShards, grantShards, pickupValue, spawnPickup, stepPickups, vacuumPickups } from '../../src/entities/pickups';
+import {
+  dropShards,
+  grantShards,
+  pickupValue,
+  spawnPickup,
+  stepPickups,
+  vacuumPickups,
+} from '../../src/entities/pickups';
 import { addTestPickup, createTestWorld, placePlayer, stepSystem } from '../helpers/worldFixture';
 
 function values(w: ReturnType<typeof createTestWorld>): number[] {

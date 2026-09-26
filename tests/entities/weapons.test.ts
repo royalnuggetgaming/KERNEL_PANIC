@@ -254,4 +254,28 @@ describe('projectiles', () => {
     expect(idle.vx).toBe(0);
     expect(idle.vz).toBe(0);
   });
+  it('versus mines seek the opponent; missiles retarget when their target dies', () => {
+    const w = createTestWorld({ mode: 'versus' });
+    w.players[1].x = 0;
+    w.players[1].z = 5;
+    const mine = spawnProjectile(w, spec({ kind: PROJECTILE_KINDS.mine, x: 0, z: 0, vx: 0, life: 3 }))!;
+    stepSystem(w, stepProjectiles, 1);
+    expect(mine.vz).toBeGreaterThan(0);
+    expect(mine.homing).toBeLessThan(-1);
+    const a = addTestEnemy(w, 'shard', 10, 0);
+    const b = addTestEnemy(w, 'shard', -10, 0);
+    const m = spawnProjectile(
+      w,
+      spec({ kind: PROJECTILE_KINDS.missile, vx: 0, vz: 22, homing: w.enemies.handleOf(a), life: 3 }),
+    )!;
+    a.dying = true;
+    stepSystem(w, stepProjectiles, 1);
+    expect(m.homing).toBe(w.enemies.handleOf(b));
+    const t = spawnProjectile(
+      w,
+      spec({ kind: PROJECTILE_KINDS.turret, vx: 0, vz: 40, homing: w.enemies.handleOf(b), life: 3 }),
+    )!;
+    stepSystem(w, stepProjectiles, 5);
+    expect(t.vx).toBeLessThan(0);
+  });
 });
