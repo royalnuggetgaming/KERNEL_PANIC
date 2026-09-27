@@ -5,6 +5,14 @@
  */
 import type { SpatialGridApi } from '../contracts/sim';
 
+/**
+ * Scratch inputs for the *In methods and the grid*In helpers: [x, z, radius] for addIn/queryCircleIn and
+ * [minX, minZ, maxX, maxZ] for queryAabbIn. Hot callers write positions here instead of passing them as
+ * arguments: a double passed to a call that is not inlined is boxed into a HeapNumber (Maglev/TurboFan in the
+ * browser), which made the per-tick grid rebuild and the per-shot queries allocate.
+ */
+export const GRID_IN = new Float64Array(4);
+
 export interface SpatialGridOptions {
   readonly cols: number;
   readonly rows: number;
@@ -66,17 +74,34 @@ export class SpatialGrid implements SpatialGridApi {
   }
 
   add(id: number, x: number, z: number, radius: number): void {
+    GRID_IN[0] = x;
+    GRID_IN[1] = z;
+    GRID_IN[2] = radius;
+    this.addIn(id);
+  }
+
+  /** add() with x, z, radius read from GRID_IN[0..2]. */
+  addIn(id: number): void {
     if (this.n >= this.capacity) {
       this.overflowCount++;
       return;
     }
+    const x = GRID_IN[0]!;
+    const z = GRID_IN[1]!;
+    const radius = GRID_IN[2]!;
     const i = this.n++;
     this.ids[i] = id;
     this.xs[i] = x;
     this.zs[i] = z;
     this.rs[i] = radius;
     if (radius > this.maxR) this.maxR = radius;
-    this.cellOf[i] = this.cellRow(z) * this.cols + this.cellCol(x);
+    // Column/row clamps inlined (NaN-safe: NaN >= 0 is false, so NaN maps to cell 0): no double crosses a call.
+    const cs = this.cellSize;
+    const c = Math.floor((x - this.originX) / cs);
+    const r = Math.floor((z - this.originZ) / cs);
+    const col = c >= 0 ? (c >= this.cols ? this.cols - 1 : c) : 0;
+    const row = r >= 0 ? (r >= this.rows ? this.rows - 1 : r) : 0;
+    this.cellOf[i] = row * this.cols + col;
   }
 
   build(): void {
@@ -94,11 +119,31 @@ export class SpatialGrid implements SpatialGridApi {
   }
 
   queryCircle(x: number, z: number, r: number, out: Int32Array): number {
+    GRID_IN[0] = x;
+    GRID_IN[1] = z;
+    GRID_IN[2] = r;
+    return this.queryCircleIn(out);
+  }
+
+  /** queryCircle() with x, z, r read from GRID_IN[0..2]. */
+  queryCircleIn(out: Int32Array): number {
+    const x = GRID_IN[0]!;
+    const z = GRID_IN[1]!;
+    const r = GRID_IN[2]!;
     const reach = r + this.maxR;
-    const c0 = this.cellCol(x - reach);
-    const c1 = this.cellCol(x + reach);
-    const r0 = this.cellRow(z - reach);
-    const r1 = this.cellRow(z + reach);
+    const cs = this.cellSize;
+    const ox = this.originX;
+    const oz = this.originZ;
+    const lastCol = this.cols - 1;
+    const lastRow = this.rows - 1;
+    let c0 = Math.floor((x - reach - ox) / cs);
+    let c1 = Math.floor((x + reach - ox) / cs);
+    let r0 = Math.floor((z - reach - oz) / cs);
+    let r1 = Math.floor((z + reach - oz) / cs);
+    c0 = c0 >= 0 ? (c0 > lastCol ? lastCol : c0) : 0;
+    c1 = c1 >= 0 ? (c1 > lastCol ? lastCol : c1) : 0;
+    r0 = r0 >= 0 ? (r0 > lastRow ? lastRow : r0) : 0;
+    r1 = r1 >= 0 ? (r1 > lastRow ? lastRow : r1) : 0;
     let written = 0;
     for (let row = r0; row <= r1; row++) {
       for (let col = c0; col <= c1; col++) {
@@ -120,11 +165,33 @@ export class SpatialGrid implements SpatialGridApi {
   }
 
   queryAabb(minX: number, minZ: number, maxX: number, maxZ: number, out: Int32Array): number {
+    GRID_IN[0] = minX;
+    GRID_IN[1] = minZ;
+    GRID_IN[2] = maxX;
+    GRID_IN[3] = maxZ;
+    return this.queryAabbIn(out);
+  }
+
+  /** queryAabb() with minX, minZ, maxX, maxZ read from GRID_IN[0..3]. */
+  queryAabbIn(out: Int32Array): number {
+    const minX = GRID_IN[0]!;
+    const minZ = GRID_IN[1]!;
+    const maxX = GRID_IN[2]!;
+    const maxZ = GRID_IN[3]!;
     const m = this.maxR;
-    const c0 = this.cellCol(minX - m);
-    const c1 = this.cellCol(maxX + m);
-    const r0 = this.cellRow(minZ - m);
-    const r1 = this.cellRow(maxZ + m);
+    const cs = this.cellSize;
+    const ox = this.originX;
+    const oz = this.originZ;
+    const lastCol = this.cols - 1;
+    const lastRow = this.rows - 1;
+    let c0 = Math.floor((minX - m - ox) / cs);
+    let c1 = Math.floor((maxX + m - ox) / cs);
+    let r0 = Math.floor((minZ - m - oz) / cs);
+    let r1 = Math.floor((maxZ + m - oz) / cs);
+    c0 = c0 >= 0 ? (c0 > lastCol ? lastCol : c0) : 0;
+    c1 = c1 >= 0 ? (c1 > lastCol ? lastCol : c1) : 0;
+    r0 = r0 >= 0 ? (r0 > lastRow ? lastRow : r0) : 0;
+    r1 = r1 >= 0 ? (r1 > lastRow ? lastRow : r1) : 0;
     let written = 0;
     for (let row = r0; row <= r1; row++) {
       for (let col = c0; col <= c1; col++) {
@@ -143,15 +210,24 @@ export class SpatialGrid implements SpatialGridApi {
     }
     return written;
   }
+}
 
-  private cellCol(x: number): number {
-    const c = Math.floor((x - this.originX) / this.cellSize);
-    // NaN-safe: NaN >= 0 is false, so NaN maps to cell 0.
-    return c >= 0 ? (c >= this.cols ? this.cols - 1 : c) : 0;
-  }
+/** g.addIn(id) for the concrete grid, else g.add from GRID_IN (any SpatialGridApi). */
+export function gridAddIn(g: SpatialGridApi, id: number): void {
+  if (g instanceof SpatialGrid) g.addIn(id);
+  else g.add(id, GRID_IN[0]!, GRID_IN[1]!, GRID_IN[2]!);
+}
 
-  private cellRow(z: number): number {
-    const r = Math.floor((z - this.originZ) / this.cellSize);
-    return r >= 0 ? (r >= this.rows ? this.rows - 1 : r) : 0;
-  }
+/** g.queryCircleIn(out) for the concrete grid, else g.queryCircle from GRID_IN. */
+export function gridQueryCircleIn(g: SpatialGridApi, out: Int32Array): number {
+  return g instanceof SpatialGrid
+    ? g.queryCircleIn(out)
+    : g.queryCircle(GRID_IN[0]!, GRID_IN[1]!, GRID_IN[2]!, out);
+}
+
+/** g.queryAabbIn(out) for the concrete grid, else g.queryAabb from GRID_IN. */
+export function gridQueryAabbIn(g: SpatialGridApi, out: Int32Array): number {
+  return g instanceof SpatialGrid
+    ? g.queryAabbIn(out)
+    : g.queryAabb(GRID_IN[0]!, GRID_IN[1]!, GRID_IN[2]!, GRID_IN[3]!, out);
 }

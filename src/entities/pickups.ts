@@ -84,8 +84,13 @@ function canCollect(p: Readonly<PlayerEntity>, ghosts: boolean): boolean {
   return p.life === 'alive' || (ghosts && p.life === 'offline');
 }
 
-/** Pickups collectable by Offline ghosts only outside versus (versus has no ghosts). */
-function nearestCollector(w: WorldState, x: number, z: number, ghosts: boolean): PlayerEntity | null {
+/**
+ * Pickups collectable by Offline ghosts only outside versus (versus has no ghosts). Takes the pickup, not its
+ * x/z: doubles passed to a call that is not inlined are boxed.
+ */
+function nearestCollector(w: WorldState, k: Readonly<PickupEntity>, ghosts: boolean): PlayerEntity | null {
+  const x = k.x;
+  const z = k.z;
   let best: PlayerEntity | null = null;
   let bestD = Infinity;
   for (let i = 0; i < 2; i++) {
@@ -116,7 +121,7 @@ export const stepPickups: SimSystem = (w: WorldState, _intents: Intents, dt: num
       pool.despawn(k);
       continue;
     }
-    const p = nearestCollector(w, k.x, k.z, ghosts);
+    const p = nearestCollector(w, k, ghosts);
     k.magnetTo = -1;
     if (p !== null) {
       const dx = p.x - k.x;

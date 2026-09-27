@@ -46,6 +46,12 @@ const RING = burstSpec(18, 6, 9, 0.45, 0.16, TINT.P1);
 const MUZZLE = burstSpec(2, 6, 12, 0.12, 0.12, TINT.P1);
 const PORTAL = burstSpec(10, 1, 4, 0.7, 0.18, TINT.ENEMY);
 const ORIGIN: XZ = { x: 0, z: 0 };
+/**
+ * The event position handed to burst/spawn/ripple, copied from each event at its (monomorphic) channel loop.
+ * Passing the events themselves made those calls see a dozen event shapes: their megamorphic x/z loads return a
+ * fresh HeapNumber per load, i.e. two allocations per particle in a burst. AT and ORIGIN share one shape.
+ */
+const AT = { x: 0, z: 0 };
 
 export function sourceTint(src: DamageSource | -1): number {
   if (src === 0) return TINT.P1;
@@ -85,9 +91,11 @@ export class FxDirector {
     }
     for (let i = 0; i < e.hit.count; i++) {
       const h = e.hit.get(i);
+      AT.x = h.x;
+      AT.z = h.z;
       SPARK.count = i < HIT_SPARK_BUDGET ? (h.crit ? 7 : 4) : 1;
       SPARK.tint = h.target === 1 ? TINT.ENEMY_SHOT : h.target === 2 ? TINT.ACCENT : TINT.WHITE;
-      ps.burst(h, 0.8, t, SPARK);
+      ps.burst(AT, 0.8, t, SPARK);
       if (h.target === 0 || h.target === 3) {
         digits.spawn(h, t, h.player === -1 ? TINT.WHITE : playerTint(h.player), h.crit);
       } else if (h.target === 1) {
@@ -95,37 +103,45 @@ export class FxDirector {
         if (!rf) this.chromatic = Math.max(this.chromatic, 0.6);
         cues.trauma(0.22);
       } else {
-        sw.spawn(h, t, 0.25, 1.4, 0.25, TINT.ACCENT, 0.6);
+        sw.spawn(AT, t, 0.25, 1.4, 0.25, TINT.ACCENT, 0.6);
       }
     }
     for (let i = 0; i < e.kill.count; i++) {
       const k = e.kill.get(i);
+      AT.x = k.x;
+      AT.z = k.z;
       KILL.tint = k.elite ? TINT.ELITE : TINT.ENEMY;
       KILL.count = k.elite ? 24 : 14;
-      ps.burst(k, 0.6, t, KILL);
-      sw.spawn(k, t, 0.35, k.elite ? 3.2 : 2, 0.35, sourceTint(k.by), k.elite ? 1 : 0.6);
-      if (k.elite) sw.ripple(k, t, 0.5);
+      ps.burst(AT, 0.6, t, KILL);
+      sw.spawn(AT, t, 0.35, k.elite ? 3.2 : 2, 0.35, sourceTint(k.by), k.elite ? 1 : 0.6);
+      if (k.elite) sw.ripple(AT, t, 0.5);
       cues.trauma(k.elite ? 0.14 : 0.05);
     }
     for (let i = 0; i < e.explosion.count; i++) {
       const x = e.explosion.get(i);
+      AT.x = x.x;
+      AT.z = x.z;
       BLAST.count = Math.round(12 + 26 * x.power * (rf ? 0.5 : 1));
-      ps.burst(x, 0.5, t, BLAST);
-      sw.spawn(x, t, 0.5, x.radius * 1.2, 0.6, TINT.ENEMY_SHOT, x.power);
-      sw.ripple(x, t, x.power);
+      ps.burst(AT, 0.5, t, BLAST);
+      sw.spawn(AT, t, 0.5, x.radius * 1.2, 0.6, TINT.ENEMY_SHOT, x.power);
+      sw.ripple(AT, t, x.power);
       cues.trauma(0.35 * x.power);
     }
     for (let i = 0; i < e.enemyShot.count; i++) {
       const s = e.enemyShot.get(i);
+      AT.x = s.x;
+      AT.z = s.z;
       if (i >= 16 && !s.boss) continue;
       SPARK.count = 1;
       SPARK.tint = TINT.ENEMY_SHOT;
-      ps.burst(s, 0.7, t, SPARK);
+      ps.burst(AT, 0.7, t, SPARK);
     }
     for (let i = 0; i < e.pickup.count; i++) {
       const p = e.pickup.get(i);
+      AT.x = p.x;
+      AT.z = p.z;
       PICK.count = p.value >= 25 ? 10 : p.value >= 5 ? 6 : 3;
-      ps.burst(p, 0.5, t, PICK);
+      ps.burst(AT, 0.5, t, PICK);
     }
     this.consumePlayers(e, t);
     this.consumeWorld(e, t);
@@ -135,6 +151,8 @@ export class FxDirector {
     const { particles: ps, shockwaves: sw, cues } = this.d;
     for (let i = 0; i < e.player.count; i++) {
       const p = e.player.get(i);
+      AT.x = p.x;
+      AT.z = p.z;
       const tint = playerTint(p.player);
       RING.tint = tint;
       switch (p.what) {
@@ -145,47 +163,49 @@ export class FxDirector {
         case 'downed':
         case 'eliminated':
           BLAST.count = 30;
-          ps.burst(p, 0.6, t, BLAST);
-          sw.spawn(p, t, 0.7, 6, 0.8, tint, 1);
-          sw.ripple(p, t, 1);
+          ps.burst(AT, 0.6, t, BLAST);
+          sw.spawn(AT, t, 0.7, 6, 0.8, tint, 1);
+          sw.ripple(AT, t, 1);
           cues.trauma(0.35);
           break;
         case 'revived':
         case 'kernel':
         case 'reboot':
           RING.count = 22;
-          ps.burst(p, 0.4, t, RING);
-          sw.spawn(p, t, 0.6, 4, 0.5, tint, 1);
+          ps.burst(AT, 0.4, t, RING);
+          sw.spawn(AT, t, 0.6, 4, 0.5, tint, 1);
           break;
         case 'offline':
           RING.count = 16;
-          ps.burst(p, 1, t, RING);
+          ps.burst(AT, 1, t, RING);
           break;
         case 'dash':
           RING.count = 8;
-          ps.burst(p, 0.4, t, RING);
+          ps.burst(AT, 0.4, t, RING);
           break;
         case 'special':
-          sw.spawn(p, t, 0.5, 5, 0.6, tint, 1);
-          sw.ripple(p, t, 0.7);
+          sw.spawn(AT, t, 0.5, 5, 0.6, tint, 1);
+          sw.ripple(AT, t, 0.7);
           cues.trauma(0.12);
           break;
         case 'heal':
           PICK.count = 4;
-          ps.burst(p, 0.6, t, PICK);
+          ps.burst(AT, 0.6, t, PICK);
           break;
         case 'shieldBlock':
-          sw.spawn(p, t, 0.3, 2, 0.3, TINT.ACCENT, 0.8);
+          sw.spawn(AT, t, 0.3, 2, 0.3, TINT.ACCENT, 0.8);
           break;
       }
     }
     for (let i = 0; i < e.special.count; i++) {
       const s = e.special.get(i);
+      AT.x = s.x;
+      AT.z = s.z;
       if (s.kind === 'railburst') cues.trauma(0.25);
       if (s.kind === 'blinkSwarm') {
         RING.tint = playerTint(s.player);
         RING.count = 20;
-        ps.burst(s, 0.6, t, RING);
+        ps.burst(AT, 0.6, t, RING);
       }
     }
     for (let i = 0; i < e.arc.count; i++) {
@@ -222,34 +242,38 @@ export class FxDirector {
     }
     for (let i = 0; i < e.spawn.count; i++) {
       const s = e.spawn.get(i);
+      AT.x = s.x;
+      AT.z = s.z;
       PORTAL.tint = s.elite ? TINT.ELITE : TINT.ENEMY;
-      ps.burst(s, 0.2, t, PORTAL);
+      ps.burst(AT, 0.2, t, PORTAL);
     }
     for (let i = 0; i < e.boss.count; i++) {
       const b = e.boss.get(i);
+      AT.x = b.x;
+      AT.z = b.z;
       switch (b.what) {
         case 'intro':
           if (b.part === 0) cues.bossIntro(b.x, b.z);
-          sw.spawn(b, t, 1.2, 12, 1, TINT.ELITE, 1);
-          sw.ripple(b, t, 1);
+          sw.spawn(AT, t, 1.2, 12, 1, TINT.ELITE, 1);
+          sw.ripple(AT, t, 1);
           break;
         case 'phase':
         case 'split':
         case 'enrage':
           BLAST.count = 30;
-          ps.burst(b, 1, t, BLAST);
-          sw.spawn(b, t, 0.8, 9, 0.8, TINT.ELITE, 1);
-          sw.ripple(b, t, 1);
+          ps.burst(AT, 1, t, BLAST);
+          sw.spawn(AT, t, 0.8, 9, 0.8, TINT.ELITE, 1);
+          sw.ripple(AT, t, 1);
           cues.trauma(0.3);
           break;
         case 'respawn':
-          sw.spawn(b, t, 0.8, 6, 0.6, TINT.ENEMY, 0.8);
+          sw.spawn(AT, t, 0.8, 6, 0.6, TINT.ENEMY, 0.8);
           break;
         case 'dead':
           BLAST.count = this.reduceFlashes ? 40 : 80;
-          ps.burst(b, 1, t, BLAST);
-          sw.spawn(b, t, 1.4, 18, 1.2, TINT.ELITE, 1);
-          sw.ripple(b, t, 1);
+          ps.burst(AT, 1, t, BLAST);
+          sw.spawn(AT, t, 1.4, 18, 1.2, TINT.ELITE, 1);
+          sw.ripple(AT, t, 1);
           cues.trauma(0.35);
           break;
       }

@@ -4,11 +4,12 @@
  * latch onto it and cut it until dashed off or killed. No-op in versus.
  */
 import type { Intents } from '../contracts/input';
+import type { LinkState } from '../contracts/sim';
 import { SOURCE_LINK } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { ENEMY_DEFS } from '../config/enemies';
 import { COOP, SIM } from '../config/tuning';
-import { applyBossDamage, applyDamage } from './damage';
+import { HIT_IN, applyBossDamage, hitEnemy } from './damage';
 
 export const LINK_TICK_EVERY = 12;
 const LINK_TICK_S = LINK_TICK_EVERY * SIM.DT;
@@ -18,8 +19,17 @@ const UNLATCH_RANGE = LATCH_RANGE * 1.5;
 
 const CLOSEST = { x: 0, z: 0, d2: 0 };
 
-/** Closest point on segment A-B to P (written to CLOSEST). */
-function closestOnSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): void {
+/**
+ * Closest point on the link segment A-B to p (written to CLOSEST). Takes the entity and the link rather than
+ * their coordinates: doubles passed to a call that is not inlined are boxed (six per enemy per step).
+ */
+function closestOnLink(p: Readonly<{ x: number; z: number }>, link: Readonly<LinkState>): void {
+  const px = p.x;
+  const pz = p.z;
+  const ax = link.ax;
+  const az = link.az;
+  const bx = link.bx;
+  const bz = link.bz;
   const abx = bx - ax;
   const abz = bz - az;
   const l2 = abx * abx + abz * abz;
@@ -92,7 +102,7 @@ function updateLatches(w: WorldState): void {
       e.latched = 0;
       continue;
     }
-    closestOnSegment(e.x, e.z, link.ax, link.az, link.bx, link.bz);
+    closestOnLink(e, link);
     const reach = e.latched !== 0 ? UNLATCH_RANGE : LATCH_RANGE;
     const r = reach + e.radius;
     e.latched = CLOSEST.d2 <= r * r ? 1 : 0;
@@ -115,14 +125,19 @@ function beamDamage(w: WorldState): void {
   for (let i = pool.count - 1; i >= 0; i--) {
     const e = pool.active[i]!;
     if (e.dying) continue;
-    closestOnSegment(e.x, e.z, link.ax, link.az, link.bx, link.bz);
+    closestOnLink(e, link);
     const r = half + e.radius;
-    if (CLOSEST.d2 <= r * r) applyDamage(w, e, dmg, SOURCE_LINK, CLOSEST.x, CLOSEST.z, false);
+    if (CLOSEST.d2 > r * r) continue;
+    // applyDamage(w, e, dmg, SOURCE_LINK, CLOSEST.x, CLOSEST.z, false) through HIT_IN (no boxed arguments).
+    HIT_IN[0] = dmg;
+    HIT_IN[1] = CLOSEST.x;
+    HIT_IN[2] = CLOSEST.z;
+    hitEnemy(w, e, SOURCE_LINK, false);
   }
   for (let k = 0; k < w.bosses.length; k++) {
     const boss = w.bosses[k]!;
     if (!boss.alive || boss.introTimer > 0) continue;
-    closestOnSegment(boss.x, boss.z, link.ax, link.az, link.bx, link.bz);
+    closestOnLink(boss, link);
     const r = half + boss.radius;
     if (CLOSEST.d2 <= r * r) applyBossDamage(w, boss, dmg, SOURCE_LINK, false);
   }

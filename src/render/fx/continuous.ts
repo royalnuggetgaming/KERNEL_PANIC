@@ -4,7 +4,7 @@
  * independent. Allocation-free.
  */
 import { TINT } from '../../shaders/tints';
-import { lerp1, type FrameContext } from '../views/types';
+import type { FrameContext } from '../views/types';
 import type { ParticleSystem } from './ParticleSystem';
 
 const GHOST_RATE = 36;
@@ -28,35 +28,39 @@ export class ContinuousEmitter {
     return n > 16 ? 16 : n;
   }
 
+  /**
+   * Particle values go through ps.rec / ps.uniforms() (typed-array scratch), never as double arguments or
+   * returns, which a call that is not inlined would box. Draw order matches the fx stream's previous use.
+   */
   emit(ps: ParticleSystem, ctx: FrameContext): void {
     const w = ctx.world;
     const dt = ctx.frameDt > 0.1 ? 0.1 : ctx.frameDt;
-    const t = ctx.time;
+    const q = ps.rec;
+    q[6] = ctx.time;
     for (let i = 0; i < 2; i++) {
       const p = w.players[i === 0 ? 0 : 1];
       const base = i * SLOTS_PER_PLAYER;
-      const tint = i === 0 ? TINT.P1 : TINT.P2;
-      const x = lerp1(p.prevX, p.x, ctx.alpha);
-      const z = lerp1(p.prevZ, p.z, ctx.alpha);
+      q[11] = i === 0 ? TINT.P1 : TINT.P2;
+      const a0 = ctx.alpha;
+      const x = p.prevX + (p.x - p.prevX) * a0;
+      const z = p.prevZ + (p.z - p.prevZ) * a0;
       if (p.life === 'offline') {
         const n = this.due(base, GHOST_RATE, dt);
         for (let k = 0; k < n; k++) {
-          const a = ps.random() * Math.PI * 2;
-          const r = ps.random() * 0.6;
-          ps.emit(
-            x + Math.sin(a) * r,
-            0.6 + ps.random() * 0.6,
-            z + Math.cos(a) * r,
-            0,
-            0.6,
-            0,
-            t,
-            0.8,
-            0.26,
-            1.5,
-            -1.5,
-            tint,
-          );
+          const u = ps.uniforms(3);
+          const a = u[0]! * Math.PI * 2;
+          const r = u[1]! * 0.6;
+          q[0] = x + Math.sin(a) * r;
+          q[1] = 0.6 + u[2]! * 0.6;
+          q[2] = z + Math.cos(a) * r;
+          q[3] = 0;
+          q[4] = 0.6;
+          q[5] = 0;
+          q[7] = 0.8;
+          q[8] = 0.26;
+          q[9] = 1.5;
+          q[10] = -1.5;
+          ps.emitRec();
         }
       } else if (p.life === 'alive') {
         const speed = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
@@ -65,70 +69,75 @@ export class ContinuousEmitter {
           const bx = -Math.sin(p.yaw);
           const bz = -Math.cos(p.yaw);
           for (let k = 0; k < n; k++) {
-            const j = (ps.random() - 0.5) * 0.5;
-            ps.emit(
-              x + bx * 0.9 - bz * j,
-              0.35,
-              z + bz * 0.9 + bx * j,
-              bx * 3,
-              0.2,
-              bz * 3,
-              t,
-              0.25,
-              0.14,
-              4,
-              0,
-              tint,
-            );
+            const j = (ps.uniforms(1)[0]! - 0.5) * 0.5;
+            q[0] = x + bx * 0.9 - bz * j;
+            q[1] = 0.35;
+            q[2] = z + bz * 0.9 + bx * j;
+            q[3] = bx * 3;
+            q[4] = 0.2;
+            q[5] = bz * 3;
+            q[7] = 0.25;
+            q[8] = 0.14;
+            q[9] = 4;
+            q[10] = 0;
+            ps.emitRec();
           }
         }
       } else if (p.life === 'downed') {
         const n = this.due(base + 2, DOWNED_RATE, dt);
         for (let k = 0; k < n; k++) {
-          const a = ps.random() * Math.PI * 2;
-          ps.emit(
-            x,
-            0.3,
-            z,
-            Math.sin(a) * 2,
-            2.5 + ps.random() * 2,
-            Math.cos(a) * 2,
-            t,
-            0.5,
-            0.12,
-            1,
-            9,
-            tint,
-          );
+          const u = ps.uniforms(2);
+          const a = u[0]! * Math.PI * 2;
+          q[0] = x;
+          q[1] = 0.3;
+          q[2] = z;
+          q[3] = Math.sin(a) * 2;
+          q[4] = 2.5 + u[1]! * 2;
+          q[5] = Math.cos(a) * 2;
+          q[7] = 0.5;
+          q[8] = 0.12;
+          q[9] = 1;
+          q[10] = 9;
+          ps.emitRec();
         }
       }
       const sp = p.special;
       if (sp.active && sp.kind === 'patchDrone') {
         const n = this.due(base + 3, DRONE_RATE, dt);
+        q[11] = TINT.PICKUP;
         for (let k = 0; k < n; k++) {
-          const a = ps.random() * Math.PI * 2;
-          const r = ps.random() * sp.radius;
-          ps.emit(
-            sp.x + Math.sin(a) * r,
-            0.2,
-            sp.z + Math.cos(a) * r,
-            0,
-            1.2,
-            0,
-            t,
-            0.9,
-            0.16,
-            0.5,
-            -0.5,
-            TINT.PICKUP,
-          );
+          const u = ps.uniforms(2);
+          const a = u[0]! * Math.PI * 2;
+          const r = u[1]! * sp.radius;
+          q[0] = sp.x + Math.sin(a) * r;
+          q[1] = 0.2;
+          q[2] = sp.z + Math.cos(a) * r;
+          q[3] = 0;
+          q[4] = 1.2;
+          q[5] = 0;
+          q[7] = 0.9;
+          q[8] = 0.16;
+          q[9] = 0.5;
+          q[10] = -0.5;
+          ps.emitRec();
         }
       }
     }
     if (w.link.droneActive) {
       const n = this.due(SLOTS_PER_PLAYER * 2, ECHO_RATE, dt);
+      q[11] = TINT.LINK;
       for (let k = 0; k < n; k++) {
-        ps.emit(w.link.droneX, 0.7, w.link.droneZ, 0, 0.3, 0, t, 0.35, 0.2, 2, 0, TINT.LINK);
+        q[0] = w.link.droneX;
+        q[1] = 0.7;
+        q[2] = w.link.droneZ;
+        q[3] = 0;
+        q[4] = 0.3;
+        q[5] = 0;
+        q[7] = 0.35;
+        q[8] = 0.2;
+        q[9] = 2;
+        q[10] = 0;
+        ps.emitRec();
       }
     }
   }

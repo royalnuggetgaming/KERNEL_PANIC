@@ -10,14 +10,14 @@ import type { SimEvents } from '../contracts/simEvents';
 import type { ThemeDef } from '../contracts/theme';
 import { ARENA } from '../config/tuning';
 import { createRng } from '../core/rng';
-import { type AudioEventRouter, createAudioEventRouter } from './AudioEventRouter';
+import { type AudioEventRouter, type AudioRequestSink, createAudioRequestRouter } from './AudioEventRouter';
 import { type SectorComposer, createComposer } from './Composer';
 import { Mixer } from './Mixer';
 import { MusicGraph } from './MusicGraph';
 import { type SequencerApi, createSequencer } from './Sequencer';
-import { SfxBank } from './SfxBank';
+import { SfxBank, sfxIndex } from './SfxBank';
 import { TIMBRES, type TimbrePreset } from './timbre';
-import { CATEGORY_LIMITS, VOICE_COUNT, VoicePool } from './VoicePool';
+import { CATEGORY_LIMITS, VOICE_COUNT, VOICE_IN, VoicePool } from './VoicePool';
 
 /** Interval timer used for the 25 ms scheduler tick (injectable for tests). */
 export interface TimerPort {
@@ -54,7 +54,7 @@ const DEFAULT_TIMERS: TimerPort = {
   },
 };
 
-class Engine implements AudioEngine {
+class Engine implements AudioEngine, AudioRequestSink {
   private readonly deps: AudioEngineDeps;
   private readonly timbre: TimbrePreset;
   private readonly timers: TimerPort;
@@ -73,6 +73,10 @@ class Engine implements AudioEngine {
   private intensity = 0;
   private ducked = false;
   private readonly volumes = new Float64Array([1, 1, 1]);
+  /** Request being played: [pan, gain, detuneCents] (the router writes it; see AudioRequestSink). */
+  readonly req = new Float64Array(3);
+  /** [ctx.currentTime], read once per play() / consumeEvents() batch (each read allocates a HeapNumber). */
+  private readonly clock = new Float64Array(1);
   private disposed = false;
   unlocked = false;
 
@@ -82,9 +86,7 @@ class Engine implements AudioEngine {
     this.timers = deps.timers ?? DEFAULT_TIMERS;
     this.bank = new SfxBank(this.timbre, deps.seed, deps.log);
     this.composer = createComposer(deps.theme, deps.seed);
-    this.router = createAudioEventRouter((id, pan, gain, detune) => {
-      this.play(id, pan, gain, detune);
-    }, ARENA.RADIUS);
+    this.router = createAudioRequestRouter(this, ARENA.RADIUS);
     for (let i = 0; i < VOICE_COUNT; i++) this.sources.push(null);
   }
 
@@ -174,15 +176,41 @@ class Engine implements AudioEngine {
   }
 
   play(id: SfxId, pan = 0, gain = 1, detuneCents = 0): void {
+    if (!this.running()) return;
+    const q = this.req;
+    q[0] = pan;
+    q[1] = gain;
+    q[2] = detuneCents;
+    this.request(id);
+  }
+
+  /** True when sounds can start; also latches the batch clock. */
+  private running(): boolean {
+    const ctx = this.ctx;
+    if (!this.unlocked || ctx === null || this.mixer === null || ctx.state !== 'running') return false;
+    this.clock[0] = ctx.currentTime;
+    return true;
+  }
+
+  /**
+   * Plays `id` with [pan, gain, detune] from `req` at the latched clock (call only after running()). The
+   * coalesced path (most requests under load) allocates nothing: no double crosses a call, durations and gains
+   * come from typed arrays. A started voice needs one AudioBufferSourceNode (one-shot by spec).
+   */
+  request(id: SfxId): void {
     const ctx = this.ctx;
     const mixer = this.mixer;
-    if (!this.unlocked || ctx === null || mixer === null) return;
-    if (ctx.state !== 'running') return;
-    const buf = this.bank.next(id);
+    if (ctx === null || mixer === null) return;
+    const bank = this.bank;
+    const buf = bank.next(id);
     if (buf === null) return;
+    const q = this.req;
+    const detuneCents = q[2]!;
     const rate = detuneCents === 0 ? 1 : Math.pow(2, detuneCents / 1200);
-    const now = ctx.currentTime;
-    const v = this.pool.acquire(id, this.bank.category(id), now, buf.duration / rate);
+    const now = this.clock[0]!;
+    VOICE_IN[0] = now;
+    VOICE_IN[1] = bank.picked[0]! / rate;
+    const v = this.pool.acquireIn(id, bank.category(id));
     if (v < 0) return;
     const strip = mixer.strips[v]!;
     const g = strip.gain.gain;
@@ -201,7 +229,9 @@ class Engine implements AudioEngine {
       }
       start = now + STEAL_FADE_S;
     }
-    const level = (gain > 0 ? (gain < 2 ? gain : 2) : 0) * this.bank.gain(id);
+    const gain = q[1]!;
+    const pan = q[0]!;
+    const level = (gain > 0 ? (gain < 2 ? gain : 2) : 0) * bank.gains[sfxIndex(id)]!;
     const p = pan > -1 ? (pan < 1 ? pan : 1) : -1;
     g.setValueAtTime(level, start);
     strip.pan.pan.setValueAtTime(Number.isFinite(p) ? p : 0, start);
@@ -214,7 +244,7 @@ class Engine implements AudioEngine {
   }
 
   consumeEvents(e: SimEvents): void {
-    if (!this.unlocked) return;
+    if (!this.running()) return;
     this.router.route(e);
   }
 

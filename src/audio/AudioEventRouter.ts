@@ -1,11 +1,13 @@
 /**
- * Maps SimEvents to positional play() calls (plan section 8): pan from the event's x position across the
+ * Maps SimEvents to positional play requests (plan section 8): pan from the event's x position across the
  * arena, a pickup pitch ladder that climbs with the combo, and louder/heavier variants by power.
- * Allocation-free: indexed loops over the channels, positional arguments only.
+ * Allocation-free: indexed loops over the channels; each request's pan/gain/detune is written to the sink's
+ * Float64Array and only the id crosses the call (a double argument to a call that is not inlined is boxed, and
+ * a stress frame routes hundreds of hit events).
  */
 import type { AudioPort, SfxId } from '../contracts/audio';
 import type { VehicleId } from '../contracts/ids';
-import type { PlayerEventKind, SimEvents, WaveEventKind } from '../contracts/simEvents';
+import type { PlayerEvent, SimEvents, WaveEvent } from '../contracts/simEvents';
 import { MINOR_PENTATONIC } from './theory';
 
 export interface AudioEventRouter {
@@ -13,6 +15,26 @@ export interface AudioEventRouter {
 }
 
 type PlayFn = AudioPort['play'];
+
+/** Receives play requests: `req` holds [pan, gain, detuneCents] for the request being made. */
+export interface AudioRequestSink {
+  readonly req: Float64Array;
+  request(id: SfxId): void;
+}
+
+/** Adapts a positional play() function to a request sink (tests, simple ports). */
+class PlaySink implements AudioRequestSink {
+  readonly req = new Float64Array(3);
+  private readonly play: PlayFn;
+
+  constructor(play: PlayFn) {
+    this.play = play;
+  }
+
+  request(id: SfxId): void {
+    this.play(id, this.req[0], this.req[1], this.req[2]);
+  }
+}
 
 const SHOT_SFX: Readonly<Record<VehicleId, SfxId>> = {
   lancer: 'laser',
@@ -41,194 +63,277 @@ export function panFromX(x: number, halfWidth: number): number {
 }
 
 class Router implements AudioEventRouter {
-  private readonly play: PlayFn;
-  private readonly half: number;
+  private readonly sink: AudioRequestSink;
+  private readonly q: Float64Array;
+  /** [arena half width]; kept in a typed array so reading it never re-boxes. */
+  private readonly half = new Float64Array(1);
 
-  constructor(play: PlayFn, arenaHalfWidth: number) {
-    this.play = play;
-    this.half = arenaHalfWidth;
+  constructor(sink: AudioRequestSink, arenaHalfWidth: number) {
+    this.sink = sink;
+    this.q = sink.req;
+    this.half[0] = arenaHalfWidth;
+  }
+
+  /** Requests `id` with q[0] = world x (converted to pan in place, panFromX's arithmetic), q[1] gain, q[2] detune. */
+  private at(id: SfxId): void {
+    const q = this.q;
+    const half = this.half[0]!;
+    const x = q[0]!;
+    let p = 0;
+    if (half > 0 && Number.isFinite(x)) {
+      p = (x / half) * 0.85;
+      p = p < -1 ? -1 : p > 1 ? 1 : p;
+    }
+    q[0] = p;
+    this.sink.request(id);
+  }
+
+  /** at(id) with a literal gain and detune (constants cross the call untouched: nothing is boxed). */
+  private play(id: SfxId, gain: number, detune: number): void {
+    this.q[1] = gain;
+    this.q[2] = detune;
+    this.at(id);
+  }
+
+  /** Centre-panned request with q[1], q[2] set from literal/integer gain and detune. */
+  private fixed(id: SfxId, gain: number, detune: number): void {
+    const q = this.q;
+    q[0] = 0;
+    q[1] = gain;
+    q[2] = detune;
+    this.sink.request(id);
   }
 
   route(e: SimEvents): void {
-    const half = this.half;
-    const play = this.play;
+    const q = this.q;
 
     const shot = e.shot;
     for (let i = 0; i < shot.count; i++) {
       const s = shot.get(i);
-      play(SHOT_SFX[s.vehicle], panFromX(s.x, half), 0.8, 0);
+      q[0] = s.x;
+      this.play(SHOT_SFX[s.vehicle], 0.8, 0);
     }
     const es = e.enemyShot;
     for (let i = 0; i < es.count; i++) {
       const s = es.get(i);
-      play('enemyShot', panFromX(s.x, half), s.boss ? 0.9 : 0.6, s.boss ? -500 : 0);
+      q[0] = s.x;
+      q[1] = s.boss ? 0.9 : 0.6;
+      q[2] = s.boss ? -500 : 0;
+      this.at('enemyShot');
     }
     const hit = e.hit;
     for (let i = 0; i < hit.count; i++) {
       const h = hit.get(i);
-      const pan = panFromX(h.x, half);
-      if (h.target === 2) play('shieldBlock', pan, 0.8, 0);
-      else if (h.target === 3) play(h.crit ? 'crit' : 'hit', pan, 0.9, -300);
-      else if (h.target === 0) play(h.crit ? 'crit' : 'hit', pan, 0.7, 0);
+      const x = h.x;
+      if (h.target === 2) {
+        q[0] = x;
+        this.play('shieldBlock', 0.8, 0);
+      } else if (h.target === 3) {
+        q[0] = x;
+        this.play(h.crit ? 'crit' : 'hit', 0.9, -300);
+      } else if (h.target === 0) {
+        q[0] = x;
+        this.play(h.crit ? 'crit' : 'hit', 0.7, 0);
+      }
       // target 1 (player) is voiced by the player 'hurt' event.
     }
     const kill = e.kill;
     for (let i = 0; i < kill.count; i++) {
       const k = kill.get(i);
       // Corrupted (elite) kills use the large explosion with its glitch-stutter tail.
-      play(k.elite ? 'explodeL' : 'explodeS', panFromX(k.x, half), k.elite ? 1 : 0.8, 0);
+      q[0] = k.x;
+      q[1] = k.elite ? 1 : 0.8;
+      q[2] = 0;
+      this.at(k.elite ? 'explodeL' : 'explodeS');
     }
     const ex = e.explosion;
     for (let i = 0; i < ex.count; i++) {
       const x = ex.get(i);
       const pw = x.power < 0 ? 0 : x.power > 1 ? 1 : x.power;
-      play(pw >= 0.66 ? 'explodeL' : 'explodeS', panFromX(x.x, half), 0.5 + 0.5 * pw, 0);
+      q[0] = x.x;
+      q[1] = 0.5 + 0.5 * pw;
+      q[2] = 0;
+      this.at(pw >= 0.66 ? 'explodeL' : 'explodeS');
     }
     const pk = e.pickup;
     for (let i = 0; i < pk.count; i++) {
       const p = pk.get(i);
-      play('shard', panFromX(p.x, half), 0.75, ladderCents(p.combo));
+      q[0] = p.x;
+      q[1] = 0.75;
+      q[2] = ladderCents(p.combo);
+      this.at('shard');
     }
     const pl = e.player;
     for (let i = 0; i < pl.count; i++) {
       const p = pl.get(i);
-      this.playerEvent(p.what, panFromX(p.x, half));
+      this.playerEvent(p);
     }
     const wv = e.wave;
     for (let i = 0; i < wv.count; i++) {
       const w = wv.get(i);
-      this.waveEvent(w.what, w.value);
+      this.waveEvent(w);
     }
     const tg = e.telegraph;
     for (let i = 0; i < tg.count; i++) {
       const t = tg.get(i);
-      if (t.shape === 0) play('portal', panFromX(t.x, half), 0.6, 0);
+      if (t.shape !== 0) continue;
+      q[0] = t.x;
+      this.play('portal', 0.6, 0);
     }
     const sp = e.special;
     for (let i = 0; i < sp.count; i++) {
       const s = sp.get(i);
-      const pan = panFromX(s.x, half);
+      const x = s.x;
       switch (s.kind) {
         case 'railburst':
-          play('railburst', pan, 1, 0);
+          q[0] = x;
+          this.play('railburst', 1, 0);
           break;
         case 'firewall':
-          play('firewall', pan, 1, 0);
+          q[0] = x;
+          this.play('firewall', 1, 0);
           break;
         case 'blinkSwarm':
-          play('blink', pan, 1, 0);
+          q[0] = x;
+          this.play('blink', 1, 0);
           break;
         case 'patchDrone':
-          play('patchDrone', pan, 1, 0);
+          q[0] = x;
+          this.play('patchDrone', 1, 0);
           break;
       }
     }
     const bs = e.boss;
     for (let i = 0; i < bs.count; i++) {
       const b = bs.get(i);
-      const pan = panFromX(b.x, half);
+      const x = b.x;
       switch (b.what) {
         case 'intro':
-          play('bossRoar', pan, 1, 0);
+          q[0] = x;
+          this.play('bossRoar', 1, 0);
           break;
         case 'phase':
-          play('bossRoar', pan, 0.9, 200);
+          q[0] = x;
+          this.play('bossRoar', 0.9, 200);
           break;
         case 'enrage':
-          play('bossRoar', pan, 1, -500);
+          q[0] = x;
+          this.play('bossRoar', 1, -500);
           break;
         case 'split':
-          play('explodeL', pan, 0.9, 0);
+          q[0] = x;
+          this.play('explodeL', 0.9, 0);
           break;
         case 'respawn':
-          play('portal', pan, 0.8, -300);
+          q[0] = x;
+          this.play('portal', 0.8, -300);
           break;
         case 'dead':
-          play('explodeBoss', pan, 1, 0);
+          q[0] = x;
+          this.play('explodeBoss', 1, 0);
           break;
       }
     }
   }
 
-  private playerEvent(what: PlayerEventKind, pan: number): void {
-    const play = this.play;
-    switch (what) {
+  private playerEvent(p: Readonly<PlayerEvent>): void {
+    const q = this.q;
+    const x = p.x;
+    switch (p.what) {
       case 'hurt':
-        play('hurt', pan, 0.9, 0);
+        q[0] = x;
+        this.play('hurt', 0.9, 0);
         break;
       case 'downed':
-        play('downed', pan, 1, 0);
+        q[0] = x;
+        this.play('downed', 1, 0);
         break;
       case 'revived':
-        play('revive', pan, 1, 0);
+        q[0] = x;
+        this.play('revive', 1, 0);
         break;
       case 'offline':
-        play('downed', pan, 0.8, -700);
+        q[0] = x;
+        this.play('downed', 0.8, -700);
         break;
       case 'kernel':
-        play('kernel', 0, 1, 0);
+        this.fixed('kernel', 1, 0);
         break;
       case 'dash':
-        play('dash', pan, 0.8, 0);
+        q[0] = x;
+        this.play('dash', 0.8, 0);
         break;
       case 'special':
         // The special channel carries the kind-specific sound.
         break;
       case 'reboot':
-        play('revive', pan, 0.8, 500);
+        q[0] = x;
+        this.play('revive', 0.8, 500);
         break;
       case 'heal':
-        play('repair', pan, 0.7, 0);
+        q[0] = x;
+        this.play('repair', 0.7, 0);
         break;
       case 'shieldBlock':
-        play('shieldBlock', pan, 0.9, 200);
+        q[0] = x;
+        this.play('shieldBlock', 0.9, 200);
         break;
       case 'eliminated':
-        play('downed', pan, 1, -1200);
+        q[0] = x;
+        this.play('downed', 1, -1200);
         break;
     }
   }
 
-  private waveEvent(what: WaveEventKind, value: number): void {
-    const play = this.play;
+  private waveEvent(w: Readonly<WaveEvent>): void {
+    const q = this.q;
+    const value = w.value;
+    const what = w.what;
+    q[0] = 0;
     switch (what) {
       case 'countdown':
-        play('uiMove', 0, 0.8, value <= 1 ? 700 : 0);
+        q[1] = 0.8;
+        q[2] = value <= 1 ? 700 : 0;
+        this.sink.request('uiMove');
         break;
       case 'start':
       case 'roundStart':
-        play('waveStart', 0, 1, 0);
+        this.fixed('waveStart', 1, 0);
         break;
       case 'purge':
-        play('explodeL', 0, 0.7, -200);
+        this.fixed('explodeL', 0.7, -200);
         break;
       case 'cleared':
-        play('waveClear', 0, 1, 0);
+        this.fixed('waveClear', 1, 0);
         break;
       case 'bossSpawn':
-        play('bossRoar', 0, 1, 0);
+        this.fixed('bossRoar', 1, 0);
         break;
       case 'bossPhase':
-        play('bossRoar', 0, 0.9, 200);
+        this.fixed('bossRoar', 0.9, 200);
         break;
       case 'bossEnrage':
-        play('bossRoar', 0, 1, -500);
+        this.fixed('bossRoar', 1, -500);
         break;
       case 'bossDead':
-        play('explodeBoss', 0, 1, 0);
+        this.fixed('explodeBoss', 1, 0);
         break;
       case 'sync':
-        play('sync', 0, 1, 0);
+        this.fixed('sync', 1, 0);
         break;
       case 'comboTier':
-        play('powerUp', 0, 0.8, (value > 0 ? value : 0) * 200);
+        q[1] = 0.8;
+        q[2] = (value > 0 ? value : 0) * 200;
+        this.sink.request('powerUp');
         break;
       case 'roundEnd':
       case 'matchEnd':
-        play('roundWin', 0, 1, what === 'matchEnd' ? 0 : -300);
+        q[1] = 1;
+        q[2] = what === 'matchEnd' ? 0 : -300;
+        this.sink.request('roundWin');
         break;
       case 'suddenDeath':
-        play('bossRoar', 0, 0.9, 300);
+        this.fixed('bossRoar', 0.9, 300);
         break;
     }
   }
@@ -236,5 +341,10 @@ class Router implements AudioEventRouter {
 
 /** Router that turns a frame's SimEvents into play() calls. Does not clear channels. */
 export function createAudioEventRouter(play: AudioPort['play'], arenaHalfWidth: number): AudioEventRouter {
-  return new Router(play, arenaHalfWidth);
+  return new Router(new PlaySink(play), arenaHalfWidth);
+}
+
+/** Router that turns a frame's SimEvents into sink requests (no doubles cross a call). Does not clear channels. */
+export function createAudioRequestRouter(sink: AudioRequestSink, arenaHalfWidth: number): AudioEventRouter {
+  return new Router(sink, arenaHalfWidth);
 }

@@ -58,7 +58,10 @@ export function burstSpec(
   };
 }
 
-/** A ground-plane point (sim events and scratch objects satisfy it; passed by reference, never boxed). */
+/**
+ * A ground-plane point (sim events and scratch objects satisfy it; passed by reference, never boxed). Hot callers
+ * pass one shared scratch point so the x/z loads stay monomorphic (FxDirector AT).
+ */
 export interface XZ {
   readonly x: number;
   readonly z: number;
@@ -105,6 +108,12 @@ export class ParticleSystem {
     return n > 0 && c < 1 ? 1 : c;
   }
 
+  /**
+   * Record scratch for emitRec(): [x, y, z, vx, vy, vz, t0, life, size, drag, gravity, tint]. Continuous emitters
+   * fill it in place instead of passing twelve doubles (a call that is not inlined boxes each one).
+   */
+  readonly rec = new Float64Array(12);
+
   /** One particle from explicit values (continuous emitters: a handful per frame). */
   emit(
     x: number,
@@ -120,22 +129,50 @@ export class ParticleSystem {
     gravity: number,
     tint: number,
   ): void {
+    const q = this.rec;
+    q[0] = x;
+    q[1] = y;
+    q[2] = z;
+    q[3] = vx;
+    q[4] = vy;
+    q[5] = vz;
+    q[6] = t0;
+    q[7] = life;
+    q[8] = size;
+    q[9] = drag;
+    q[10] = gravity;
+    q[11] = tint;
+    this.emitRec();
+  }
+
+  /** One particle from `rec`. */
+  emitRec(): void {
+    const q = this.rec;
     const r = this.ring;
     const o = r.claim();
     const d = r.data;
-    d[o + O_P0] = x;
-    d[o + O_P0 + 1] = y;
-    d[o + O_P0 + 2] = z;
-    d[o + O_P0 + 3] = t0;
-    d[o + O_V0] = vx;
-    d[o + O_V0 + 1] = vy;
-    d[o + O_V0 + 2] = vz;
-    d[o + O_V0 + 3] = life;
-    d[o + O_PX] = size;
-    d[o + O_PX + 1] = drag;
-    d[o + O_PX + 2] = gravity;
-    d[o + O_PX + 3] = tint;
+    d[o + O_P0] = q[0]!;
+    d[o + O_P0 + 1] = q[1]!;
+    d[o + O_P0 + 2] = q[2]!;
+    d[o + O_P0 + 3] = q[6]!;
+    d[o + O_V0] = q[3]!;
+    d[o + O_V0 + 1] = q[4]!;
+    d[o + O_V0 + 2] = q[5]!;
+    d[o + O_V0 + 3] = q[7]!;
+    d[o + O_PX] = q[8]!;
+    d[o + O_PX + 1] = q[9]!;
+    d[o + O_PX + 2] = q[10]!;
+    d[o + O_PX + 3] = q[11]!;
     this.pending++;
+  }
+
+  /**
+   * Draws n (<= 6) uniforms in [0, 1) from the fx stream into the returned scratch (valid until the next draw):
+   * random() without returning a double across a call.
+   */
+  uniforms(n: number): Readonly<Float64Array> {
+    this.draw(n < DRAWS ? n : DRAWS);
+    return this.u;
   }
 
   /** Radial burst on the ground plane at p. Writes straight into the ring (hot path: no boxed doubles). */
@@ -144,6 +181,9 @@ export class ParticleSystem {
     const u = this.u;
     const r = this.ring;
     const d = r.data;
+    // Read once: a non-monomorphic p would make every x/z load return a fresh HeapNumber.
+    const px = p.x;
+    const pz = p.z;
     for (let i = 0; i < n; i++) {
       this.draw(DRAWS);
       const ang = u[0]! * Math.PI * 2;
@@ -152,9 +192,9 @@ export class ParticleSystem {
       const sz = Math.cos(ang);
       const j = u[2]! * s.spread;
       const o = r.claim();
-      d[o + O_P0] = p.x + sx * j;
+      d[o + O_P0] = px + sx * j;
       d[o + O_P0 + 1] = y;
-      d[o + O_P0 + 2] = p.z + sz * j;
+      d[o + O_P0 + 2] = pz + sz * j;
       d[o + O_P0 + 3] = t0;
       d[o + O_V0] = sx * sp;
       d[o + O_V0 + 1] = s.upMin + (s.upMax - s.upMin) * u[3]!;

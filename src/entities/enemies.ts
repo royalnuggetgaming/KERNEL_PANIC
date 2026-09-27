@@ -10,6 +10,7 @@ import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { CORRUPTED, ENEMY_AI, ENEMY_DEFS } from '../config/enemies';
 import { DEG2RAD } from '../core/math';
+import { GRID_IN, gridQueryCircleIn } from '../core/SpatialGrid';
 import { ARENA } from '../config/tuning';
 import { AI_STATE, stepEnemyBehavior } from './enemyBehaviors';
 import { clampToArena, emitSpawn, nearestTarget, nearestTargetOf } from './contentShared';
@@ -113,14 +114,16 @@ function retarget(w: WorldState, e: EnemyEntity): void {
 
 /**
  * Separation (<= 6 neighbours) then integration: moves e by its velocity, kept inside the arena disc minus its
- * radius (contentShared clampToArena's arithmetic). One function on purpose: the grid query takes e's position
- * as doubles, which V8 boxes unless queryCircle is inlined, and at this size the function is never inlined into
- * the enemy loop, so its own compilation always has the inlining budget for the query.
+ * radius (contentShared clampToArena's arithmetic). The grid query reads e's position from GRID_IN, so no double
+ * is boxed whether or not V8 inlines the query.
  */
 function separateAndMove(w: WorldState, e: EnemyEntity, dt: number): void {
   if (e.latched !== 1) {
     const r = ENEMY_AI.SEPARATION_RADIUS;
-    const n = w.grid.queryCircle(e.x, e.z, r, NEIGHBOURS);
+    GRID_IN[0] = e.x;
+    GRID_IN[1] = e.z;
+    GRID_IN[2] = r;
+    const n = gridQueryCircleIn(w.grid, NEIGHBOURS);
     const cap = w.enemies.capacity;
     let used = 0;
     for (let i = 0; i < n && used < ENEMY_AI.SEPARATION_NEIGHBOURS; i++) {

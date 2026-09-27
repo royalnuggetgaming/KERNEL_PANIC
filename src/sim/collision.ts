@@ -15,6 +15,7 @@ import {
 import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { angleDiff, pointSegDistSq } from '../core/math';
+import { GRID_IN, gridAddIn, gridQueryAabbIn, gridQueryCircleIn } from '../core/SpatialGrid';
 import { BOSS_DEFS } from '../config/bosses';
 import { ENEMY_DEFS } from '../config/enemies';
 import { ARENA, CAPACITY, COOP } from '../config/tuning';
@@ -35,13 +36,18 @@ export const LASER_TICK = COOP.CONTACT_COOLDOWN;
 const TINKER_CHAIN = VEHICLES.tinker.weapon.chain;
 const TINKER_CHAIN_RANGE = VEHICLES.tinker.weapon.chainRange;
 
+/** Grid inputs go through GRID_IN: doubles passed to a grid call that is not inlined would be boxed. */
 function rebuildGrid(w: WorldState): void {
   const g = w.grid;
   g.begin();
   const pool = w.enemies;
   for (let i = 0; i < pool.count; i++) {
     const e = pool.active[i]!;
-    if (!e.dying) g.add(e.slot, e.x, e.z, e.radius);
+    if (e.dying) continue;
+    GRID_IN[0] = e.x;
+    GRID_IN[1] = e.z;
+    GRID_IN[2] = e.radius;
+    gridAddIn(g, e.slot);
   }
   g.build();
 }
@@ -198,11 +204,11 @@ function playerShots(w: WorldState): void {
     const owner = s.owner;
     if (owner !== 0 && owner !== 1) continue;
     const r = s.radius;
-    const minX = (s.prevX < s.x ? s.prevX : s.x) - r;
-    const maxX = (s.prevX > s.x ? s.prevX : s.x) + r;
-    const minZ = (s.prevZ < s.z ? s.prevZ : s.z) - r;
-    const maxZ = (s.prevZ > s.z ? s.prevZ : s.z) + r;
-    const n = g.queryAabb(minX, minZ, maxX, maxZ, CANDS);
+    GRID_IN[0] = (s.prevX < s.x ? s.prevX : s.x) - r;
+    GRID_IN[1] = (s.prevZ < s.z ? s.prevZ : s.z) - r;
+    GRID_IN[2] = (s.prevX > s.x ? s.prevX : s.x) + r;
+    GRID_IN[3] = (s.prevZ > s.z ? s.prevZ : s.z) + r;
+    const n = gridQueryAabbIn(g, CANDS);
     if (n === 0 && !others) continue;
     let hits = 0;
     while (hits < HITS.length) {
@@ -276,7 +282,10 @@ function contact(w: WorldState): void {
     let dmg = 0;
     let fx = p.x;
     let fz = p.z;
-    const n = w.grid.queryCircle(p.x, p.z, p.radius, CANDS);
+    GRID_IN[0] = p.x;
+    GRID_IN[1] = p.z;
+    GRID_IN[2] = p.radius;
+    const n = gridQueryCircleIn(w.grid, CANDS);
     for (let c = 0; c < n; c++) {
       const e = w.enemies.atSlot(CANDS[c]!);
       if (e.dying) continue;

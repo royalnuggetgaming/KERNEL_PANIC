@@ -29,6 +29,12 @@ export const CATEGORY_LIMITS: Readonly<Record<SfxCategory, number>> = {
 export const VOICE_COUNT = 32;
 export const COALESCE_S = 0.025;
 
+/**
+ * Scratch inputs for acquireIn(): [nowS, durationS]. The engine's per-request path writes them here instead of
+ * passing doubles (a double argument to a call that is not inlined is boxed into a HeapNumber).
+ */
+export const VOICE_IN = new Float64Array(2);
+
 export class VoicePool {
   readonly size: number;
   private readonly offset: Readonly<Record<SfxCategory, number>>;
@@ -69,6 +75,15 @@ export class VoicePool {
 
   /** Voice index to use (stealing the oldest in the category), or -1 when coalesced (same id within 25 ms). */
   acquire(id: SfxId, category: SfxCategory, nowS: number, durationS: number): number {
+    VOICE_IN[0] = nowS;
+    VOICE_IN[1] = durationS;
+    return this.acquireIn(id, category);
+  }
+
+  /** acquire() with nowS, durationS read from VOICE_IN. */
+  acquireIn(id: SfxId, category: SfxCategory): number {
+    const nowS = VOICE_IN[0]!;
+    const durationS = VOICE_IN[1]!;
     if (nowS > this.lastNow) this.lastNow = nowS;
     const lo = this.offset[category];
     const hi = lo + this.limits[category];

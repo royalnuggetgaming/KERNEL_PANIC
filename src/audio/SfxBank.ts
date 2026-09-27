@@ -53,6 +53,12 @@ export class SfxBank {
   private readonly log: Logger | null;
   private readonly buffers: (AudioBuffer | null)[];
   private readonly rr = new Uint8Array(SFX_IDS.length);
+  /** Duration (s) of each rendered buffer, cached so the play path never reads AudioBuffer.duration (boxed). */
+  private readonly durations = new Float64Array(SFX_IDS.length * SFX_VARIANTS);
+  /** Recipe gain per sfxIndex(id) (a typed-array read never boxes, unlike a double returned by gain()). */
+  readonly gains = new Float64Array(SFX_IDS.length);
+  /** [duration (s) of the buffer returned by the last successful next()]. */
+  readonly picked = new Float64Array(1);
   private renderPromise: Promise<void> | null = null;
   private done = false;
   failed = 0;
@@ -64,6 +70,7 @@ export class SfxBank {
     this.log = log;
     this.buffers = [];
     for (let i = 0; i < SFX_IDS.length * SFX_VARIANTS; i++) this.buffers.push(null);
+    for (let i = 0; i < SFX_IDS.length; i++) this.gains[i] = recipes[SFX_IDS[i]!].gain;
   }
 
   get ready(): boolean {
@@ -105,6 +112,7 @@ export class SfxBank {
       const b = this.buffers[idx * SFX_VARIANTS + v];
       if (b) {
         this.rr[idx] = (v + 1) % SFX_VARIANTS;
+        this.picked[0] = this.durations[idx * SFX_VARIANTS + v]!;
         return b;
       }
     }
@@ -144,6 +152,7 @@ export class SfxBank {
       const buf = await off.startRendering();
       for (let c = 0; c < buf.numberOfChannels; c++) normalizePeak(buf.getChannelData(c), BUFFER_PEAK);
       this.buffers[slot] = buf;
+      this.durations[slot] = buf.duration;
     } catch (err) {
       this.failed++;
       this.log?.warn(`audio: sfx render failed for ${id}#${variant}`, err);
