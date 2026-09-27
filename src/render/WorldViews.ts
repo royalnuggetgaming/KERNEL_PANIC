@@ -111,6 +111,38 @@ export class WorldViews {
     this.fx.update(ctx);
   }
 
+  /**
+   * Warm-up only (plan 10.6/10.7): shows the root and gives every batch one degenerate (scale 0) instance and
+   * every ring a visible mesh, so the warm-up frames upload each buffer and VAO at Boot instead of on its first
+   * visible Playing frame. endWarmup() empties them again.
+   */
+  primeForWarmup(): void {
+    this.root.visible = true;
+    const b = this.set.batches;
+    const keys = Object.keys(b) as (keyof typeof b)[];
+    for (const k of keys) {
+      const batch = b[k];
+      batch.begin();
+      batch.push(0, 0, 0, 0, 0, 0, 0, 0);
+      batch.commit();
+    }
+    this.set.rings.particles.mesh.visible = true;
+    this.set.rings.shockwaves.mesh.visible = true;
+    this.set.rings.digits.mesh.visible = true;
+  }
+
+  /** Undoes primeForWarmup(): empty batches, reset (hidden) rings. The caller restores root visibility. */
+  endWarmup(): void {
+    const b = this.set.batches;
+    const keys = Object.keys(b) as (keyof typeof b)[];
+    for (const k of keys) {
+      const batch = b[k];
+      batch.begin();
+      batch.commit();
+    }
+    this.clear();
+  }
+
   clear(): void {
     this.players.clear();
     this.enemies.clear();

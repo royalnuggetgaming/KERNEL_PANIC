@@ -27,7 +27,7 @@ import { createRenderSystem, type RenderSystem, type ViewportSize } from './Rend
 import { ArenaScene } from './scenes/ArenaScene';
 import { MenuBackdrop } from './scenes/MenuBackdrop';
 import { SelectStage } from './scenes/SelectStage';
-import { warmupShaders } from './ShaderWarmup';
+import { warmupShaders, type WarmupDeps } from './ShaderWarmup';
 import type { FrameContext } from './views/types';
 import { WorldViews } from './WorldViews';
 
@@ -39,6 +39,11 @@ export interface RenderBridgeDeps {
   readonly log: Logger;
 }
 
+export interface GovernorAction {
+  readonly kind: 'renderScale' | 'msaa' | 'frameCap';
+  readonly value: number | null;
+}
+
 export interface RenderBridge extends RenderPort {
   readonly canvas: HTMLCanvasElement;
   /**
@@ -47,10 +52,7 @@ export interface RenderBridge extends RenderPort {
    */
   warmup(): Promise<void>;
   /** Governor actions from engine/ResolutionGovernor (structurally typed). */
-  applyGovernor(a: {
-    readonly kind: 'renderScale' | 'msaa' | 'frameCap';
-    readonly value: number | null;
-  }): void;
+  applyGovernor(a: GovernorAction): void;
   dispose(): void;
 }
 
@@ -153,23 +155,35 @@ class RenderBridgeImpl implements RenderBridge {
     post.setTheme(sh.bloomStrength, sh.bloomThreshold, sh.heatShimmer);
     post.setSize(this.sys.size.width, this.sys.size.height);
     const uniforms = new FrameUniforms(a.uniforms, this.deps.theme);
-    this.live = { scene, arena, backdrop, stage, views, post, uniforms };
+    const live: Live = { scene, arena, backdrop, stage, views, post, uniforms };
+    this.live = live;
     this.applySettings(this.settings);
     this.onResize(this.sys.size);
     uniforms.setSector(this.pendingSector);
     uniforms.setBeat(this.pendingBeat);
     stage.show(this.previews);
     this.applyModeVisibility();
-    this.programBaseline = await warmupShaders({
-      renderer: this.sys.renderer,
-      camera: this.rig.camera,
-      post,
-      warmScene: a.warmScene,
-      scenes: [scene],
-      textures: a.textures,
-      log: this.deps.log,
-    });
+    this.programBaseline = await this.warmLive(live);
     this.warmed = true;
+  }
+
+  /** ShaderWarmup with every live batch/ring primed, so their buffers and VAOs upload at Boot (plan 10.7). */
+  private async warmLive(live: Live): Promise<number> {
+    live.views.primeForWarmup();
+    try {
+      return await warmupShaders(this.warmDeps(live));
+    } finally {
+      live.views.endWarmup();
+      this.applyModeVisibility();
+    }
+  }
+
+  private warmDeps(live: Live): WarmupDeps {
+    const { warmScene, textures } = this.deps.assets;
+    const { renderer } = this.sys;
+    const { camera } = this.rig;
+    const { log } = this.deps;
+    return { renderer, camera, post: live.post, warmScene, scenes: [live.scene], textures, log };
   }
 
   private ready(): Live | null {
@@ -301,10 +315,7 @@ class RenderBridgeImpl implements RenderBridge {
     this.refreeze();
   }
 
-  applyGovernor(a: {
-    readonly kind: 'renderScale' | 'msaa' | 'frameCap';
-    readonly value: number | null;
-  }): void {
+  applyGovernor(a: GovernorAction): void {
     const live = this.live;
     if (live === null || a.value === null) return;
     if (a.kind === 'renderScale') live.post.setRenderScale(a.value);
@@ -367,15 +378,8 @@ class RenderBridgeImpl implements RenderBridge {
     const a = this.deps.assets;
     for (let i = 0; i < a.textures.length; i++) a.textures[i]!.needsUpdate = true;
     live.post.setSize(this.sys.size.width, this.sys.size.height);
-    const redo = warmupShaders({
-      renderer: this.sys.renderer,
-      camera: this.rig.camera,
-      post: live.post,
-      warmScene: a.warmScene,
-      scenes: [live.scene],
-      textures: a.textures,
-      log: this.deps.log,
-    });
+    // Buffers are re-created from their CPU arrays on next use; the views keep their state (no priming).
+    const redo = warmupShaders(this.warmDeps(live));
     redo.then(
       (n) => {
         this.programBaseline = n;

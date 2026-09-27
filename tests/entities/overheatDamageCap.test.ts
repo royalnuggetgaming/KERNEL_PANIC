@@ -1,20 +1,20 @@
 /**
- * ECON critic reproduction (FAILS on current code): the runtime Overheat fire-rate overflow multiplies
- * damage past the 4.0 hard cap (plan section 6 HARD CAPS: "damage multiplier <= 4.0"; "any excess ratio
- * becomes a damage multiplier"). computeStats clamps the overflow-adjusted damageMul, but
- * entities/weapons.ts applies RATE.mul on top of stats.damageMul without re-clamping.
+ * ECON-2 regression: the runtime Overheat fire-rate overflow (plan section 6 HARD CAPS: "any excess ratio
+ * becomes a damage multiplier") must still respect "damage multiplier <= 4.0". computeStats clamps the
+ * overflow-adjusted damageMul; entities/weapons.ts re-clamps after applying Overheat's runtime RATE.mul (it
+ * used to fire 5 x 3.018 x 1.4 = 21.13 damage needles).
  * Build (all through the real shop): Specter, Overclock 8 + Payload 8 + Overheat, below 30% HP.
  */
 import { describe, expect, it } from 'vitest';
-import { NullLogger } from '../../../src/core/logger';
-import { STAT_CAPS } from '../../../src/config/tuning';
-import { VEHICLES } from '../../../src/config/vehicles';
-import { createRunSession } from '../../../src/sim/RunSession';
-import { clearBoss } from '../../../src/sim/worldRecords';
-import { createIntents } from '../../helpers/scriptedIntents';
-import { runConfigFor } from '../../sim/runDriver';
+import { NullLogger } from '../../src/core/logger';
+import { STAT_CAPS } from '../../src/config/tuning';
+import { VEHICLES } from '../../src/config/vehicles';
+import { createRunSession } from '../../src/sim/RunSession';
+import { clearBoss } from '../../src/sim/worldRecords';
+import { createIntents } from '../helpers/scriptedIntents';
+import { runConfigFor } from '../sim/runDriver';
 
-describe('ECON: Overheat overflow respects the 4.0 damage cap', () => {
+describe('weapons: Overheat overflow respects the 4.0 damage cap', () => {
   it('a needle fired below 30% HP never exceeds weapon damage x 4.0', () => {
     const s = createRunSession(runConfigFor('solo', 3, { players: [{ player: 0, vehicle: 'specter' }] }), {
       log: NullLogger,
@@ -64,7 +64,6 @@ describe('ECON: Overheat overflow respects the 4.0 damage cap', () => {
       for (let k = 0; k < w.playerShots.count; k++) dmg = Math.max(dmg, w.playerShots.active[k]!.damage);
     }
     const cap = VEHICLES.specter.weapon.damage * STAT_CAPS.damageMulMax;
-    // Observed: 5 x 3.018 x 1.4 = 21.13 > 20.
     expect(dmg).toBeLessThanOrEqual(cap + 1e-9);
   });
 });

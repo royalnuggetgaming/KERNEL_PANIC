@@ -1,7 +1,7 @@
 /**
  * Kill chains: 2 s window, tiers at 10/25/50/100 (score x1.5..x4, Shards +10..40%), halving on hit,
- * sync kills (co-op only: both players kill within 0.4 s -> +2 Shards and +3 Overdrive each), Vampire Code
- * kill counting and ROOT ACCESS (+1 tier).
+ * sync kills (co-op only: both players kill within 0.4 s -> +2 Shards and +3 Overdrive each, at most one per
+ * SYNC_COOLDOWN), Vampire Code kill counting and ROOT ACCESS (+1 tier).
  */
 import type { PlayerIndex } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
@@ -16,6 +16,15 @@ import { emitWave } from './simEventsOut';
 import { grantShards } from './wallet';
 
 const MAX_TIER = COMBO.TIERS.length;
+/**
+ * Seconds after a sync kill before the next one can pay (ECON-3). Without it, two players trading kills in a
+ * busy wave "sync" on nearly every other kill (~20 syncs = ~45 Shards per player per wave in sector 1, more than
+ * their pickups), and 2P per-player income ran 1.3-1.5x solo against the +-25% target. With 2 s the real sim
+ * measures ~20-25 sync Shards per player per wave, and 2P/solo per-player income ~1.0 over waves 1-3 of normal
+ * play and 0.8-0.95 per sector with invulnerable players (tests/sim/economyFidelity.test.ts). A tuning value: it
+ * belongs next to COOP.SYNC_WINDOW in config/tuning.ts, which is frozen in this wave.
+ */
+export const SYNC_COOLDOWN = 2;
 
 /** Raw tier (0..4) reached by a chain length, before ROOT ACCESS. */
 export function comboTierFor(chain: number): number {
@@ -89,6 +98,7 @@ function trySync(w: WorldState, p: PlayerEntity): void {
   const q = w.players[p.index === 0 ? 1 : 0];
   if (q.life !== 'alive' || q.lastKillTime < 0) return;
   const s = syncState(w);
+  if (s[0]! >= 0 && w.time - s[0]! < SYNC_COOLDOWN) return;
   if (w.time - q.lastKillTime > COOP.SYNC_WINDOW || q.lastKillTime <= s[0]!) return;
   s[0] = w.time;
   grantShards(w, p.index, COOP.SYNC_SHARDS);

@@ -1,6 +1,6 @@
 /**
  * Arena geometry: floor plane (the floor shader draws everything), the force-field wall band around
- * ARENA.RADIUS (uv.x around, uv.y 0 bottom .. 1 top), a hex pylon (placed at portals by ArenaScene), and the
+ * ARENA.RADIUS (uv.x around, uv.y 0 bottom .. 1 top), one hex pylon per portal (merged: one draw call), and the
  * inside-out sky sphere (drawn at the far plane by the sky shader). Also the pickup gem and shield dome.
  */
 import {
@@ -20,6 +20,8 @@ export const FLOOR_SIZE = 200;
 export const WALL_HEIGHT = 3;
 export const PYLON_HEIGHT = 4;
 export const SKY_RADIUS = 400;
+/** Pylons stand behind their portal, between the portal ring and the wall. */
+export const PYLON_RADIUS = (ARENA.PORTAL_RADIUS + ARENA.RADIUS) / 2;
 
 export function buildArena(theme: ThemeDef): {
   floor: BufferGeometry;
@@ -46,22 +48,28 @@ export function buildArena(theme: ThemeDef): {
   });
   const wall = mb.build('arena:wall');
 
-  mb.add(new CylinderGeometry(0.42, 0.6, PYLON_HEIGHT, 6, 1), {
-    matrix: trs(0, PYLON_HEIGHT / 2, 0),
-    color: 0x1c2233,
-    emissiveFn: (p) => (p.y < 0.25 ? 0.8 : 0.05),
-  });
-  mb.add(new OctahedronGeometry(0.4, 0), {
-    matrix: trs(0, PYLON_HEIGHT + 0.55, 0, 0, 0, 0, 1, 1.5, 1),
-    color: 0x3a4560,
-    emissive: 1,
-  });
-  mb.add(new TorusGeometry(0.75, 0.05, 4, 6), {
-    matrix: trs(0, PYLON_HEIGHT * 0.7, 0, Math.PI / 2, 0, 0),
-    color: 0x3a4560,
-    emissive: 0.9,
-    edges: 'none',
-  });
+  // One pylon per portal (portal i at yaw i * TAU / PORTALS, sim/formations.ts), merged into one draw call.
+  for (let i = 0; i < ARENA.PORTALS; i++) {
+    const yaw = (i * Math.PI * 2) / ARENA.PORTALS;
+    const px = Math.sin(yaw) * PYLON_RADIUS;
+    const pz = Math.cos(yaw) * PYLON_RADIUS;
+    mb.add(new CylinderGeometry(0.42, 0.6, PYLON_HEIGHT, 6, 1), {
+      matrix: trs(px, PYLON_HEIGHT / 2, pz, 0, yaw, 0),
+      color: 0x1c2233,
+      emissiveFn: (p) => (p.y < 0.25 ? 0.8 : 0.05),
+    });
+    mb.add(new OctahedronGeometry(0.4, 0), {
+      matrix: trs(px, PYLON_HEIGHT + 0.55, pz, 0, yaw, 0, 1, 1.5, 1),
+      color: 0x3a4560,
+      emissive: 1,
+    });
+    mb.add(new TorusGeometry(0.75, 0.05, 4, 6), {
+      matrix: trs(px, PYLON_HEIGHT * 0.7, pz, Math.PI / 2, 0, 0),
+      color: 0x3a4560,
+      emissive: 0.9,
+      edges: 'none',
+    });
+  }
   const pylon = mb.build('arena:pylon');
 
   mb.add(new SphereGeometry(SKY_RADIUS, 48, 24), {

@@ -53,11 +53,12 @@
   display: none !important;
 }
 
-.kp-ui h1,
-.kp-ui h2,
-.kp-ui h3,
-.kp-ui p,
-.kp-ui pre {
+/* Element resets are wrapped in :where() (specificity 0,0,1) so single-class component rules win. */
+:where(.kp-ui) h1,
+:where(.kp-ui) h2,
+:where(.kp-ui) h3,
+:where(.kp-ui) p,
+:where(.kp-ui) pre {
   margin: 0;
   font: inherit;
 }
@@ -175,6 +176,7 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   text-align: center;
+  white-space: nowrap;
   text-shadow:
     -2px 0 rgba(var(--kp-p2-rgb), 0.75),
     2px 0 rgba(var(--kp-p1-rgb), 0.75),
@@ -218,7 +220,7 @@
 
 /* ------------------------------------------------------------------ buttons and lists */
 
-.kp-ui button {
+:where(.kp-ui) button {
   appearance: none;
   margin: 0;
   padding: 0;

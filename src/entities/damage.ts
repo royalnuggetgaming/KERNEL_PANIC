@@ -13,7 +13,6 @@ import { COOP, OVERDRIVE } from '../config/tuning';
 import { VERSUS } from '../config/versus';
 import { CARD_BIT, hasCard } from './cardBits';
 import { registerKill, registerPlayerHit } from './combo';
-import { addOverdrive } from './overdrive';
 import { dropShards } from './pickups';
 import { emitHit, emitPlayer, isPlayerSource } from './simEventsOut';
 
@@ -32,19 +31,25 @@ export const HIT_IN = new Float64Array(3);
 /** [damage dealt by the last hitEnemy / applyBossDamage call] (kept out of return values for the same reason). */
 const DEALT = new Float64Array(1);
 
-/** Credits DEALT[0] to the source's damageDealt and Overdrive. */
+/** addOverdrive(p, DEALT[0] x PER_DAMAGE x share), same arithmetic, without a boxed amount argument. */
+function chargeFromDealt(pl: PlayerEntity, share: number): void {
+  const amount = DEALT[0]! * OVERDRIVE.PER_DAMAGE * share;
+  if (pl.life === 'absent' || !(amount > 0)) return;
+  const v = pl.overdrive + amount * pl.stats.specialChargeMul;
+  pl.overdrive = v > OVERDRIVE.MAX ? OVERDRIVE.MAX : v;
+}
+
+/** Credits DEALT[0] to the source's damageDealt and Overdrive (link damage charges both linked players). */
 function creditDamage(w: WorldState, source: DamageSource): void {
   const dealt = DEALT[0]!;
   if (dealt <= 0) return;
   if (isPlayerSource(source)) {
     const p = w.players[source];
     p.damageDealt += dealt;
-    addOverdrive(w, source, dealt * OVERDRIVE.PER_DAMAGE);
+    chargeFromDealt(p, 1);
   } else if (source === SOURCE_LINK) {
-    // Link damage charges both linked players' meters equally.
-    const half = dealt * OVERDRIVE.PER_DAMAGE * 0.5;
-    if (w.players[0].life === 'alive') addOverdrive(w, 0, half);
-    if (w.players[1].life === 'alive') addOverdrive(w, 1, half);
+    if (w.players[0].life === 'alive') chargeFromDealt(w.players[0], 0.5);
+    if (w.players[1].life === 'alive') chargeFromDealt(w.players[1], 0.5);
   }
 }
 
@@ -65,7 +70,13 @@ function shieldBlocksHit(e: Readonly<EnemyEntity>): boolean {
   return Math.abs(d) <= WARDEN_HALF_ARC;
 }
 
-function pushEnemyHit(w: WorldState, e: Readonly<EnemyEntity>, crit: boolean, target: 0 | 2, player: PlayerIndex | -1): void {
+function pushEnemyHit(
+  w: WorldState,
+  e: Readonly<EnemyEntity>,
+  crit: boolean,
+  target: 0 | 2,
+  player: PlayerIndex | -1,
+): void {
   const h = w.events.hit.push();
   h.x = e.x;
   h.z = e.z;

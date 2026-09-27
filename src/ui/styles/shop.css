@@ -176,6 +176,17 @@
   padding: 0.18em 0.3em;
 }
 
+/* Short viewports (1280x720): compact rows so the READY row stays on screen without scrolling. */
+@media (max-height: 820px) {
+  .kp-row-buy {
+    padding-block: 0;
+  }
+
+  .kp-shop-sub {
+    margin-top: 0.3em;
+  }
+}
+
 .kp-row-level {
   color: var(--kp-dim);
   font-size: 0.8em;
@@ -296,14 +307,16 @@
 
 .kp-hangar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  /* Below the 3D voxel title (top ~22% of the view), so the panel never covers the logo. */
+  padding-top: 23vh;
   background: rgba(var(--kp-bg-rgb), 0.55);
 }
 
 .kp-hangar-box {
   width: min(44em, 94vw);
-  max-height: 92vh;
+  max-height: 75vh;
   overflow: auto;
 }
 

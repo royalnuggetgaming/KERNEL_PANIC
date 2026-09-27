@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
 import { HUD_TEXT_INTERVAL_MS, Hud } from '../../src/ui/hud/Hud';
+import { isScoreText } from '../../src/ui/hud/WaveBanner';
 import { createUiRootWithClock } from '../../src/ui/UIRoot';
 import { FakeDocument, asDocument, asElement, asFake, type FakeElement } from './fakeDom';
 import { hudPlayerVM, hudVM } from './fixtures';
@@ -133,6 +134,20 @@ describe('ui/hud', () => {
     expect(el.first('kp-banner').classList.contains('is-on')).toBe(false);
     expect(el.first('kp-banner-text').textContent).toBe('CYCLE 5');
     expect(el.first('kp-hud-fps').hidden).toBe(true);
+  });
+
+  it('a live number under the banner (countdown digit, versus score) is flagged for the large style', () => {
+    const { hud, el } = makeHud();
+    const banner = el.first('kp-banner');
+    hud.render(hudVM({ banner: { visible: true, text: 'CYCLE 4', sub: '3' } }), 0);
+    expect(banner.classList.contains('is-count')).toBe(true);
+    hud.render(hudVM({ banner: { visible: true, text: 'P1 TAKES THE ROUND', sub: '1 : 0' } }), 500);
+    expect(banner.classList.contains('is-count')).toBe(true);
+    hud.render(hudVM({ banner: { visible: true, text: 'FORK BOMB', sub: 'BOSS PROCESS' } }), 1000);
+    expect(banner.classList.contains('is-count')).toBe(false);
+    expect(isScoreText('')).toBe(false);
+    expect(isScoreText(' : ')).toBe(false);
+    expect(isScoreText('12')).toBe(true);
   });
 
   it('UIRoot re-renders a throttled HUD on a later flush without a new VM', () => {

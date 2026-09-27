@@ -207,22 +207,24 @@ export function solveFraming(
 }
 
 /**
- * Axis-aligned rectangle on the ground that is fully visible: z spans the screen's top (far) to bottom (near)
- * edge, x spans the narrower bottom edge of the view trapezoid. The sim clamps the Offline ghost to it (inset).
+ * Axis-aligned ground rectangle inside the framing safe box (NDC x +-CAMERA.SAFE_X, y CAMERA.SAFE_Y_MIN..
+ * SAFE_Y_MAX), i.e. clear of the HUD panels and the top banner: z spans the safe box's top (far) to bottom
+ * (near) edge, x spans the narrower bottom edge of the view trapezoid. The sim clamps the Offline ghost to it
+ * (inset), so the ghost never hides under a HUD panel.
  */
 export function viewRectOnGround(pose: CameraPose, aspect: number, out: ViewRect): ViewRect {
   const d = pose.distance;
   const camY = d * SIN_P;
   const camZ = pose.targetZ + d * COS_P;
-  // Bottom edge (ndcY = -1): ray dir y = -(sin + tan cos), z = -(cos - tan sin).
-  const dyB = SIN_P + TAN_HALF * COS_P;
-  const lamB = camY / dyB;
-  const zNear = camZ + lamB * (-COS_P + TAN_HALF * SIN_P);
-  // Top edge (ndcY = +1): ray dir y = -(sin - tan cos) (> 0 because pitch > fov / 2).
-  const dyT = SIN_P - TAN_HALF * COS_P;
-  const lamT = camY / dyT;
-  const zFar = camZ + lamT * (-COS_P - TAN_HALF * SIN_P);
-  const half = lamB * TAN_HALF * (aspect > 1e-3 ? aspect : 1e-3);
+  // Ray through ndcY = y: dir = forward + y tan(fov/2) up = (0, -(sin - y tan cos), -(cos + y tan sin)).
+  const yB = CAMERA.SAFE_Y_MIN;
+  const lamB = camY / (SIN_P - yB * TAN_HALF * COS_P);
+  const zNear = camZ - lamB * (COS_P + yB * TAN_HALF * SIN_P);
+  // Top edge: pitch > fov / 2, so the ray still meets the ground.
+  const yT = CAMERA.SAFE_Y_MAX;
+  const lamT = camY / (SIN_P - yT * TAN_HALF * COS_P);
+  const zFar = camZ - lamT * (COS_P + yT * TAN_HALF * SIN_P);
+  const half = lamB * TAN_HALF * (aspect > 1e-3 ? aspect : 1e-3) * CAMERA.SAFE_X;
   out.minX = pose.targetX - half;
   out.maxX = pose.targetX + half;
   out.minZ = zFar;

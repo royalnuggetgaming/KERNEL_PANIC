@@ -8,7 +8,7 @@ import type { PickupEntity, PlayerEntity } from '../contracts/sim';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { ARENA, COOP, PICKUPS } from '../config/tuning';
 import { comboShardBonus } from './combo';
-import { grantShards } from './wallet';
+import { grantShards, takeWholeShards } from './wallet';
 
 export { grantShards } from './wallet';
 
@@ -53,7 +53,11 @@ export function dropShards(w: WorldState, x: number, z: number, total: number): 
   }
 }
 
-/** Collection value for player p picking up `value` (shardGain, combo bonus, catch-up, ghost 50%). */
+/**
+ * Whole Shards player p collects for a pickup worth `value` (shardGain, combo bonus, catch-up, ghost 50%). The
+ * exact product is credited through p's fractional carry (wallet.ts takeWholeShards), so it may be 0 or more
+ * than the rounded product; the carry advances on every call.
+ */
 export function pickupValue(w: WorldState, p: Readonly<PlayerEntity>, value: number): number {
   let v = value * p.stats.shardGain * (1 + comboShardBonus(p));
   if (w.run.playerCount === 2) {
@@ -62,8 +66,7 @@ export function pickupValue(w: WorldState, p: Readonly<PlayerEntity>, value: num
     if (mine < other * PICKUPS.CATCHUP_RATIO) v *= 1 + PICKUPS.CATCHUP_BONUS;
   }
   if (p.life === 'offline') v *= COOP.OFFLINE_COLLECT_MUL;
-  const r = Math.round(v);
-  return r < 1 ? 1 : r;
+  return takeWholeShards(w, p.index, v);
 }
 
 function collect(w: WorldState, p: PlayerEntity, k: PickupEntity): void {

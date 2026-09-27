@@ -5,14 +5,14 @@
  */
 import { NO_HANDLE, type PlayerIndex, type SpecialKind } from '../contracts/ids';
 import type { Intents, PlayerIntent } from '../contracts/input';
-import { PROJECTILE_KINDS, type PlayerEntity, type ProjectileSpec } from '../contracts/sim';
+import { PROJECTILE_KINDS, type EnemyEntity, type PlayerEntity, type ProjectileSpec } from '../contracts/sim';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { pointSegDistSq } from '../core/math';
 import { SPECIALS, specialTierMul } from '../config/specials';
 import { ARENA, OVERDRIVE, STAT_CAPS } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
 import { CARD_BIT, hasCard } from './cardBits';
-import { applyBossDamage, applyDamage, damagePlayer } from './damage';
+import { HIT_IN, applyBossDamage, damagePlayer, hitEnemy } from './damage';
 import { nearestEnemy, spawnProjectile } from './projectiles';
 import { emitPlayer } from './simEventsOut';
 
@@ -64,6 +64,31 @@ function emitSpecial(w: WorldState, p: PlayerEntity): void {
   emitPlayer(w, p.index, 'special', s.tier, p.x, p.z);
 }
 
+/** Rail being resolved: [ax, az, bx, bz, half width, damage] (scratch for the per-enemy test and hit). */
+const RAIL = new Float64Array(6);
+
+/** core/math pointSegDistSq(e, rail) <= (half + e.radius)^2, same arithmetic, reading the rail from RAIL. */
+function railTouches(e: Readonly<EnemyEntity>): boolean {
+  const ax = RAIL[0]!;
+  const az = RAIL[1]!;
+  const abx = RAIL[2]! - ax;
+  const abz = RAIL[3]! - az;
+  const l2 = abx * abx + abz * abz;
+  let t = l2 > 0 ? ((e.x - ax) * abx + (e.z - az) * abz) / l2 : 0;
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const cx = ax + abx * t - e.x;
+  const cz = az + abz * t - e.z;
+  const r = RAIL[4]! + e.radius;
+  return cx * cx + cz * cz <= r * r;
+}
+
+function railHitEnemy(w: WorldState, e: EnemyEntity, owner: PlayerIndex): void {
+  HIT_IN[0] = RAIL[5]!;
+  HIT_IN[1] = RAIL[0]!;
+  HIT_IN[2] = RAIL[1]!;
+  hitEnemy(w, e, owner, false);
+}
+
 /** Railburst: one piercing hit to everything on the rail (enemies, boss parts, versus opponent). */
 function fireRail(w: WorldState, p: PlayerEntity, damage: number): void {
   const s = p.special;
@@ -72,12 +97,16 @@ function fireRail(w: WorldState, p: PlayerEntity, damage: number): void {
   const bx = ax + s.dirX * SPECIALS.railburst.length;
   const bz = az + s.dirZ * SPECIALS.railburst.length;
   const half = s.radius;
+  RAIL[0] = ax;
+  RAIL[1] = az;
+  RAIL[2] = bx;
+  RAIL[3] = bz;
+  RAIL[4] = half;
+  RAIL[5] = damage;
   const pool = w.enemies;
   for (let i = pool.count - 1; i >= 0; i--) {
     const e = pool.active[i]!;
-    if (e.dying) continue;
-    const r = half + e.radius;
-    if (pointSegDistSq(e.x, e.z, ax, az, bx, bz) <= r * r) applyDamage(w, e, damage, p.index, ax, az, false);
+    if (!e.dying && railTouches(e)) railHitEnemy(w, e, p.index);
   }
   for (let b = 0; b < w.bosses.length; b++) {
     const boss = w.bosses[b]!;
@@ -190,14 +219,12 @@ function heal(w: WorldState, target: PlayerEntity, amount: number, emit: boolean
   if (emit) emitPlayer(w, target.index, 'heal', target.hp - before, target.x, target.z);
 }
 
-function stepDrone(w: WorldState, p: PlayerEntity, dt: number, prevTimer: number): void {
+function stepDrone(w: WorldState, p: PlayerEntity, dt: number, emit: boolean): void {
   const cfg = SPECIALS.patchDrone;
   const s = p.special;
   const mul = specialTierMul(s.tier);
   s.x = p.x + Math.sin(w.time * DRONE_ORBIT_SPEED) * cfg.orbit;
   s.z = p.z + Math.cos(w.time * DRONE_ORBIT_SPEED) * cfg.orbit;
-  // One heal event per whole second of drone time (the heal itself is continuous).
-  const emit = Math.floor(prevTimer) !== Math.floor(s.timer);
   const r2 = s.radius * s.radius;
   for (let i = 0; i < 2; i++) {
     const t = w.players[i as PlayerIndex];
@@ -256,7 +283,8 @@ export const stepSpecials: SimSystem = (w: WorldState, intents: Intents, dt: num
         s.x = p.x;
         s.z = p.z;
       } else if (s.kind === 'patchDrone') {
-        stepDrone(w, p, dt, prevTimer);
+        // One heal event per whole second of drone time (the heal itself is continuous).
+        stepDrone(w, p, dt, Math.floor(prevTimer) !== Math.floor(s.timer));
       }
       if (s.timer <= TIMER_EPS) {
         s.active = false;

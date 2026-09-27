@@ -217,17 +217,41 @@ describe('viewRectOnGround', () => {
     }
   });
 
-  it('matches the screen edges: corners of the rect project onto the frame', () => {
+  it('matches the HUD-safe box edges: corners of the rect project onto the safe frame', () => {
     const p: CameraPose = { targetX: 4, targetZ: -3, distance: 40 };
     const r = viewRectOnGround(p, 1.6, rect());
     const o = { x: 0, y: 0 };
     projectToNdc(p, 1.6, r.maxX, r.maxZ, o);
-    expect(o.x).toBeCloseTo(1, 5);
-    expect(o.y).toBeCloseTo(-1, 5);
+    expect(o.x).toBeCloseTo(CAMERA.SAFE_X, 5);
+    expect(o.y).toBeCloseTo(CAMERA.SAFE_Y_MIN, 5);
     projectToNdc(p, 1.6, r.minX, r.minZ, o);
-    expect(o.y).toBeCloseTo(1, 5);
-    expect(Math.abs(o.x)).toBeLessThan(1);
+    expect(o.y).toBeCloseTo(CAMERA.SAFE_Y_MAX, 5);
+    expect(Math.abs(o.x)).toBeLessThan(CAMERA.SAFE_X);
     expect((r.minX + r.maxX) / 2).toBeCloseTo(4);
+  });
+});
+
+describe('Offline ghost clamp rectangle (VISUAL-3)', () => {
+  it.each(ASPECTS)('every inset corner projects inside the HUD-safe box (aspect %s)', (aspect) => {
+    // Regression (round-1 visual critic): the rect spanned the full NDC box, so the clamped ghost could sit under
+    // the bottom HUD panels (P2 ghost at NDC y -0.876 < SAFE_Y_MIN).
+    for (const distance of [CAMERA.MIN_DIST, 40, solveMaxDistance(aspect)]) {
+      const camPose: CameraPose = { targetX: 3, targetZ: -2, distance };
+      const r = viewRectOnGround(camPose, aspect, rect());
+      const inset = CAMERA.GHOST_INSET;
+      const o = { x: 0, y: 0 };
+      for (const [x, z] of [
+        [r.minX + inset, r.minZ + inset],
+        [r.maxX - inset, r.minZ + inset],
+        [r.minX + inset, r.maxZ - inset],
+        [r.maxX - inset, r.maxZ - inset],
+      ] as const) {
+        projectToNdc(camPose, aspect, x, z, o);
+        expect(o.y).toBeGreaterThanOrEqual(CAMERA.SAFE_Y_MIN);
+        expect(o.y).toBeLessThanOrEqual(CAMERA.SAFE_Y_MAX);
+        expect(Math.abs(o.x)).toBeLessThanOrEqual(CAMERA.SAFE_X);
+      }
+    }
   });
 });
 

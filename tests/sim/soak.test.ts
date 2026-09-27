@@ -15,12 +15,16 @@ import { drive, newSession } from './runDriver';
 
 const TICKS = 72_000;
 
-/** Final stateHash per (mode, seed) after TICKS ticks. Update deliberately when the sim changes. */
+/**
+ * Final stateHash per (mode, seed) after TICKS ticks. Update deliberately when the sim changes.
+ * Last update: exact Shard crediting through the fractional pickup carry (ECON-1, also hashed) and the co-op
+ * sync-kill cooldown (ECON-3) change wallets, shop purchases and so the whole trajectory.
+ */
 const GOLDEN: Readonly<Record<string, number>> = {
-  'coop:1': 770314458,
-  'solo:2': 2419331212,
-  'versus:3': 1973061818,
-  'coop-god:4': 665878800,
+  'coop:1': 2465465107,
+  'solo:2': 2680459033,
+  'versus:3': 2504984236,
+  'coop-god:4': 784688408,
 };
 
 function finite(...xs: number[]): boolean {

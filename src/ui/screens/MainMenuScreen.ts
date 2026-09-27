@@ -14,6 +14,7 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
   private readonly tagline: TextSlot;
   private readonly menu: MenuList;
   private readonly menuShown: Shown;
+  private readonly headShown: Shown;
   private readonly sub: SubPanels;
   private readonly cores: NumSlot;
   private readonly currency: TextSlot;
@@ -26,6 +27,7 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
     const taglineEl = h(doc, 'p', { className: 'kp-tagline' });
     this.menu = new MenuList(doc, 'kp-main-menu');
     const menuBox = h(doc, 'nav', { className: 'kp-menu-box' }, this.menu.el, this.menu.hintEl);
+    const head = h(doc, 'header', { className: 'kp-main-head' }, titleEl, taglineEl);
     this.sub = new SubPanels(doc);
     const coresEl = h(doc, 'span', { className: 'kp-cores-num' });
     const currencyEl = h(doc, 'span', { className: 'kp-unit' });
@@ -35,7 +37,7 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
         doc,
         'div',
         { className: 'kp-main' },
-        h(doc, 'header', { className: 'kp-main-head' }, titleEl, taglineEl),
+        head,
         menuBox,
         this.sub.el,
         h(
@@ -50,6 +52,7 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
     this.title = new TextSlot(titleEl);
     this.tagline = new TextSlot(taglineEl);
     this.menuShown = new Shown(menuBox);
+    this.headShown = new Shown(head);
     this.cores = new NumSlot(coresEl, formatShards);
     this.currency = new TextSlot(currencyEl);
     this.version = new TextSlot(versionEl);
@@ -60,6 +63,8 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
     this.tagline.set(vm.tagline);
     const panelOpen = this.sub.render(vm.panel, vm.settings, vm.controls, vm.credits);
     this.menuShown.set(!panelOpen);
+    // A sub-panel (settings/controls/credits) owns the centre: the tagline would sit on top of the 3D logo.
+    this.headShown.set(!panelOpen);
     if (!panelOpen) this.menu.render(vm.items, vm.cursor);
     this.cores.set(vm.cores);
     this.currency.set(' ' + vm.metaCurrency);

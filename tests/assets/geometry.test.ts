@@ -5,6 +5,7 @@ import {
   buildPickupGeometry,
   buildShieldGeometry,
   FLOOR_SIZE,
+  PYLON_RADIUS,
   SKY_RADIUS,
   WALL_HEIGHT,
 } from '../../src/assets/geometry/arena';
@@ -142,6 +143,34 @@ describe.each(ALL_THEMES.map((t) => [t.id, t] as const))('theme %s geometry', (_
     // Inside-out sky: normals point towards the centre.
     expect(outwardFraction(sky, new Vector3())).toBeLessThan(0.01);
     expect(boundsOf(pylon).min.y).toBeGreaterThanOrEqual(-1e-6);
+  });
+
+  it('stands one pylon behind every portal and none at the arena centre (VISUAL-2)', () => {
+    const { pylon } = buildArena(theme);
+    const pos = pylon.getAttribute('position');
+    const n = ARENA.PORTALS;
+    const count = new Array<number>(n).fill(0);
+    const sx = new Array<number>(n).fill(0);
+    const sz = new Array<number>(n).fill(0);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      // Every vertex belongs to a pylon between the portal ring and the wall (none at the centre).
+      expect(Math.hypot(x, z)).toBeGreaterThan(ARENA.PORTAL_RADIUS - 1.5);
+      expect(Math.hypot(x, z)).toBeLessThan(ARENA.RADIUS);
+      // Portal i sits at yaw i * TAU / PORTALS (sim/formations.ts).
+      const k = (Math.round((Math.atan2(x, z) / (Math.PI * 2)) * n) + n) % n;
+      count[k]!++;
+      sx[k]! += x;
+      sz[k]! += z;
+    }
+    for (let k = 0; k < n; k++) {
+      expect(count[k]).toBe(count[0]);
+      const yaw = (k * Math.PI * 2) / n;
+      expect(sx[k]! / count[k]!).toBeCloseTo(Math.sin(yaw) * PYLON_RADIUS, 0);
+      expect(sz[k]! / count[k]!).toBeCloseTo(Math.cos(yaw) * PYLON_RADIUS, 0);
+    }
+    expect(count[0]).toBeGreaterThan(0);
   });
 });
 

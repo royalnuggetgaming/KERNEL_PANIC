@@ -8,6 +8,7 @@ import {
   stepPickups,
   vacuumPickups,
 } from '../../src/entities/pickups';
+import { shardCarry } from '../../src/entities/wallet';
 import { addTestPickup, createTestWorld, placePlayer, stepSystem } from '../helpers/worldFixture';
 
 function values(w: ReturnType<typeof createTestWorld>): number[] {
@@ -60,7 +61,10 @@ describe('pickups', () => {
     expect(w.run.wallets[0]).toBe(6);
     expect(w.events.pickup.count).toBe(1);
     w.players[0].comboTier = 4;
-    expect(pickupValue(w, w.players[0], 10)).toBe(Math.round(10 * 1.2 * 1.4));
+    // 10 x 1.2 x 1.4 = 16.8: 16 now, the 0.8 carries into the next pickup (16.8 + 0.8 -> 17, carry 0.6).
+    expect(pickupValue(w, w.players[0], 10)).toBe(16);
+    expect(pickupValue(w, w.players[0], 10)).toBe(17);
+    expect(shardCarry(w)[0]).toBeCloseTo(0.6, 9);
   });
 
   it('outside the magnet radius pickups slow down, blink and despawn at 12 s', () => {

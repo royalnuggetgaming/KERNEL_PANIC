@@ -144,6 +144,8 @@ describe('wave clear outro', () => {
 describe('purge', () => {
   it('de-rezzes survivors over 1.5 s paying 50% of their shards', () => {
     const w = inCombat(6);
+    // Equal wallets keep the co-op catch-up bonus (+20% below 60% of the partner) out of the payout.
+    w.run.wallets[0] = w.run.wallets[1] = 1_000;
     w.director.budgetLeft = 999;
     for (let i = 0; i < 12; i++) spawnEnemy(w, 'warden', i - 6, -15, i === 0, 0);
     w.run.waveTimer = SIM.DT / 2;
@@ -158,7 +160,7 @@ describe('purge', () => {
     expect(w.enemies.count).toBe(0);
     expect(w.run.phase).toBe('clearOutro');
     // Pickups were vacuumed into the wallets at outro start.
-    const paid = w.run.wallets[0] + w.run.wallets[1];
+    const paid = w.run.wallets[0] + w.run.wallets[1] - 2_000;
     expect(paid).toBe(11 * purgePayout('warden', false) + purgePayout('warden', true));
     expect(purgePayout('warden', false)).toBe(2);
     expect(purgePayout('warden', true)).toBe(7);

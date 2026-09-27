@@ -22,8 +22,16 @@ import { spawnProjectile } from './projectiles';
 /** Angular offset between the two copies of a FORK() doubled volley. */
 const FORK_OFFSET = 3 * DEG2RAD;
 const ACC_EPS = 1e-9;
-/** Per-volley base damage before the crit roll (module scratch). */
-const SPEC_BASE = { damage: 0 };
+/**
+ * Volley scratch: [yaw, lateral offset, lead time, damage multiplier, base damage before the crit roll]. The
+ * per-shot helpers read it instead of taking computed doubles (a non-inlined call would box each one).
+ */
+const VOLLEY = new Float64Array(5);
+const V_YAW = 0;
+const V_LATERAL = 1;
+const V_LEAD = 2;
+const V_DMG_MUL = 3;
+const V_BASE_DAMAGE = 4;
 
 const SPEC: ProjectileSpec = {
   side: 'player',
@@ -84,7 +92,11 @@ function emitShot(w: WorldState, p: PlayerEntity, x: number, z: number, dx: numb
   e.dirZ = dz;
 }
 
-function fireOne(w: WorldState, p: PlayerEntity, yaw: number, lateral: number, lead: number): void {
+/** One projectile along VOLLEY yaw, offset sideways by VOLLEY lateral and advanced by VOLLEY lead. */
+function fireOne(w: WorldState, p: PlayerEntity): void {
+  const yaw = VOLLEY[V_YAW]!;
+  const lateral = VOLLEY[V_LATERAL]!;
+  const lead = VOLLEY[V_LEAD]!;
   const dx = Math.sin(yaw);
   const dz = Math.cos(yaw);
   const speed = p.stats.projectileSpeed;
@@ -94,7 +106,7 @@ function fireOne(w: WorldState, p: PlayerEntity, yaw: number, lateral: number, l
   SPEC.z = p.z + dz * (muzzle + speed * lead) - dx * lateral;
   SPEC.vx = dx * speed;
   SPEC.vz = dz * speed;
-  let dmg = SPEC_BASE.damage;
+  let dmg = VOLLEY[V_BASE_DAMAGE]!;
   let crit = false;
   if (p.stats.critChance > 0 && w.rng.sim.chance(p.stats.critChance)) {
     dmg *= STAT_CAPS.critMul;
@@ -105,8 +117,8 @@ function fireOne(w: WorldState, p: PlayerEntity, yaw: number, lateral: number, l
   spawnProjectile(w, SPEC);
 }
 
-/** One volley along the player's aim direction. */
-function fireVolley(w: WorldState, p: PlayerEntity, focus: boolean, dmgMul: number, lead: number): void {
+/** One volley along the player's aim direction (damage multiplier and lead time from VOLLEY). */
+function fireVolley(w: WorldState, p: PlayerEntity, focus: boolean): void {
   const weapon = VEHICLES[p.vehicle].weapon;
   const baseYaw = Math.atan2(p.aimX, p.aimZ);
   const n = intStat(p.stats.projectiles, 1, STAT_CAPS.projectilesMax);
@@ -121,7 +133,7 @@ function fireVolley(w: WorldState, p: PlayerEntity, focus: boolean, dmgMul: numb
   SPEC.pierce = intStat(p.stats.pierce, 0, STAT_CAPS.pierceMax);
   SPEC.bounces = intStat(p.stats.bounces, 0, STAT_CAPS.bouncesMax);
   SPEC.homing = NO_HANDLE;
-  SPEC_BASE.damage = weapon.damage * dmgMul * (focus ? 1 + MOVEMENT.FOCUS_DAMAGE_BONUS : 1);
+  VOLLEY[V_BASE_DAMAGE] = weapon.damage * VOLLEY[V_DMG_MUL]! * (focus ? 1 + MOVEMENT.FOCUS_DAMAGE_BONUS : 1);
   const counter = ++p.cards.forkShotCounter;
   const lateral = weapon.muzzleOffset * ((counter & 1) === 0 ? 1 : -1);
   const doubled = cardStacks(p, CARD_BIT.forkCall) > 0 && counter % CARD_PARAMS.forkCall.every === 0;
@@ -135,12 +147,17 @@ function fireVolley(w: WorldState, p: PlayerEntity, focus: boolean, dmgMul: numb
       } else {
         yaw += (k - (n - 1) / 2) * spreadDeg * DEG2RAD;
       }
-      fireOne(w, p, yaw, lateral, lead);
+      VOLLEY[V_YAW] = yaw;
+      VOLLEY[V_LATERAL] = lateral;
+      fireOne(w, p);
     }
+    VOLLEY[V_LATERAL] = 0;
     for (let s = 1; s <= sidePairs; s++) {
       const off = CARD_PARAMS.splitShot.angleDeg * s * DEG2RAD;
-      fireOne(w, p, yaw0 - off, 0, lead);
-      fireOne(w, p, yaw0 + off, 0, lead);
+      VOLLEY[V_YAW] = yaw0 - off;
+      fireOne(w, p);
+      VOLLEY[V_YAW] = yaw0 + off;
+      fireOne(w, p);
     }
   }
   emitShot(w, p, p.x, p.z, p.aimX, p.aimZ);
@@ -169,11 +186,13 @@ export const stepWeapons: SimSystem = (w: WorldState, intents: Intents, dt: numb
       continue;
     }
     p.fireAcc += rate * dt;
+    // The fire-rate overflow (Overheat above the 20/s cap) converts to damage, still within the 4.0 hard cap.
     const dmgMul = p.stats.damageMul * RATE.mul;
+    VOLLEY[V_DMG_MUL] = dmgMul < STAT_CAPS.damageMulMax ? dmgMul : STAT_CAPS.damageMulMax;
     while (p.fireAcc >= 1 - ACC_EPS) {
       p.fireAcc -= 1;
-      const lead = p.fireAcc > 0 ? p.fireAcc / rate : 0;
-      fireVolley(w, p, it.focusHeld, dmgMul, lead);
+      VOLLEY[V_LEAD] = p.fireAcc > 0 ? p.fireAcc / rate : 0;
+      fireVolley(w, p, it.focusHeld);
     }
   }
 };

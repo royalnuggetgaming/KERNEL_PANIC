@@ -3,10 +3,9 @@
  * 500 enemy shots, topped up every step) with both players and the link beam. The plan's sim budget is
  * <= 0.8 ms per 120 Hz step on the target Mac; this container has no guarantee of that speed, so the
  * assertion is loose (mean < 4 ms; measured here ~0.45 ms mean, ~0.7 ms p95). Also an allocation sanity
- * check: heap growth per step over a window without garbage collection. The sim code has no explicit
- * allocations in its hot paths, but V8 boxes doubles returned from calls it does not inline (measured
- * ~12 KB/step at this load, almost all in enemy steering: turnToward/wrapAngle and the grid query in
- * separation), so the bound catches per-entity object allocation (hundreds of KB/step), not boxing.
+ * check: heap growth per step over a window without garbage collection. This coarse bound catches per-entity
+ * object allocation (hundreds of KB/step); the zero-allocation gate for the same load, including HeapNumber
+ * boxing across non-inlined calls, is tests/sim/simAllocation.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { ENEMY_KINDS, NO_HANDLE } from '../../src/contracts/ids';

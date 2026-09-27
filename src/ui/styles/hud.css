@@ -18,7 +18,19 @@
   flex-direction: column;
   align-items: center;
   gap: 0.1em;
+  padding: 0.35em 2.6em 0.45em;
+  /* Soft backing plate: the readout stays legible where the wall ring and fx cross the top band. */
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    rgba(var(--kp-bg-rgb), 0.78) 35%,
+    rgba(var(--kp-bg-rgb), 0) 72%
+  );
   transform: translateX(-50%);
+}
+
+/* A full-screen overlay (the Patch Bay) owns the screen: the HUD underneath is not drawn through it. */
+.kp-ui:has(> .kp-shop:not([hidden])) > .kp-hud {
+  visibility: hidden;
 }
 
 .kp-hud-wave {
@@ -154,6 +166,19 @@
 .kp-banner-sub {
   color: var(--kp-accent);
   letter-spacing: 0.3em;
+}
+
+/* Countdown digit / versus round score: a live number, as prominent as the title. */
+.kp-banner.is-count .kp-banner-sub {
+  margin-top: 0.1em;
+  color: var(--kp-text);
+  font-size: clamp(2.4em, 6vw, 4.6em);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 18px rgba(var(--kp-accent-rgb), 0.75),
+    0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* ------------------------------------------------------------------ player panels */

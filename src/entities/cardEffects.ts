@@ -50,7 +50,13 @@ const PICKED = new Int32Array(8);
 const ARC = new Float64Array(3);
 
 /** arcChain from ARC: nearest-unhit-enemy hops, each emitting an arc event and dealing ARC[2]. */
-function runArc(w: WorldState, owner: PlayerIndex, count: number, range: number, excludeSlot: number): number {
+function runArc(
+  w: WorldState,
+  owner: PlayerIndex,
+  count: number,
+  range: number,
+  excludeSlot: number,
+): number {
   let hops = 0;
   const max = count < PICKED.length ? count : PICKED.length;
   const pool = w.enemies;

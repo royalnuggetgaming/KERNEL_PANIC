@@ -1,5 +1,6 @@
 /**
- * Static arena props (4 draw calls): floor plane, sky dome, hex force-field wall band and the pylons. Matrices are
+ * Static arena props (4 draw calls): floor plane, sky dome, hex force-field wall band and the
+ * pylons (one per ARENA.PORTALS portal, merged into the arena:pylon geometry). Matrices are
  * computed once (matrixAutoUpdate off); the arena is always in view, so frustum culling is off.
  */
 import { Group, Mesh, type BufferGeometry, type ShaderMaterial } from 'three';

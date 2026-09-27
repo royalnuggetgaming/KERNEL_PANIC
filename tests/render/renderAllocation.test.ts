@@ -1,27 +1,29 @@
 /**
- * PERF critic (plan section 10: view sync is a hot path, "zero steady-state GC"; the view/fx files document
- * themselves as allocation-free). Real AssetLibrary batches and rings (three runs in node), real WorldViews/
- * FxDirector/TrailRenderer, a sim world at the stress load. The sim is advanced first; each measured frame then
- * only moves the players (so trails keep changing) and re-runs the render-side work, so the numbers are render
- * allocations only. Expected to FAIL on the current code:
- * - TrailRibbon.write: `(visible ? this.px[k]! : x) + ox` merges a Float32Array load with the tagged parameter
- *   `x`; TurboFan boxes the phi, 2 HeapNumbers per vertex: ~4.2 KB per call, ~8.4 KB per frame (2 players).
- * - EnemyView.sync -> InstanceBatch.push(x, z, yaw, ...) and FxDirector.consume -> ParticleSystem.burst/emit/
- *   rng.range box the computed doubles they pass across non-inlined calls (1-7 KB per frame at stress).
+ * Render-side per-frame allocation (plan section 10: view sync is a hot path, "zero steady-state GC").
+ * Regression for PERF-2/PERF-3 (round-1 perf critic). Real AssetLibrary batches and rings (three runs in node),
+ * real WorldViews/FxDirector/TrailRenderer, a sim world at the stress load. The sim is advanced first; each
+ * measured frame then only moves the players (so trails keep changing) and re-runs the render-side work, so the
+ * numbers are render allocations only. Causes fixed:
+ * - TrailRibbon.write merged a Float32Array load with a tagged parameter in one expression (boxed phi, ~4.2 KB
+ *   per call).
+ * - InstanceBatch.commit re-pushed its range into a just-emptied updateRanges array every frame (a new backing
+ *   store per batch per frame, ~150 B each).
+ * - ParticleSystem.burst/cone went through a 12-double emit() and the boxed rng.next()/range() per particle, and
+ *   FxDirector passed event coordinates as doubles to the fx systems (~6-26 KB per stress step).
  */
 import { describe, expect, it } from 'vitest';
-import { createAssetLibrary } from '../../../src/assets/AssetLibrary';
-import { buildTrailGeometry } from '../../../src/assets/geometry/fxShapes';
-import { QUALITY_PRESETS } from '../../../src/config/quality';
-import { NullLogger } from '../../../src/core/logger';
-import { CameraRig } from '../../../src/render/CameraRig';
-import { TrailRibbon } from '../../../src/render/fx/TrailRenderer';
-import type { FrameContext } from '../../../src/render/views/types';
-import { WorldViews } from '../../../src/render/WorldViews';
-import { clearSimEvents } from '../../../src/sim/simEventChannels';
-import { KERNEL_PANIC } from '../../../src/themes/kernelPanic';
-import { measureAllocation } from '../../support/allocProbe';
-import { createStressRig } from '../../support/stressWorld';
+import { createAssetLibrary } from '../../src/assets/AssetLibrary';
+import { buildTrailGeometry } from '../../src/assets/geometry/fxShapes';
+import { QUALITY_PRESETS } from '../../src/config/quality';
+import { NullLogger } from '../../src/core/logger';
+import { CameraRig } from '../../src/render/CameraRig';
+import { TrailRibbon } from '../../src/render/fx/TrailRenderer';
+import type { FrameContext } from '../../src/render/views/types';
+import { WorldViews } from '../../src/render/WorldViews';
+import { clearSimEvents } from '../../src/sim/simEventChannels';
+import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
+import { measureAllocation } from '../support/allocProbe';
+import { createStressRig } from '../support/stressWorld';
 
 const FRAME_BUDGET_BYTES = 256;
 
@@ -65,7 +67,7 @@ async function renderRig(): Promise<{
   return { rig, views, camera, ctx, movePlayers };
 }
 
-describe('PERF critic: render-side per-frame allocation', () => {
+describe('render-side per-frame allocation', () => {
   it('TrailRibbon.write (every frame, per player) allocates nothing', async () => {
     const g = buildTrailGeometry(0);
     const pos = g.getAttribute('position').array as Float32Array;

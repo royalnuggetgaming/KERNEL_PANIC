@@ -1,8 +1,8 @@
 /**
  * Deterministic 32-bit FNV-1a hash of the simulation state (determinism and soak tests, debug overlay).
  * Covers the clock, players, every pool (dense order, which is itself deterministic), bosses, lasers, link,
- * run counters, flags, director, the sim/shop rng states and W1-COMBAT's per-world memory (sync kills, ram
- * stamps). Presentation-only data (events, view rect, hit flashes) is excluded. Allocation-free.
+ * run counters, flags, director, the sim/shop rng states, W1-COMBAT's per-world memory (sync kills, ram
+ * stamps) and the fractional Shard carry. Presentation-only data (events, view rect, hit flashes) is excluded. Allocation-free.
  */
 import {
   BOSS_IDS,
@@ -29,6 +29,7 @@ import type { WavePhase, WorldState } from '../contracts/world';
 import { FNV_OFFSET, fnv1aMixF64, fnv1aMixU32 } from '../core/hash';
 import { lastSyncTime } from '../entities/combo';
 import { ramStamps } from '../entities/playerDash';
+import { shardCarryOf } from '../entities/wallet';
 
 const LIFE: readonly LifeState[] = ['alive', 'downed', 'offline', 'respawning', 'absent'];
 const PHASES: readonly WavePhase[] = [
@@ -232,9 +233,14 @@ function mixRng(h0: number, w: WorldState): number {
   return h;
 }
 
-/** W1-COMBAT per-world memory kept outside the world object (sync kills, Bulwark ram stamps). */
+/**
+ * Per-world memory kept outside the world object: W1-COMBAT's sync kills and Bulwark ram stamps, and the
+ * players' fractional Shard carry.
+ */
 function mixCombatMemory(h0: number, w: WorldState): number {
   let h = fnv1aMixF64(h0, lastSyncTime(w));
+  h = fnv1aMixF64(h, shardCarryOf(w, 0));
+  h = fnv1aMixF64(h, shardCarryOf(w, 1));
   const ram = ramStamps(w);
   if (ram === null) return fnv1aMixU32(h, 0);
   h = fnv1aMixU32(h, ram.length);

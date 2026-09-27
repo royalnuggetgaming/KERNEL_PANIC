@@ -182,9 +182,17 @@ function applyShotHit(w: WorldState, s: ProjectileEntity, owner: PlayerIndex, co
   return false;
 }
 
+/** True when a shot with no grid candidates can still hit something (a live boss part or the versus opponent). */
+function hasNonGridTargets(w: WorldState): boolean {
+  if (w.mode === 'versus') return true;
+  for (let k = 0; k < w.bosses.length; k++) if (w.bosses[k]!.alive) return true;
+  return false;
+}
+
 function playerShots(w: WorldState): void {
   const pool = w.playerShots;
   const g = w.grid;
+  const others = hasNonGridTargets(w);
   for (let i = pool.count - 1; i >= 0; i--) {
     const s = pool.active[i]!;
     const owner = s.owner;
@@ -195,6 +203,7 @@ function playerShots(w: WorldState): void {
     const minZ = (s.prevZ < s.z ? s.prevZ : s.z) - r;
     const maxZ = (s.prevZ > s.z ? s.prevZ : s.z) + r;
     const n = g.queryAabb(minX, minZ, maxX, maxZ, CANDS);
+    if (n === 0 && !others) continue;
     let hits = 0;
     while (hits < HITS.length) {
       findFirstHit(w, s, n, hits);

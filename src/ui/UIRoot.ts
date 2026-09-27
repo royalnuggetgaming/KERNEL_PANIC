@@ -51,7 +51,9 @@ interface ScreenSlot {
 export function paletteVars(theme: ThemeDef, colorblind: boolean): readonly (readonly [string, string])[] {
   const p = theme.palette;
   const p2 = colorblind ? p.p2Colorblind : p.p2;
-  const accent = p.sectors[0].accent;
+  // UI chrome keeps the theme's signature cyan; the sector accents are world colours (walls, pylons, fx) and are
+  // chosen to stay off the player hues, so they no longer match the UI.
+  const accent = p.p1;
   return [
     ['--kp-bg', formatHexColor(p.ui.bg)],
     ['--kp-panel', formatHexColor(p.ui.panel)],

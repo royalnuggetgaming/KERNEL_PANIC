@@ -10,8 +10,9 @@ import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { CORRUPTED, ENEMY_AI, ENEMY_DEFS } from '../config/enemies';
 import { DEG2RAD } from '../core/math';
+import { ARENA } from '../config/tuning';
 import { AI_STATE, stepEnemyBehavior } from './enemyBehaviors';
-import { clampToArena, emitSpawn, nearestTarget } from './contentShared';
+import { clampToArena, emitSpawn, nearestTarget, nearestTargetOf } from './contentShared';
 
 /** Hit flash decays to 0 over 1 / FLASH_DECAY seconds. */
 const FLASH_DECAY = 8;
@@ -106,34 +107,54 @@ export function spawnPendingEnemies(w: WorldState, dt: number): void {
 function retarget(w: WorldState, e: EnemyEntity): void {
   const cur = w.players[e.target];
   if (cur.life === 'alive' && (w.tick + e.slot) % ENEMY_AI.RETARGET_STAGGER !== 0) return;
-  const t = nearestTarget(w, e.x, e.z);
+  const t = nearestTargetOf(w, e);
   if (t !== -1) e.target = t;
 }
 
-function separate(w: WorldState, e: EnemyEntity): void {
-  const r = ENEMY_AI.SEPARATION_RADIUS;
-  const n = w.grid.queryCircle(e.x, e.z, r, NEIGHBOURS);
-  const cap = w.enemies.capacity;
-  let used = 0;
-  for (let i = 0; i < n && used < ENEMY_AI.SEPARATION_NEIGHBOURS; i++) {
-    const id = NEIGHBOURS[i]!;
-    if (id === e.slot || id < 0 || id >= cap) continue;
-    const o = w.enemies.atSlot(id);
-    if (!w.enemies.isAlive(o) || o.dying) continue;
-    used++;
-    const dx = e.x - o.x;
-    const dz = e.z - o.z;
-    const d = Math.sqrt(dx * dx + dz * dz);
-    const reach = r + (e.radius + o.radius) * 0.5;
-    if (d >= reach) continue;
-    if (d < 1e-6) {
-      // Exact overlap: split deterministically by slot order.
-      e.vx += e.slot < o.slot ? ENEMY_AI.SEPARATION_FORCE : -ENEMY_AI.SEPARATION_FORCE;
-      continue;
+/**
+ * Separation (<= 6 neighbours) then integration: moves e by its velocity, kept inside the arena disc minus its
+ * radius (contentShared clampToArena's arithmetic). One function on purpose: the grid query takes e's position
+ * as doubles, which V8 boxes unless queryCircle is inlined, and at this size the function is never inlined into
+ * the enemy loop, so its own compilation always has the inlining budget for the query.
+ */
+function separateAndMove(w: WorldState, e: EnemyEntity, dt: number): void {
+  if (e.latched !== 1) {
+    const r = ENEMY_AI.SEPARATION_RADIUS;
+    const n = w.grid.queryCircle(e.x, e.z, r, NEIGHBOURS);
+    const cap = w.enemies.capacity;
+    let used = 0;
+    for (let i = 0; i < n && used < ENEMY_AI.SEPARATION_NEIGHBOURS; i++) {
+      const id = NEIGHBOURS[i]!;
+      if (id === e.slot || id < 0 || id >= cap) continue;
+      const o = w.enemies.atSlot(id);
+      if (!w.enemies.isAlive(o) || o.dying) continue;
+      used++;
+      const dx = e.x - o.x;
+      const dz = e.z - o.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      const reach = r + (e.radius + o.radius) * 0.5;
+      if (d >= reach) continue;
+      if (d < 1e-6) {
+        // Exact overlap: split deterministically by slot order.
+        e.vx += e.slot < o.slot ? ENEMY_AI.SEPARATION_FORCE : -ENEMY_AI.SEPARATION_FORCE;
+        continue;
+      }
+      const f = ((reach - d) / reach) * ENEMY_AI.SEPARATION_FORCE;
+      e.vx += (dx / d) * f;
+      e.vz += (dz / d) * f;
     }
-    const f = ((reach - d) / reach) * ENEMY_AI.SEPARATION_FORCE;
-    e.vx += (dx / d) * f;
-    e.vz += (dz / d) * f;
+  }
+  const x = e.x + e.vx * dt;
+  const z = e.z + e.vz * dt;
+  const lim = ARENA.RADIUS - e.radius;
+  const d2 = x * x + z * z;
+  if (d2 > lim * lim) {
+    const k = lim / Math.sqrt(d2);
+    e.x = x * k;
+    e.z = z * k;
+  } else {
+    e.x = x;
+    e.z = z;
   }
 }
 
@@ -156,10 +177,7 @@ function stepEnemiesImpl(w: WorldState, _intents: Intents, dt: number): void {
     }
     retarget(w, e);
     stepEnemyBehavior(w, e, dt);
-    if (e.latched !== 1) separate(w, e);
-    clampToArena(e.x + e.vx * dt, e.z + e.vz * dt, e.radius, CLAMP);
-    e.x = CLAMP.x;
-    e.z = CLAMP.z;
+    separateAndMove(w, e, dt);
   }
 }
 

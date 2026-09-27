@@ -88,14 +88,40 @@
   text-align: center;
 }
 
+/* The 3D voxel title is the logo on the main menu; the heading stays for screen readers only. */
+.kp-main-head .kp-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Text over the live backdrop sits on translucent plates (the ring and drones pass behind it). */
 .kp-tagline {
-  margin-top: 0.4em;
-  color: var(--kp-dim);
+  display: inline-block;
+  padding: 0.35em 1.1em;
+  background: rgba(var(--kp-bg-rgb), 0.72);
+  color: var(--kp-text);
   letter-spacing: 0.2em;
+  opacity: 0.85;
 }
 
 .kp-menu-box {
   min-width: 18em;
+  padding: 0.8em 1.2em 0.6em;
+  background: rgba(var(--kp-panel-rgb), 0.8);
+  border: 1px solid var(--kp-line);
+}
+
+.kp-menu-box .kp-menu-item {
+  color: #9aa9c4;
+}
+
+.kp-menu-box .kp-menu-item:hover,
+.kp-menu-box .kp-menu-item.is-cursor {
+  color: var(--kp-text);
 }
 
 .kp-main-menu .kp-menu-item {
@@ -233,6 +259,8 @@
 
 .kp-pause-box {
   min-width: 20em;
+  /* Near-opaque: the Patch Bay rows behind a pause must not read through the panel. */
+  background: rgba(var(--kp-panel-rgb), 0.97);
 }
 
 .kp-pause-reason {

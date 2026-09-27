@@ -26,6 +26,7 @@ import { EventChannel } from '../core/EventChannel';
 import { createRng } from '../core/rng';
 import { SpatialGrid } from '../core/SpatialGrid';
 import { ARENA, CAPACITY } from '../config/tuning';
+import { resetShardCarry } from '../entities/wallet';
 import { clearSimEvents, createSimEvents } from './simEventChannels';
 import {
   clearBoss,
@@ -183,6 +184,7 @@ export function resetWorld(w: WorldState, config: WorldConfig): void {
   w.viewRect.maxZ = ARENA.RADIUS;
   initPlayer(w.players[0], config.players[0], config.mode);
   initPlayer(w.players[1], config.players[1], config.mode);
+  resetShardCarry(w);
   const root = createRng(config.seed);
   m.rng = { sim: root.fork('sim'), shop: root.fork('shop') };
 }

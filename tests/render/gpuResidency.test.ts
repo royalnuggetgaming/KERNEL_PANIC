@@ -1,20 +1,15 @@
 /**
- * PERF critic (plan section 10 TARGETS "Zero new programs, geometries or textures after Boot"; 10.6 warm-up;
- * 10.7 "Assets and batches are allocated once at Boot ... The smoke test runs cycleRuns(3) and requires
- * renderer.info.memory to equal the Boot baseline").
+ * GPU residency after Boot (plan section 10 TARGETS "Zero new programs, geometries or textures after Boot"; 10.6
+ * warm-up; 10.7 "Assets and batches are allocated once at Boot ... cycleRuns(3) ... renderer.info.memory equals
+ * the Boot baseline"). Regression for PERF-4 (round-1 perf critic).
  *
  * three uploads a geometry (createBuffer + bufferData of the whole array + a VAO; info.memory.geometries++) the
- * first time a VISIBLE mesh using it is projected. ShaderWarmup renders the library's count-1 warm batches and the
- * bridge scene, but the live InstanceBatches/GpuRingBuffers under views.root are invisible (count 0, and
- * views.root is hidden outside follow mode) during warm-up, so none of them is uploaded at Boot: each one is
- * created on its first visible frame in Playing. In Chromium (SwiftShader, `node browserGl.mjs`) this shows up as
- * geometries 32 at Boot/MainMenu -> 37 in the first Playing frames -> 47-48 under stress, with createBuffer/
- * bufferData/createVertexArray calls mid-run, and `__game.cycleRuns(2)` from a fresh boot returning
- * equal:false (32 -> 41). The Wave 3 smoke passed only because it ran cycleRuns after the stress test.
+ * first time a VISIBLE mesh using it is projected. Before the fix the live InstanceBatches/GpuRingBuffers under
+ * views.root were invisible during warm-up, so each was first uploaded mid-run (Chromium: geometries 32 at Boot
+ * -> 41 after cycleRuns(2)). RenderBridge.warmLive now primes every batch and ring (WorldViews.primeForWarmup).
  *
- * This test drives the real RenderBridge with a structural fake WebGLRenderer whose render() records the
- * geometry of every visible mesh (what three would upload) and expects no geometry to be seen for the first
- * time after warmup(). Expected to FAIL on the current code.
+ * Drives the real RenderBridge with a structural fake WebGLRenderer whose render() records the geometry of every
+ * visible mesh (what three would upload) and expects no geometry to be seen for the first time after warmup().
  */
 import { describe, expect, it, vi } from 'vitest';
 
@@ -84,16 +79,16 @@ vi.mock('three', async (importOriginal) => {
   return { ...three, WebGLRenderer: FakeWebGLRenderer };
 });
 
-const { createAssetLibrary } = await import('../../../src/assets/AssetLibrary');
-const { QUALITY_PRESETS } = await import('../../../src/config/quality');
-const { NullLogger } = await import('../../../src/core/logger');
-const { createRenderBridge } = await import('../../../src/render/RenderBridge');
-const { DEFAULT_SETTINGS } = await import('../../../src/save/defaults');
-const { clearSimEvents } = await import('../../../src/sim/simEventChannels');
-const { KERNEL_PANIC } = await import('../../../src/themes/kernelPanic');
-const { createStressRig } = await import('../../support/stressWorld');
+const { createAssetLibrary } = await import('../../src/assets/AssetLibrary');
+const { QUALITY_PRESETS } = await import('../../src/config/quality');
+const { NullLogger } = await import('../../src/core/logger');
+const { createRenderBridge } = await import('../../src/render/RenderBridge');
+const { DEFAULT_SETTINGS } = await import('../../src/save/defaults');
+const { clearSimEvents } = await import('../../src/sim/simEventChannels');
+const { KERNEL_PANIC } = await import('../../src/themes/kernelPanic');
+const { createStressRig } = await import('../support/stressWorld');
 
-describe('PERF critic: GPU residency after Boot', () => {
+describe('RenderBridge: GPU residency after Boot', () => {
   it('no geometry is uploaded for the first time after warm-up (Playing at the stress load)', async () => {
     const lib = createAssetLibrary({
       theme: KERNEL_PANIC,

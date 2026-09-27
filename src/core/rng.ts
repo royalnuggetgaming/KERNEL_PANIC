@@ -12,36 +12,58 @@ function splitmix32(state: { s: number }): number {
   return (z ^ (z >>> 16)) >>> 0;
 }
 
+/** State word indices into Sfc32.s. */
+const A = 0;
+const B = 1;
+const C = 2;
+const D = 3;
+
 class Sfc32 implements Rng {
-  private a = 0;
-  private b = 0;
-  private c = 0;
-  private d = 0;
+  /**
+   * State words a, b, c, d. An Int32Array rather than number fields: int32 values outside the Smi range would
+   * otherwise be stored boxed, and every draw updates all four (hot path, plan section 10.2).
+   */
+  private readonly s = new Int32Array(4);
   private readonly seed: number;
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
     const st = { s: this.seed };
-    this.a = splitmix32(st);
-    this.b = splitmix32(st);
-    this.c = splitmix32(st);
-    this.d = 1;
+    this.s[A] = splitmix32(st);
+    this.s[B] = splitmix32(st);
+    this.s[C] = splitmix32(st);
+    this.s[D] = 1;
     // Warm up so nearby seeds decorrelate.
     for (let i = 0; i < 12; i++) this.nextU32();
   }
 
   nextU32(): number {
-    const t = (((this.a + this.b) | 0) + this.d) | 0;
-    this.d = (this.d + 1) | 0;
-    this.a = this.b ^ (this.b >>> 9);
-    this.b = (this.c + (this.c << 3)) | 0;
-    this.c = (this.c << 21) | (this.c >>> 11);
-    this.c = (this.c + t) | 0;
+    const s = this.s;
+    const a = s[A]!;
+    const b = s[B]!;
+    const c = s[C]!;
+    const d = s[D]!;
+    const t = (((a + b) | 0) + d) | 0;
+    s[D] = (d + 1) | 0;
+    s[A] = b ^ (b >>> 9);
+    s[B] = (c + (c << 3)) | 0;
+    s[C] = (((c << 21) | (c >>> 11)) + t) | 0;
     return t >>> 0;
   }
 
+  /** Same draw as nextU32() / 2^32, written out (no nested call) so it stays small enough to inline. */
   next(): number {
-    return this.nextU32() / 4294967296;
+    const s = this.s;
+    const a = s[A]!;
+    const b = s[B]!;
+    const c = s[C]!;
+    const d = s[D]!;
+    const t = (((a + b) | 0) + d) | 0;
+    s[D] = (d + 1) | 0;
+    s[A] = b ^ (b >>> 9);
+    s[B] = (c + (c << 3)) | 0;
+    s[C] = (((c << 21) | (c >>> 11)) + t) | 0;
+    return (t >>> 0) / 4294967296;
   }
 
   int(min: number, max: number): number {
@@ -99,18 +121,20 @@ class Sfc32 implements Rng {
   }
 
   getState(out: Uint32Array): void {
-    out[0] = this.a >>> 0;
-    out[1] = this.b >>> 0;
-    out[2] = this.c >>> 0;
-    out[3] = this.d >>> 0;
+    const s = this.s;
+    out[0] = s[A]! >>> 0;
+    out[1] = s[B]! >>> 0;
+    out[2] = s[C]! >>> 0;
+    out[3] = s[D]! >>> 0;
   }
 
   setState(state: ArrayLike<number>): void {
     if (state.length < 4) throw new RangeError('Rng.setState: need 4 words');
-    this.a = state[0]! | 0;
-    this.b = state[1]! | 0;
-    this.c = state[2]! | 0;
-    this.d = state[3]! | 0;
+    const s = this.s;
+    s[A] = state[0]! | 0;
+    s[B] = state[1]! | 0;
+    s[C] = state[2]! | 0;
+    s[D] = state[3]! | 0;
   }
 }
 

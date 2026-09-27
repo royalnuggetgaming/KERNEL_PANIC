@@ -5,6 +5,7 @@
 import { NO_HANDLE, type EnemyKind, type PlayerIndex, type BossId } from '../contracts/ids';
 import {
   PROJECTILE_KINDS,
+  type EnemyEntity,
   type PlayerEntity,
   type ProjectileKind,
   type ProjectileSpec,
@@ -19,8 +20,10 @@ export function isTargetable(p: Readonly<PlayerEntity>): boolean {
   return p.life === 'alive';
 }
 
-/** Nearest targetable player to (x, z), or -1 when nobody can be targeted. Ties go to P1. */
-export function nearestTarget(w: WorldView, x: number, z: number): PlayerIndex | -1 {
+/** Query point of nearestToProbe: [x, z] (scratch, so per-enemy retargeting passes no boxed doubles). */
+const PROBE = new Float64Array(2);
+
+function nearestToProbe(w: WorldView): PlayerIndex | -1 {
   const p0 = w.players[0];
   const p1 = w.players[1];
   const ok0 = isTargetable(p0);
@@ -28,9 +31,25 @@ export function nearestTarget(w: WorldView, x: number, z: number): PlayerIndex |
   if (!ok0 && !ok1) return -1;
   if (!ok1) return 0;
   if (!ok0) return 1;
+  const x = PROBE[0]!;
+  const z = PROBE[1]!;
   const d0 = (p0.x - x) * (p0.x - x) + (p0.z - z) * (p0.z - z);
   const d1 = (p1.x - x) * (p1.x - x) + (p1.z - z) * (p1.z - z);
   return d1 < d0 ? 1 : 0;
+}
+
+/** Nearest targetable player to (x, z), or -1 when nobody can be targeted. Ties go to P1. */
+export function nearestTarget(w: WorldView, x: number, z: number): PlayerIndex | -1 {
+  PROBE[0] = x;
+  PROBE[1] = z;
+  return nearestToProbe(w);
+}
+
+/** nearestTarget from enemy e's position. */
+export function nearestTargetOf(w: WorldView, e: Readonly<EnemyEntity>): PlayerIndex | -1 {
+  PROBE[0] = e.x;
+  PROBE[1] = e.z;
+  return nearestToProbe(w);
 }
 
 /** Keeps (x, z) inside the arena disc minus `inset`; writes into out. */
@@ -142,6 +161,42 @@ export const BOSS_SHOT_RADIUS = 0.38;
 export const ENEMY_SHOT_LIFE = 6;
 
 /**
+ * The next fireEnemyShotAt: [x, z, yaw, speed, damage, radius] (index constants below). Per-enemy callers
+ * write it instead of passing doubles: a call that is not inlined boxes each double argument into a HeapNumber.
+ */
+export const ENEMY_MUZZLE = new Float64Array(6);
+export const MUZZLE_X = 0;
+export const MUZZLE_Z = 1;
+export const MUZZLE_YAW = 2;
+export const MUZZLE_SPEED = 3;
+export const MUZZLE_DAMAGE = 4;
+export const MUZZLE_RADIUS = 5;
+
+/**
+ * Fires one enemy-side projectile described by ENEMY_MUZZLE (yaw 0 = +Z, math.ts convention). Returns false
+ * when the enemy-shot pool is full (deterministic skip).
+ */
+export function fireEnemyShotAt(w: WorldState, kind: ProjectileKind): boolean {
+  const yaw = ENEMY_MUZZLE[MUZZLE_YAW]!;
+  const speed = ENEMY_MUZZLE[MUZZLE_SPEED]!;
+  SHOT.side = 'enemy';
+  SHOT.owner = SOURCE_WORLD;
+  SHOT.kind = kind;
+  SHOT.x = ENEMY_MUZZLE[MUZZLE_X]!;
+  SHOT.z = ENEMY_MUZZLE[MUZZLE_Z]!;
+  SHOT.vx = Math.sin(yaw) * speed;
+  SHOT.vz = Math.cos(yaw) * speed;
+  SHOT.damage = ENEMY_MUZZLE[MUZZLE_DAMAGE]!;
+  SHOT.radius = ENEMY_MUZZLE[MUZZLE_RADIUS]!;
+  SHOT.life = ENEMY_SHOT_LIFE;
+  SHOT.pierce = 0;
+  SHOT.bounces = 0;
+  SHOT.crit = false;
+  SHOT.homing = NO_HANDLE;
+  return spawnProjectile(w, SHOT) !== null;
+}
+
+/**
  * Fires one enemy-side projectile along angle `yaw` (0 = +Z, math.ts convention). Returns false when the
  * enemy-shot pool is full (deterministic skip).
  */
@@ -155,19 +210,19 @@ export function fireEnemyShot(
   damage: number,
   radius: number,
 ): boolean {
-  SHOT.side = 'enemy';
-  SHOT.owner = SOURCE_WORLD;
-  SHOT.kind = kind;
-  SHOT.x = x;
-  SHOT.z = z;
-  SHOT.vx = Math.sin(yaw) * speed;
-  SHOT.vz = Math.cos(yaw) * speed;
-  SHOT.damage = damage;
-  SHOT.radius = radius;
-  SHOT.life = ENEMY_SHOT_LIFE;
-  SHOT.pierce = 0;
-  SHOT.bounces = 0;
-  SHOT.crit = false;
-  SHOT.homing = NO_HANDLE;
-  return spawnProjectile(w, SHOT) !== null;
+  ENEMY_MUZZLE[MUZZLE_X] = x;
+  ENEMY_MUZZLE[MUZZLE_Z] = z;
+  ENEMY_MUZZLE[MUZZLE_YAW] = yaw;
+  ENEMY_MUZZLE[MUZZLE_SPEED] = speed;
+  ENEMY_MUZZLE[MUZZLE_DAMAGE] = damage;
+  ENEMY_MUZZLE[MUZZLE_RADIUS] = radius;
+  return fireEnemyShotAt(w, kind);
+}
+
+/** emitEnemyShot at the muzzle in ENEMY_MUZZLE. */
+export function emitEnemyShotAtMuzzle(w: WorldState, boss: boolean): void {
+  const e = w.events.enemyShot.push();
+  e.x = ENEMY_MUZZLE[MUZZLE_X]!;
+  e.z = ENEMY_MUZZLE[MUZZLE_Z]!;
+  e.boss = boss;
 }

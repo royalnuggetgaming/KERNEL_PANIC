@@ -7,12 +7,19 @@
 import { PROJECTILE_KINDS, type EnemyEntity } from '../contracts/sim';
 import type { WorldState } from '../contracts/world';
 import { ENEMY_DEFS } from '../config/enemies';
-import { DEG2RAD, TAU, inArc } from '../core/math';
+import { DEG2RAD, TAU } from '../core/math';
 import {
+  ENEMY_MUZZLE,
   ENEMY_SHOT_RADIUS,
-  emitEnemyShot,
+  MUZZLE_DAMAGE,
+  MUZZLE_RADIUS,
+  MUZZLE_SPEED,
+  MUZZLE_X,
+  MUZZLE_YAW,
+  MUZZLE_Z,
+  emitEnemyShotAtMuzzle,
   emitTelegraph,
-  fireEnemyShot,
+  fireEnemyShotAt,
   isTargetable,
 } from './contentShared';
 
@@ -43,19 +50,30 @@ const LEECH_SNAP_MUL = 3;
 const LEECH_T_MIN = 0.05;
 const LEECH_T_MAX = 0.95;
 
+/** Current behaviour target [x, z, distance] (scratch: handlers read it instead of taking boxed doubles). */
 const TGT = new Float64Array(3);
 const SHARD = ENEMY_DEFS.shard;
 const DART = ENEMY_DEFS.dart;
 const SPIKER = ENEMY_DEFS.spiker;
 const WARDEN = ENEMY_DEFS.warden;
+const WARDEN_HALF_ARC = WARDEN.params.shieldArcDeg * 0.5 * DEG2RAD;
 
-/** Turns e toward (tx, tz) at `rate` rad/s and moves along its facing at `speed`. */
-function steer(e: EnemyEntity, tx: number, tz: number, rate: number, speed: number, dt: number): void {
-  const dx = tx - e.x;
-  const dz = tz - e.z;
+/** Steering request [target x, target z, turn rate rad/s, speed] (scratch, read by steer). */
+const STEER = new Float64Array(4);
+/** stepLeech's beam projection parameter [t] (scratch, written by beamParam). */
+const BEAM_T = new Float64Array(1);
+
+/**
+ * Turns e toward the STEER target at the STEER rate and moves along its facing at the STEER speed. Targets and
+ * rates travel through scratch arrays: a handler call TurboFan does not inline would box every double argument
+ * (turnToward/wrapAngle arithmetic is inlined here for the same reason).
+ */
+function steer(e: EnemyEntity, dt: number): void {
+  const dx = STEER[0]! - e.x;
+  const dz = STEER[1]! - e.z;
   if (dx * dx + dz * dz > 1e-8) {
     const target = Math.atan2(dx, dz);
-    const maxStep = rate * dt;
+    const maxStep = STEER[2]! * dt;
     let d = (target - e.yaw) % TAU;
     if (d <= -Math.PI) d += TAU;
     else if (d > Math.PI) d -= TAU;
@@ -65,6 +83,7 @@ function steer(e: EnemyEntity, tx: number, tz: number, rate: number, speed: numb
     else if (y > Math.PI) y -= TAU;
     e.yaw = y;
   }
+  const speed = STEER[3]!;
   e.dirX = Math.sin(e.yaw);
   e.dirZ = Math.cos(e.yaw);
   e.vx = e.dirX * speed;
@@ -82,14 +101,19 @@ function idle(e: EnemyEntity, dt: number): void {
     stop(e);
     return;
   }
-  steer(e, 0, 0, DEFAULT_TURN, e.speed * IDLE_SPEED_MUL, dt);
+  STEER[0] = 0;
+  STEER[1] = 0;
+  STEER[2] = DEFAULT_TURN;
+  STEER[3] = e.speed * IDLE_SPEED_MUL;
+  steer(e, dt);
 }
 
 function stepSeek(e: EnemyEntity, dt: number): void {
-  const tx = TGT[0]!;
-  const tz = TGT[1]!;
-  const rate = e.kind === 'shard' ? SHARD.params.turnRate : DEFAULT_TURN;
-  steer(e, tx, tz, rate, e.speed, dt);
+  STEER[0] = TGT[0]!;
+  STEER[1] = TGT[1]!;
+  STEER[2] = e.kind === 'shard' ? SHARD.params.turnRate : DEFAULT_TURN;
+  STEER[3] = e.speed;
+  steer(e, dt);
 }
 
 function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
@@ -137,23 +161,24 @@ function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
   }
 }
 
+/** Loads e's muzzle and the standard enemy bullet radius into ENEMY_MUZZLE (speed, damage, yaw by caller). */
+function aimMuzzle(e: Readonly<EnemyEntity>): void {
+  ENEMY_MUZZLE[MUZZLE_X] = e.x;
+  ENEMY_MUZZLE[MUZZLE_Z] = e.z;
+  ENEMY_MUZZLE[MUZZLE_RADIUS] = ENEMY_SHOT_RADIUS;
+}
+
 function fireSpikerRing(w: WorldState, e: EnemyEntity): void {
   const n = SPIKER.params.bullets;
   const offset = (e.seed % 360) * DEG2RAD;
+  aimMuzzle(e);
+  ENEMY_MUZZLE[MUZZLE_SPEED] = SPIKER.shotSpeed;
+  ENEMY_MUZZLE[MUZZLE_DAMAGE] = SPIKER.shotDamage;
   for (let i = 0; i < n; i++) {
-    const a = offset + (i * TAU) / n;
-    fireEnemyShot(
-      w,
-      PROJECTILE_KINDS.enemySpike,
-      e.x,
-      e.z,
-      a,
-      SPIKER.shotSpeed,
-      SPIKER.shotDamage,
-      ENEMY_SHOT_RADIUS,
-    );
+    ENEMY_MUZZLE[MUZZLE_YAW] = offset + (i * TAU) / n;
+    fireEnemyShotAt(w, PROJECTILE_KINDS.enemySpike);
   }
-  emitEnemyShot(w, e.x, e.z, false);
+  emitEnemyShotAtMuzzle(w, false);
 }
 
 function stepSpiker(w: WorldState, e: EnemyEntity, dt: number): void {
@@ -201,36 +226,43 @@ function stepSpiker(w: WorldState, e: EnemyEntity, dt: number): void {
   e.dirZ = nz;
 }
 
+/** core/math inArc(e.yaw, WARDEN_HALF_ARC, target - e), same arithmetic, reading the target from TGT. */
+function shieldFacesTarget(e: Readonly<EnemyEntity>): boolean {
+  const dx = TGT[0]! - e.x;
+  const dz = TGT[1]! - e.z;
+  if (dx === 0 && dz === 0) return false;
+  let d = (Math.atan2(dx, dz) - e.yaw) % TAU;
+  if (d <= -Math.PI) d += TAU;
+  else if (d > Math.PI) d -= TAU;
+  return Math.abs(d) <= WARDEN_HALF_ARC;
+}
+
 function stepWarden(w: WorldState, e: EnemyEntity, dt: number): void {
   const tx = TGT[0]!;
   const tz = TGT[1]!;
   const dist = TGT[2]!;
   const p = WARDEN.params;
-  const speed = dist <= WARDEN_STOP_DIST ? 0 : e.speed;
-  steer(e, tx, tz, p.turnRate, speed, dt);
+  STEER[0] = tx;
+  STEER[1] = tz;
+  STEER[2] = p.turnRate;
+  STEER[3] = dist <= WARDEN_STOP_DIST ? 0 : e.speed;
+  steer(e, dt);
   e.ai = AI_STATE.SEEK;
   e.shotTimer -= dt;
   if (e.shotTimer > 0) return;
   e.shotTimer = 0;
   if (dist > WARDEN_FIRE_RANGE) return;
-  const halfArc = p.shieldArcDeg * 0.5 * DEG2RAD;
-  if (!inArc(e.yaw, halfArc, tx - e.x, tz - e.z)) return;
+  if (!shieldFacesTarget(e)) return;
   const n = p.volleyShots;
   const spread = p.volleySpreadDeg * DEG2RAD;
+  aimMuzzle(e);
+  ENEMY_MUZZLE[MUZZLE_SPEED] = WARDEN.shotSpeed;
+  ENEMY_MUZZLE[MUZZLE_DAMAGE] = WARDEN.shotDamage;
   for (let i = 0; i < n; i++) {
-    const a = e.yaw + (i - (n - 1) * 0.5) * spread;
-    fireEnemyShot(
-      w,
-      PROJECTILE_KINDS.enemyOrb,
-      e.x,
-      e.z,
-      a,
-      WARDEN.shotSpeed,
-      WARDEN.shotDamage,
-      ENEMY_SHOT_RADIUS,
-    );
+    ENEMY_MUZZLE[MUZZLE_YAW] = e.yaw + (i - (n - 1) * 0.5) * spread;
+    fireEnemyShotAt(w, PROJECTILE_KINDS.enemyOrb);
   }
-  emitEnemyShot(w, e.x, e.z, false);
+  emitEnemyShotAtMuzzle(w, false);
   e.shotTimer = p.volleyInterval;
 }
 
@@ -244,15 +276,18 @@ function unlatch(w: WorldState, e: EnemyEntity): void {
   if (w.link.latchedCount > 0) w.link.latchedCount--;
 }
 
-/** Projection parameter of (x, z) on the beam segment, clamped to [0, 1]. */
-function beamParam(w: WorldState, x: number, z: number): number {
+/** Projection parameter of e on the beam segment, clamped to [0, 1], written to BEAM_T[0]. */
+function beamParam(w: WorldState, e: Readonly<EnemyEntity>): void {
   const l = w.link;
   const abx = l.bx - l.ax;
   const abz = l.bz - l.az;
   const l2 = abx * abx + abz * abz;
-  if (l2 <= 1e-9) return 0;
-  const t = ((x - l.ax) * abx + (z - l.az) * abz) / l2;
-  return t < 0 ? 0 : t > 1 ? 1 : t;
+  if (l2 <= 1e-9) {
+    BEAM_T[0] = 0;
+    return;
+  }
+  const t = ((e.x - l.ax) * abx + (e.z - l.az) * abz) / l2;
+  BEAM_T[0] = t < 0 ? 0 : t > 1 ? 1 : t;
 }
 
 function stepLeech(w: WorldState, e: EnemyEntity, hasTarget: boolean, dt: number): void {
@@ -263,7 +298,8 @@ function stepLeech(w: WorldState, e: EnemyEntity, hasTarget: boolean, dt: number
       e.ai = AI_STATE.SEEK;
     } else {
       if (e.ai !== AI_STATE.LATCHED) {
-        const t = beamParam(w, e.x, e.z);
+        beamParam(w, e);
+        const t = BEAM_T[0]!;
         e.aiTimer = t < LEECH_T_MIN ? LEECH_T_MIN : t > LEECH_T_MAX ? LEECH_T_MAX : t;
         e.ai = AI_STATE.LATCHED;
       }
@@ -295,8 +331,13 @@ function stepLeech(w: WorldState, e: EnemyEntity, hasTarget: boolean, dt: number
     return;
   }
   if (beamPresent(w)) {
-    const t = beamParam(w, e.x, e.z);
-    steer(e, l.ax + (l.bx - l.ax) * t, l.az + (l.bz - l.az) * t, DEFAULT_TURN, e.speed, dt);
+    beamParam(w, e);
+    const t = BEAM_T[0]!;
+    STEER[0] = l.ax + (l.bx - l.ax) * t;
+    STEER[1] = l.az + (l.bz - l.az) * t;
+    STEER[2] = DEFAULT_TURN;
+    STEER[3] = e.speed;
+    steer(e, dt);
     return;
   }
   if (!hasTarget) {

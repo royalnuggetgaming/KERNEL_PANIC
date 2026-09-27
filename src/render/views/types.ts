@@ -92,4 +92,3 @@ export function appendRecord(b: BatchSink): number {
   b.setCount(i + 1);
   return i * STRIDE;
 }
-
