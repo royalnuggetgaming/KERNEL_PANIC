@@ -1,0 +1,108 @@
+/* GameOver: outcome title, versus match line, results table, Cores breakdown. Imported by screens.css. */
+
+/* ------------------------------------------------------------------ game over */
+
+.kp-gameover {
+  background: rgba(var(--kp-bg-rgb), 0.7);
+}
+
+.kp-go-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9em;
+  padding: 2em;
+  overflow: auto;
+}
+
+.outcome-defeat .kp-go-title {
+  color: var(--kp-danger);
+}
+
+.outcome-victory .kp-go-title {
+  color: var(--kp-good);
+}
+
+.outcome-abandoned .kp-go-title {
+  color: var(--kp-dim);
+}
+
+.kp-go-subtitle {
+  color: var(--kp-dim);
+  letter-spacing: 0.2em;
+}
+
+.kp-go-match {
+  color: var(--kp-pc, var(--kp-text));
+  font-size: 1.5em;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 16px rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.7);
+}
+
+.kp-go-table {
+  border-collapse: collapse;
+  min-width: min(56em, 94vw);
+}
+
+.kp-go-table th {
+  padding: 0.3em 0.6em;
+  border-bottom: 1px solid var(--kp-line);
+  color: var(--kp-dim);
+  font-size: 0.75em;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-align: left;
+}
+
+.kp-go-table th.kp-num {
+  text-align: right;
+}
+
+.kp-go-table td {
+  padding: 0.35em 0.6em;
+}
+
+.kp-go-row.is-highlight {
+  background: linear-gradient(90deg, rgba(var(--kp-pc-rgb), 0.18), transparent);
+}
+
+.kp-go-who {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+.kp-badge {
+  color: #ffd166;
+  font-size: 0.75em;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.kp-cores-box {
+  min-width: min(26em, 94vw);
+}
+
+.kp-cores-line,
+.kp-cores-total {
+  display: flex;
+  justify-content: space-between;
+}
+
+.kp-cores-total {
+  margin-top: 0.4em;
+  padding-top: 0.4em;
+  border-top: 1px solid var(--kp-line);
+  font-weight: 800;
+}
+
+.kp-new-best {
+  margin-top: 0.5em;
+  color: #ffd166;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
+}

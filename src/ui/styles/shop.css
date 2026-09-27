@@ -1,0 +1,340 @@
+/* Patch Bay (mid-run shop) and the Firmware hangar. Imported by screens.css. */
+
+/* The Patch Bay fills the screen: a near-opaque backdrop keeps the HUD underneath from bleeding through. */
+.kp-overlay.kp-shop {
+  background: rgba(var(--kp-bg-rgb), 0.94);
+}
+
+.kp-shop-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding: 1.2em max(1.2em, 2.5vw);
+}
+
+.kp-shop-top {
+  display: flex;
+  gap: 1.2em;
+  align-items: baseline;
+}
+
+.kp-shop-title {
+  margin: 0;
+}
+
+.kp-shop-subtitle {
+  flex: 1;
+}
+
+.kp-team-kernels-num {
+  color: var(--kp-good);
+  font-weight: 700;
+}
+
+.kp-final {
+  display: flex;
+  gap: 1.2em;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6em;
+  border: 1px solid rgba(var(--kp-accent-rgb), 0.5);
+  background: rgba(var(--kp-accent-rgb), 0.08);
+}
+
+.kp-final-btns {
+  display: flex;
+  gap: 1em;
+}
+
+.kp-final-btn {
+  padding: 0.4em 1.4em;
+  border: 1px solid var(--kp-line);
+  font-weight: 800;
+  letter-spacing: 0.25em;
+}
+
+.kp-final-btn.is-selected {
+  border-color: var(--kp-accent);
+  background: rgba(var(--kp-accent-rgb), 0.25);
+  box-shadow: var(--kp-glow);
+}
+
+.kp-shop-panels {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5em;
+  min-height: 0;
+}
+
+.mode-solo .kp-shop-panels {
+  grid-template-columns: minmax(0, 40em);
+  justify-content: center;
+}
+
+.mode-solo .kp-shop-panel.kp-p2 {
+  display: none;
+}
+
+.kp-shop-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.7em 0.9em;
+  border-top: 2px solid var(--kp-pc);
+  background: rgba(var(--kp-panel-rgb), 0.9);
+  overflow: auto;
+}
+
+.kp-shop-panel.fx-buy {
+  animation: kp-buy 220ms ease-out;
+}
+
+.kp-shop-panel.fx-deny {
+  animation: kp-deny 320ms ease-in-out;
+}
+
+@keyframes kp-buy {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kp-deny {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.kp-shop-head {
+  display: flex;
+  gap: 0.6em;
+  align-items: center;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--kp-line);
+}
+
+.kp-shop-name {
+  flex: 1;
+  color: var(--kp-pc);
+  font-weight: 700;
+}
+
+.kp-shop-wallet-num {
+  color: var(--kp-good);
+  font-size: 1.2em;
+  font-weight: 800;
+}
+
+.kp-shop-hp {
+  color: var(--kp-dim);
+  font-size: 0.85em;
+}
+
+.kp-shop-sub {
+  margin: 0.5em 0 0.15em;
+  color: var(--kp-dim);
+  font-size: 0.7em;
+  letter-spacing: 0.25em;
+}
+
+.kp-row {
+  display: flex;
+  align-items: stretch;
+  border-left: 2px solid transparent;
+}
+
+.kp-row.is-cursor {
+  border-left-color: var(--kp-pc, var(--kp-accent));
+  background: linear-gradient(90deg, rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.16), transparent);
+}
+
+.kp-row-buy {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1.2em 1fr auto 5.5em;
+  gap: 0.5em;
+  align-items: center;
+  padding: 0.18em 0.3em;
+}
+
+/* Short viewports (1280x720): compact rows so the READY row stays on screen without scrolling. */
+@media (max-height: 820px) {
+  .kp-row-buy {
+    padding-block: 0;
+  }
+
+  .kp-shop-sub {
+    margin-top: 0.3em;
+  }
+}
+
+.kp-row-level {
+  color: var(--kp-dim);
+  font-size: 0.8em;
+}
+
+.kp-row-price {
+  color: var(--kp-good);
+  text-align: right;
+}
+
+.kp-row.st-unaffordable .kp-row-price {
+  color: var(--kp-danger);
+}
+
+.kp-row.st-maxed .kp-row-price,
+.kp-row.st-capped .kp-row-price,
+.kp-row.st-heldcap .kp-row-price,
+.kp-row.st-owned .kp-row-price {
+  color: #ffd166;
+  font-size: 0.8em;
+}
+
+.kp-row.st-soldout,
+.kp-row.st-unavailable,
+.kp-row.st-locked {
+  opacity: 0.45;
+}
+
+.kp-row-lock {
+  width: 4.8em;
+  padding: 0 0.4em;
+  border-left: 1px solid var(--kp-line);
+  color: var(--kp-dim);
+  font-size: 0.75em;
+  text-align: center;
+}
+
+.kp-row.is-cursor.is-col-lock .kp-row-lock {
+  background: rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.3);
+  color: var(--kp-text);
+}
+
+.kp-row.is-cursor.is-col-lock .kp-row-caret {
+  opacity: 0;
+}
+
+.kp-row.is-locked .kp-row-lock {
+  color: #ffd166;
+}
+
+.kp-row-card.rar-c .kp-row-level {
+  color: #c9d4e6;
+}
+
+.kp-row-card.rar-u .kp-row-level {
+  color: #7dff9a;
+}
+
+.kp-row-card.rar-r .kp-row-level {
+  color: #4ab8ff;
+}
+
+.kp-row-card.rar-l .kp-row-level {
+  color: #ffb13b;
+  text-shadow: 0 0 8px rgba(255, 177, 59, 0.8);
+}
+
+.kp-shop-actions {
+  display: flex;
+  gap: 0.8em;
+  margin-top: 0.7em;
+}
+
+.kp-shop-ready {
+  flex: 1;
+  padding: 0.45em;
+  border: 1px solid rgba(var(--kp-pc-rgb), 0.5);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.kp-shop-ready.is-cursor {
+  box-shadow: 0 0 0 1px var(--kp-pc);
+}
+
+.kp-shop-ready.is-ready {
+  background: rgba(var(--kp-pc-rgb), 0.3);
+  color: var(--kp-text);
+}
+
+.kp-shop-undo {
+  padding: 0.45em 0.9em;
+  border: 1px solid var(--kp-line);
+  color: var(--kp-dim);
+}
+
+.kp-shop-detail {
+  min-height: 2.7em;
+  margin-top: 0.5em;
+  color: var(--kp-dim);
+  font-size: 0.85em;
+}
+
+.kp-shop-toast {
+  min-height: 1.35em;
+  color: #ffd166;
+  font-size: 0.85em;
+}
+
+.kp-shop-absent {
+  margin: auto;
+  color: var(--kp-dim);
+  letter-spacing: 0.3em;
+}
+
+/* ------------------------------------------------------------------ hangar */
+
+.kp-hangar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Below the 3D voxel title (top ~22% of the view), so the panel never covers the logo. */
+  padding-top: 23vh;
+  background: rgba(var(--kp-bg-rgb), 0.55);
+}
+
+.kp-hangar-box {
+  width: min(44em, 94vw);
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.kp-hangar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kp-hangar-list .kp-row-buy {
+  grid-template-columns: 1.2em 1fr auto 6em;
+}
+
+.kp-hangar-refund,
+.kp-hangar-msg {
+  min-height: 1.35em;
+}
+
+.kp-hangar.is-readonly .kp-hangar-list {
+  opacity: 0.5;
+}

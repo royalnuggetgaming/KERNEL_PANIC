@@ -1,0 +1,369 @@
+/*
+ * KERNEL PANIC UI base: palette variables (overwritten at runtime from the ThemeDef by UIRoot), system monospace
+ * stack, shared widgets (panels, buttons, meters, keycaps, toasts). Animations touch transform/opacity only.
+ */
+@import './widgets.css';
+
+.kp-ui {
+  --kp-bg: #05060d;
+  --kp-panel: #0c1022;
+  --kp-text: #e6f6ff;
+  --kp-dim: #6a7a99;
+  --kp-p1: #19e6ff;
+  --kp-p2: #ff3fd0;
+  --kp-accent: #19e6ff;
+  --kp-danger: #ff5a1f;
+  --kp-good: #7dff9a;
+  --kp-link: #9d7bff;
+  --kp-p1-rgb: 25, 230, 255;
+  --kp-p2-rgb: 255, 63, 208;
+  --kp-accent-rgb: 25, 230, 255;
+  --kp-danger-rgb: 255, 90, 31;
+  --kp-panel-rgb: 12, 16, 34;
+  --kp-bg-rgb: 5, 6, 13;
+  --kp-font:
+    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', Consolas,
+    'Liberation Mono', 'DejaVu Sans Mono', monospace;
+  --kp-line: rgba(var(--kp-accent-rgb), 0.28);
+  --kp-glow: 0 0 12px rgba(var(--kp-accent-rgb), 0.45);
+  --kp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--kp-text);
+  font-family: var(--kp-font);
+  font-size: clamp(12px, 1.05vw + 4px, 17px);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+.kp-ui *,
+.kp-ui *::before,
+.kp-ui *::after {
+  box-sizing: border-box;
+}
+
+.kp-ui [hidden] {
+  display: none !important;
+}
+
+/* Element resets are wrapped in :where() (specificity 0,0,1) so single-class component rules win. */
+:where(.kp-ui) h1,
+:where(.kp-ui) h2,
+:where(.kp-ui) h3,
+:where(.kp-ui) p,
+:where(.kp-ui) pre {
+  margin: 0;
+  font: inherit;
+}
+
+/* ------------------------------------------------------------------ player colour scopes */
+
+.kp-ui .kp-p1 {
+  --kp-pc: var(--kp-p1);
+  --kp-pc-rgb: var(--kp-p1-rgb);
+}
+
+.kp-ui .kp-p2 {
+  --kp-pc: var(--kp-p2);
+  --kp-pc-rgb: var(--kp-p2-rgb);
+}
+
+.kp-tag {
+  display: inline-block;
+  padding: 0 0.4em;
+  border: 1px solid var(--kp-pc, var(--kp-accent));
+  color: var(--kp-pc, var(--kp-accent));
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.7);
+}
+
+.kp-dim {
+  color: var(--kp-dim);
+}
+
+.kp-warn {
+  color: #ffd166;
+}
+
+.kp-danger {
+  color: var(--kp-danger);
+}
+
+.kp-unit {
+  color: var(--kp-dim);
+  font-size: 0.85em;
+}
+
+.kp-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ screens */
+
+.kp-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.kp-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1.2em;
+}
+
+.kp-overlay {
+  background: rgba(var(--kp-bg-rgb), 0.62);
+}
+
+.kp-panel {
+  position: relative;
+  padding: 1.1em 1.4em;
+  background: rgba(var(--kp-panel-rgb), 0.88);
+  border: 1px solid var(--kp-line);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--kp-bg-rgb), 0.9),
+    0 0 24px rgba(var(--kp-accent-rgb), 0.12);
+}
+
+.kp-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 1.2em;
+  height: 1.2em;
+  border-top: 2px solid var(--kp-accent);
+  border-left: 2px solid var(--kp-accent);
+  pointer-events: none;
+}
+
+.kp-panel-title {
+  margin-bottom: 0.8em;
+  color: var(--kp-accent);
+  font-size: 1.25em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-shadow: var(--kp-glow);
+}
+
+.kp-panel-title::before {
+  content: '// ';
+  color: var(--kp-dim);
+}
+
+.kp-panel-sub {
+  margin: 0.6em 0 0.3em;
+  color: var(--kp-dim);
+  font-size: 0.8em;
+  letter-spacing: 0.2em;
+}
+
+.kp-title {
+  color: var(--kp-text);
+  font-size: clamp(2.2em, 6vw, 5em);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow:
+    -2px 0 rgba(var(--kp-p2-rgb), 0.75),
+    2px 0 rgba(var(--kp-p1-rgb), 0.75),
+    0 0 24px rgba(var(--kp-accent-rgb), 0.55);
+}
+
+.kp-glitch {
+  animation: kp-glitch 5.2s steps(1, end) infinite;
+}
+
+@keyframes kp-glitch {
+  0%,
+  91%,
+  100% {
+    transform: translate(0, 0);
+  }
+  92% {
+    transform: translate(-3px, 1px) skewX(-6deg);
+  }
+  94% {
+    transform: translate(3px, -1px) skewX(4deg);
+  }
+  96% {
+    transform: translate(-1px, 0);
+  }
+}
+
+.kp-blink {
+  animation: kp-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes kp-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ------------------------------------------------------------------ buttons and lists */
+
+:where(.kp-ui) button {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.kp-btn {
+  padding: 0.45em 1.1em;
+  border: 1px solid var(--kp-line);
+  background: rgba(var(--kp-accent-rgb), 0.06);
+  color: var(--kp-text);
+  transition: opacity 120ms var(--kp-ease);
+}
+
+.kp-btn:hover,
+.kp-btn.is-on {
+  border-color: var(--kp-accent);
+  box-shadow: var(--kp-glow);
+}
+
+.kp-btn-row {
+  display: flex;
+  gap: 0.8em;
+  justify-content: center;
+  margin-top: 1em;
+}
+
+.kp-arrow {
+  padding: 0 0.45em;
+  color: var(--kp-dim);
+}
+
+.kp-arrow:hover {
+  color: var(--kp-accent);
+}
+
+.kp-caret,
+.kp-menu-caret,
+.kp-row-caret {
+  display: inline-block;
+  width: 1.2em;
+  color: var(--kp-accent);
+  opacity: 0;
+}
+
+.kp-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+
+.kp-menu-row {
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.5em;
+}
+
+.kp-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 0.35em 0.9em 0.35em 0.4em;
+  border-left: 2px solid transparent;
+  color: var(--kp-dim);
+}
+
+.kp-menu-item:hover {
+  color: var(--kp-text);
+}
+
+.kp-menu-item.is-cursor {
+  border-left-color: var(--kp-accent);
+  background: linear-gradient(90deg, rgba(var(--kp-accent-rgb), 0.18), transparent);
+  color: var(--kp-text);
+  text-shadow: var(--kp-glow);
+}
+
+.kp-menu-item.is-cursor .kp-menu-caret,
+.is-cursor > .kp-caret,
+.is-cursor .kp-row-caret {
+  opacity: 1;
+}
+
+.kp-menu-item.is-cursor-p2 {
+  box-shadow: inset -2px 0 0 var(--kp-p2);
+}
+
+.kp-menu-item.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.kp-menu-hint {
+  min-height: 1.35em;
+  margin-top: 0.6em;
+  color: var(--kp-dim);
+  font-size: 0.85em;
+}
+
+/* ------------------------------------------------------------------ meters (transform: scaleX only) */
+
+.kp-meter {
+  position: relative;
+  height: 0.45em;
+  overflow: hidden;
+  background: rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.14);
+  color: var(--kp-pc, var(--kp-accent));
+}
+
+.kp-meter-fill {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  will-change: transform;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ------------------------------------------------------------------ accessibility */
+
+.kp-reduce-motion *,
+.kp-reduce-motion *::before,
+.kp-reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+.kp-reduce-flashes .kp-blink {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kp-ui *,
+  .kp-ui *::before,
+  .kp-ui *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,1 @@
+{"v":1,"ts":1758844800000,"rev":3,"crc":12345,"data":{"cores":137,"lifetimeCores":6

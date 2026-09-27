@@ -1,0 +1,183 @@
+/* CharacterSelect: player slots, stat bars, MODE row, launch countdown. Imported by screens.css. */
+
+/* ------------------------------------------------------------------ character select */
+
+.kp-select-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 2em max(2em, 4vw);
+}
+
+.kp-select-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kp-slots {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  gap: max(2em, 18vw);
+  min-height: 0;
+}
+
+.kp-slot {
+  display: flex;
+  flex-direction: column;
+  padding: 1em;
+  border: 1px solid rgba(var(--kp-pc-rgb), 0.35);
+  background: linear-gradient(180deg, rgba(var(--kp-panel-rgb), 0.85), rgba(var(--kp-panel-rgb), 0.35));
+}
+
+.kp-slot.is-ready {
+  border-color: var(--kp-pc);
+  box-shadow: 0 0 22px rgba(var(--kp-pc-rgb), 0.35);
+}
+
+.kp-slot-head {
+  margin-bottom: 0.8em;
+}
+
+.kp-join {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  color: var(--kp-pc);
+}
+
+.kp-join-plus {
+  font-size: 3em;
+  line-height: 1;
+}
+
+.kp-slot-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.kp-veh-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3em;
+  border: 1px solid transparent;
+}
+
+.kp-veh-row.is-cursor {
+  border-color: rgba(var(--kp-pc-rgb), 0.6);
+}
+
+.kp-veh-row .kp-arrow {
+  font-size: 1.3em;
+}
+
+.kp-veh-name {
+  min-width: 8em;
+  color: var(--kp-pc);
+  font-size: 1.6em;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-shadow: 0 0 14px rgba(var(--kp-pc-rgb), 0.7);
+}
+
+.kp-veh-blurb {
+  min-height: 2.7em;
+  color: var(--kp-dim);
+  text-align: center;
+}
+
+.kp-stat {
+  display: grid;
+  grid-template-columns: 7em 1fr 5.5em;
+  gap: 0.6em;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.kp-stat-value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.kp-veh-lock {
+  padding: 0.4em;
+  border: 1px solid rgba(var(--kp-danger-rgb), 0.5);
+  color: #ffd166;
+  text-align: center;
+}
+
+.kp-slot.is-locked .kp-veh-name {
+  opacity: 0.45;
+}
+
+.kp-ready-btn {
+  align-self: center;
+  margin-top: 0.4em;
+}
+
+.kp-slot.is-ready .kp-ready-btn {
+  border-color: var(--kp-pc);
+  background: rgba(var(--kp-pc-rgb), 0.25);
+}
+
+.kp-mode-row {
+  display: flex;
+  gap: 0.6em;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4em;
+}
+
+.kp-mode-label {
+  min-width: 7em;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-align: center;
+}
+
+.kp-mode-row.mode-versus .kp-mode-label {
+  color: var(--kp-danger);
+}
+
+.kp-mode-row.mode-coop .kp-mode-label {
+  color: var(--kp-link);
+}
+
+.kp-mode-cur {
+  color: var(--kp-pc);
+  font-size: 0.75em;
+  opacity: 0;
+}
+
+.kp-mode-row.cur-p1 .kp-mode-cur.kp-p1,
+.kp-mode-row.cur-p2 .kp-mode-cur.kp-p2 {
+  opacity: 1;
+}
+
+.kp-select-msg {
+  min-height: 1.35em;
+  text-align: center;
+}
+
+.kp-select-countdown,
+.kp-shop-countdown {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  color: var(--kp-accent);
+  font-size: 2.4em;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  transform: translate(-50%, -50%);
+  text-shadow: var(--kp-glow);
+  pointer-events: none;
+}

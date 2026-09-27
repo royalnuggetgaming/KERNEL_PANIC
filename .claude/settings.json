@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest run *)",
+      "Bash(node scripts/typecheck-scope.mjs *)",
+      "Bash(npx prettier --check *)",
+      "Bash(npx tsc -p tsconfig.json --noEmit)",
+      "Bash(npx tsc -p tsconfig.pure.json --noEmit)",
+      "Bash(node scripts/check-arch.mjs)",
+      "Bash(npm run verify:nobuild)",
+      "Bash(npm run -s verify:nobuild)"
+    ]
+  }
+}
