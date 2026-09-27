@@ -1,5 +1,10 @@
 /* Patch Bay (mid-run shop) and the Firmware hangar. Imported by screens.css. */
 
+/* The Patch Bay fills the screen: a near-opaque backdrop keeps the HUD underneath from bleeding through. */
+.kp-overlay.kp-shop {
+  background: rgba(var(--kp-bg-rgb), 0.94);
+}
+
 .kp-shop-wrap {
   position: absolute;
   inset: 0;

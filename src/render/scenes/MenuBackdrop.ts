@@ -7,7 +7,7 @@ import { VEHICLE_IDS } from '../../contracts/ids';
 import type { AssetSource } from './ArenaScene';
 
 export const DRONE_COUNT = 6;
-const TITLE_HEIGHT = 9;
+const TITLE_HEIGHT = 16;
 const TITLE_SCALE = 1.5;
 
 export class MenuBackdrop {
