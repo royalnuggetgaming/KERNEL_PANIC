@@ -97,7 +97,7 @@
 
 .kp-stat {
   display: grid;
-  grid-template-columns: 7em 1fr 3.5em;
+  grid-template-columns: 7em 1fr 5.5em;
   gap: 0.6em;
   align-items: center;
   font-size: 0.85em;
@@ -105,6 +105,7 @@
 
 .kp-stat-value {
   text-align: right;
+  white-space: nowrap;
 }
 
 .kp-veh-lock {

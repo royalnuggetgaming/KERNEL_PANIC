@@ -23,4 +23,14 @@ describe('ui styles', () => {
     expect(m).not.toBeNull();
     expect(Number(m![1])).toBeGreaterThanOrEqual(0.9);
   });
+
+  it('vehicle stat values ("12 u/s", "95 dps") stay on one line', async () => {
+    // Regression (Wave 3 browser smoke): a 3.5em value column wrapped units onto a second line that overlapped
+    // the next stat row.
+    const text = await css('select.css');
+    expect(/\.kp-stat-value\s*\{[^}]*white-space:\s*nowrap/.test(text)).toBe(true);
+    const col = /\.kp-stat\s*\{[^}]*grid-template-columns:\s*[0-9.]+em\s+1fr\s+([0-9.]+)em/.exec(text);
+    expect(col).not.toBeNull();
+    expect(Number(col![1])).toBeGreaterThanOrEqual(5);
+  });
 });
