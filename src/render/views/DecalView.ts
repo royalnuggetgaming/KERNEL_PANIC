@@ -6,7 +6,7 @@
 import { DECAL_KIND } from '../../shaders/decal';
 import { encodeStyle, TINT } from '../../shaders/tints';
 import type { TransientList } from '../fx/TransientList';
-import { lerp1, type BatchSink, type FrameContext } from './types';
+import { appendRecord, lerp1, REC, type BatchSink, type FrameContext } from './types';
 
 const PLAYER_GLOW = 2.4;
 const BOSS_GLOW_MUL = 1.7;
@@ -62,11 +62,23 @@ export class DecalView {
         0.2 + i * 0.1,
       );
     }
+    // Telegraphs can be many under load: stored straight into the batch (appendRecord), since push()'s double
+    // arguments are boxed whenever it is not inlined.
+    const d = b.data;
     for (let i = 0; i < telegraphs.count; i++) {
       const r = telegraphs.items[i]!;
       const prog = r.life > 0 ? (t - r.t0) / r.life : 1;
       if (prog > 1) continue;
-      b.push(r.x0, r.z0, r.x1, r.size, prog < 0 ? 0 : prog, r.t0, encodeStyle(r.kind, r.tint), r.seed);
+      const o = appendRecord(b);
+      if (o < 0) break;
+      d[o + REC.X] = r.x0;
+      d[o + REC.Z] = r.z0;
+      d[o + REC.YAW] = r.x1;
+      d[o + REC.SCALE] = r.size;
+      d[o + REC.FLASH] = prog < 0 ? 0 : prog;
+      d[o + REC.SPAWN] = r.t0;
+      d[o + REC.TINT] = encodeStyle(r.kind, r.tint);
+      d[o + REC.SEED] = r.seed;
     }
     b.commit();
   }

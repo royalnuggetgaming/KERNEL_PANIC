@@ -8,7 +8,7 @@ import type { Intents, PlayerIntent } from '../contracts/input';
 import type { PlayerEntity } from '../contracts/sim';
 import { NUMERIC_STATS, type DerivedStats } from '../contracts/upgrades';
 import type { SimSystem, WorldState } from '../contracts/world';
-import { DEG2RAD, turnToward } from '../core/math';
+import { DEG2RAD, TAU } from '../core/math';
 import { COOP, DASH, MOVEMENT, STAT_CAPS } from '../config/tuning';
 import { VERSUS } from '../config/versus';
 import { beginRam, clampGhostToView, clampToArena, shedLeeches, stepRam } from './playerDash';
@@ -105,12 +105,20 @@ export function resetPlayersForRound(w: WorldState): void {
   }
 }
 
-/** Moves (vx, vz) toward (tx, tz) by at most rate * dt. */
-function accelerate(p: PlayerEntity, tx: number, tz: number, rate: number, dt: number): void {
+/**
+ * accelerate() inputs [tx, tz, rate * dt]: written by the caller instead of passed, because doubles passed to a
+ * call that is not inlined are boxed (per player per step).
+ */
+const ACCEL_IN = new Float64Array(3);
+
+/** Moves (vx, vz) toward (tx, tz) = ACCEL_IN[0..1] by at most ACCEL_IN[2] (rate * dt). */
+function accelerate(p: PlayerEntity): void {
+  const tx = ACCEL_IN[0]!;
+  const tz = ACCEL_IN[1]!;
   const dx = tx - p.vx;
   const dz = tz - p.vz;
   const l = Math.sqrt(dx * dx + dz * dz);
-  const step = rate * dt;
+  const step = ACCEL_IN[2]!;
   if (l <= step) {
     p.vx = tx;
     p.vz = tz;
@@ -209,6 +217,28 @@ function updateAim(w: WorldState, p: PlayerEntity): void {
   p.aimZ = az;
 }
 
+/** core/math wrapAngle's arithmetic, in place on YAW[0] (no double crosses a call). */
+const YAW = new Float64Array(1);
+function wrapYaw(): void {
+  let r = YAW[0]! % TAU;
+  if (r <= -Math.PI) r += TAU;
+  else if (r > Math.PI) r -= TAU;
+  YAW[0] = r;
+}
+
+/** p.yaw = turnToward(p.yaw, atan2(moveX, moveZ), TURN_RATE * dt), same arithmetic, without boxed arguments. */
+function turnToMove(p: PlayerEntity, it: Readonly<PlayerIntent>, dt: number): void {
+  const current = p.yaw;
+  const target = Math.atan2(it.moveX, it.moveZ);
+  const maxStep = TURN_RATE * dt;
+  YAW[0] = target - current;
+  wrapYaw();
+  const d = YAW[0];
+  YAW[0] = d > maxStep ? current + maxStep : d < -maxStep ? current - maxStep : target;
+  wrapYaw();
+  p.yaw = YAW[0]!;
+}
+
 function stepAlive(w: WorldState, p: PlayerEntity, it: PlayerIntent, dt: number): void {
   rechargeDash(p, dt);
   if (it.dashPressed && p.dashTimer <= 0 && p.dashCharges >= 1) startDash(w, p, it);
@@ -231,11 +261,14 @@ function stepAlive(w: WorldState, p: PlayerEntity, it: PlayerIntent, dt: number)
     stepRam(w, p);
   } else {
     const speed = p.stats.moveSpeed * (it.focusHeld ? MOVEMENT.FOCUS_MOVE_MUL : 1);
-    accelerate(p, it.moveX * speed, it.moveZ * speed, moving ? MOVEMENT.ACCEL : MOVEMENT.DECEL, dt);
+    ACCEL_IN[0] = it.moveX * speed;
+    ACCEL_IN[1] = it.moveZ * speed;
+    ACCEL_IN[2] = (moving ? MOVEMENT.ACCEL : MOVEMENT.DECEL) * dt;
+    accelerate(p);
     p.x += p.vx * dt;
     p.z += p.vz * dt;
   }
-  if (!it.focusHeld && moving) p.yaw = turnToward(p.yaw, Math.atan2(it.moveX, it.moveZ), TURN_RATE * dt);
+  if (!it.focusHeld && moving) turnToMove(p, it, dt);
   clampToArena(p);
   updateAim(w, p);
 }
@@ -255,13 +288,10 @@ function stepDowned(w: WorldState, p: PlayerEntity, it: PlayerIntent, dt: number
 
 function stepGhost(w: WorldState, p: PlayerEntity, it: PlayerIntent, dt: number): void {
   const speed = p.stats.moveSpeed;
-  accelerate(
-    p,
-    it.moveX * speed,
-    it.moveZ * speed,
-    it.moveX !== 0 || it.moveZ !== 0 ? MOVEMENT.ACCEL : MOVEMENT.DECEL,
-    dt,
-  );
+  ACCEL_IN[0] = it.moveX * speed;
+  ACCEL_IN[1] = it.moveZ * speed;
+  ACCEL_IN[2] = (it.moveX !== 0 || it.moveZ !== 0 ? MOVEMENT.ACCEL : MOVEMENT.DECEL) * dt;
+  accelerate(p);
   p.x += p.vx * dt;
   p.z += p.vz * dt;
   clampGhostToView(w, p);
