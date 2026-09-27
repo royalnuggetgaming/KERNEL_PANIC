@@ -2,9 +2,14 @@
  * SaveStorePort implementation (plan section 6 "PERSISTENCE"):
  * - load chain: main -> .bak -> defaults (the corrupt blob is quarantined in .corrupt);
  * - crc check, migrations, sanitisation; a save from a newer build runs read-only on defaults, never written;
- * - DELTA commits: re-read the stored value, apply, validate, write .bak (previous good envelope) then main;
- * - QuotaExceeded: evict .corrupt and retry once, then keep the in-memory state and report 'quota';
- * - commitRun idempotency via lastCommittedRunId; 500 ms debounce driven by tick(nowMs); storage-event sync.
+ * - DELTA commits: re-read the stored value, validate the delta against it (deltaConflicts: a stale Hangar
+ *   delta from another tab's write is refused and the re-read value adopted), apply, sanitise, write .bak
+ *   (previous good envelope) then main;
+ * - QuotaExceeded: evict .corrupt and retry once, then keep the in-memory state and report 'quota'; a failed
+ *   write (boot included) sets status 'memoryOnly' until a later write succeeds, so it can be surfaced (a
+ *   refused stale delta, by contrast, leaves the status alone);
+ * - commitRun idempotency via lastCommittedRunId; 500 ms debounce driven by tick(nowMs), deferred while a run
+ *   is live (plan: never write while Playing; flush() on pagehide/hidden still writes); storage-event sync.
  */
 import type { Logger, Result } from '../contracts/ids';
 import {
@@ -23,7 +28,7 @@ import { createDefaultSave } from './defaults';
 import { decodeEnvelope, encodeEnvelope } from './envelope';
 import { MIGRATIONS } from './migrations';
 import { sanitizeSave } from './sanitize';
-import { applySaveDelta, mergeSaveDelta } from './saveDelta';
+import { applySaveDelta, deltaConflicts, mergeSaveDelta } from './saveDelta';
 import { StorageWriteError, isQuotaError } from './storage';
 
 export const SAVE_DEBOUNCE_MS = 500;
@@ -83,6 +88,11 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
   const failureOf = (e: unknown): 'quota' | 'unavailable' =>
     e instanceof StorageWriteError ? e.kind : isQuotaError(e) ? 'quota' : 'unavailable';
 
+  const failed = (kind: 'quota' | 'unavailable'): WriteResult => {
+    if (status !== 'readOnlyFuture') status = 'memoryOnly';
+    return err(kind);
+  };
+
   /** Writes `next` as rev + 1; evicts .corrupt and retries once on QuotaExceeded. */
   const write = (next: SaveDataV1, prevGood: string | null, baseRev: number): WriteResult => {
     const raw = encodeEnvelope(next, baseRev + 1, deps.clock.now());
@@ -92,16 +102,17 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
       const kind = failureOf(e);
       if (kind !== 'quota') {
         log.warn('save: storage unavailable', e);
-        return err('unavailable');
+        return failed('unavailable');
       }
       kv.remove(SAVE_KEYS.corrupt);
       try {
         writePair(raw, prevGood);
       } catch (e2) {
         log.warn('save: quota exceeded after evicting .corrupt', e2);
-        return err(failureOf(e2));
+        return failed(failureOf(e2));
       }
     }
+    if (status === 'memoryOnly' && !deps.memoryOnly) status = 'ok';
     rev = baseRev + 1;
     lastGoodRaw = raw;
     return ok(true);
@@ -180,19 +191,33 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     return { data, status };
   };
 
+  /** Adopts a re-read stored value as the persisted state (pending edits stay on top) and tells listeners. */
+  const adopt = (raw: string, d: SaveDataV1, storedRev: number): void => {
+    rev = Math.max(rev, storedRev);
+    lastGoodRaw = raw;
+    persisted = d;
+    data = withPending(d);
+    for (const cb of [...listeners]) cb(data);
+  };
+
   /** Delta commit against the freshly re-read stored value. */
-  const commitDelta = (d: SaveDelta, runId: string | null): Result<SaveDataV1, SaveError | 'duplicate'> => {
+  const commitDelta = (
+    d: SaveDelta,
+    runId: string | null,
+  ): Result<SaveDataV1, SaveError | 'duplicate' | 'conflict'> => {
     if (readOnly) return err('readOnly');
     const stored = kv.get(SAVE_KEYS.main);
     let base = persisted;
     let baseRev = rev;
     let prevGood = lastGoodRaw;
+    let fresh: { readonly raw: string; readonly rev: number } | null = null;
     if (stored !== null && stored !== lastGoodRaw) {
       const dec = decode(stored);
       if (dec.kind === 'ok') {
         base = dec.data;
         baseRev = Math.max(rev, dec.rev);
         prevGood = stored;
+        fresh = { raw: stored, rev: dec.rev };
       } else if (dec.kind === 'future') {
         enterReadOnly();
         return err('readOnly');
@@ -202,6 +227,11 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     }
     if (runId !== null && (base.lastCommittedRunId === runId || persisted.lastCommittedRunId === runId))
       return err('duplicate');
+    if (deltaConflicts(base, d)) {
+      // Computed from a stale cache: refuse it and show the stored truth instead.
+      if (fresh !== null) adopt(fresh.raw, base, fresh.rev);
+      return err('conflict');
+    }
     const next = sanitizeSave(applySaveDelta(base, d, deps.clock.now(), runId)).data;
     const w = write(next, prevGood, baseRev);
     // The in-memory state always moves on (even when storage failed) so the session stays consistent.
@@ -230,11 +260,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
       return;
     }
     if (dec.kind !== 'ok') return;
-    rev = Math.max(rev, dec.rev);
-    lastGoodRaw = raw;
-    persisted = dec.data;
-    data = withPending(dec.data);
-    for (const cb of [...listeners]) cb(data);
+    adopt(raw, dec.data, dec.rev);
   };
 
   return {
@@ -248,10 +274,13 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     commit(d: SaveDelta): Result<SaveDataV1, SaveError> {
       const r = commitDelta(d, null);
       if (r.ok) return r;
-      return err(r.error === 'duplicate' ? 'unavailable' : r.error);
+      // A conflict leaves `data` refreshed from storage; callers re-evaluate their operation against it.
+      return err(r.error === 'duplicate' || r.error === 'conflict' ? 'unavailable' : r.error);
     },
     commitRun(runId: string, d: SaveDelta): Result<SaveDataV1, SaveError | 'duplicate'> {
-      return commitDelta(d, runId);
+      const r = commitDelta(d, runId);
+      if (r.ok) return r;
+      return err(r.error === 'conflict' ? 'unavailable' : r.error);
     },
     commitDebounced(d: SaveDelta): void {
       data = sanitizeSave(applySaveDelta(data, d, deps.clock.now())).data;
@@ -264,7 +293,9 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     },
     tick(nowMs: number): void {
       if (externalDirty && !deps.inRun()) reloadExternal();
-      if (pending !== null && nowMs >= dueAt) flush();
+      // Never while a run is live (localStorage is synchronous): Paused edits wait for the run to end, or for
+      // pagehide/hidden, which call flush() directly.
+      if (pending !== null && nowMs >= dueAt && !deps.inRun()) flush();
     },
     flush,
     onExternalChange(cb: (d: SaveDataV1) => void): () => void {

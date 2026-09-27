@@ -32,7 +32,10 @@ const SAVE_TOASTS: Readonly<Record<SaveStatus, { msg: string; kind: ToastKind } 
     msg: 'This save comes from a newer version: running read-only, nothing will be saved.',
     kind: 'warn',
   },
-  memoryOnly: { msg: 'Storage is unavailable (private mode?): progress will not be saved.', kind: 'warn' },
+  memoryOnly: {
+    msg: 'Storage is unavailable or full (private mode?): progress will not be saved.',
+    kind: 'warn',
+  },
 };
 
 function errorText(e: unknown): string {

@@ -128,10 +128,13 @@ class PausedStateImpl implements GameState<'Paused'> {
         this.activate(target, i.pointer, i.player);
         return;
       }
+      case 'pause':
+        // Escape or KeyP toggles: the pause key also resumes (open sub-panels consume intents first).
+        if (!i.pointer) this.resume();
+        return;
       case 'left':
       case 'right':
       case 'ready':
-      case 'pause':
         return;
     }
   }

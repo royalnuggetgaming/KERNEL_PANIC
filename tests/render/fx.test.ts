@@ -72,9 +72,9 @@ describe('ring record packing', () => {
     expect(ps.scaledCount(10)).toBe(5);
     expect(ps.scaledCount(1)).toBe(1);
     const before = ring.claims;
-    ps.burst(0, 0, 0.5, 1, burstSpec(10, 1, 2, 0.5, 0.2, TINT.WHITE));
+    ps.burst({ x: 0, z: 0 }, 0.5, 1, burstSpec(10, 1, 2, 0.5, 0.2, TINT.WHITE));
     expect(ring.claims - before).toBe(5);
-    ps.cone(0, 0, 0.5, 0, 1, 0.2, 1, burstSpec(4, 1, 2, 0.5, 0.2, TINT.WHITE));
+    ps.cone({ x: 0, z: 0, dirX: 0, dirZ: 1 }, 0, 0.5, 0.2, 1, burstSpec(4, 1, 2, 0.5, 0.2, TINT.WHITE));
     expect(ring.claims - before).toBe(7);
     ps.reset();
     expect(ring.resets).toBe(1);
@@ -84,9 +84,9 @@ describe('ring record packing', () => {
     const ring = new FakeRing(8, SHOCKWAVE_RECORD.stride);
     const rip = Array.from({ length: 8 }, () => new Vector4());
     const sw = new ShockwaveSystem(ring, rip);
-    sw.spawn(1, 2, 3, 4, 5, 6, 7, 8);
+    sw.spawn({ x: 1, z: 2 }, 3, 4, 5, 6, 7, 8);
     expect(ring.rec(0)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    for (let i = 0; i < 9; i++) sw.ripple(i, 0, 10 + i, 1);
+    for (let i = 0; i < 9; i++) sw.ripple({ x: i, z: 0 }, 10 + i, 1);
     expect(rip[0]!.x).toBe(8);
     expect(rip[1]!.x).toBe(1);
     expect(rip[0]!.z).toBe(18);
@@ -99,21 +99,21 @@ describe('ring record packing', () => {
   it('digits follow DIGIT_RECORD, pop crits and cap the per-frame count', () => {
     const ring = new FakeRing(256, DIGIT_RECORD.stride);
     const d = new DamageNumbers(ring);
-    expect(d.spawn(1, 2, 5, 12.4, TINT.P1, true)).toBe(true);
+    expect(d.spawn({ x: 1, z: 2, amount: 12.4 }, 5, TINT.P1, true)).toBe(true);
     const r = ring.rec(0);
     expect(r[0]).toBe(1);
     expect(r[2]).toBe(2);
     expect(r[3]).toBe(5);
     expect(r[4]).toBe(12);
     expect(r[7]).toBe(CRIT_SCALE);
-    expect(d.spawn(0, 0, 0, 0.2, 0, false)).toBe(false);
+    expect(d.spawn({ x: 0, z: 0, amount: 0.2 }, 0, 0, false)).toBe(false);
     let ok = 1;
-    for (let i = 0; i < 100; i++) if (d.spawn(0, 0, 0, 5, 0, false)) ok++;
+    for (let i = 0; i < 100; i++) if (d.spawn({ x: 0, z: 0, amount: 5 }, 0, 0, false)) ok++;
     expect(ok).toBe(MAX_DIGITS_PER_FRAME);
     d.commit();
-    expect(d.spawn(0, 0, 0, 5, 0, false)).toBe(true);
+    expect(d.spawn({ x: 0, z: 0, amount: 5 }, 0, 0, false)).toBe(true);
     d.enabled = false;
-    expect(d.spawn(0, 0, 0, 5, 0, false)).toBe(false);
+    expect(d.spawn({ x: 0, z: 0, amount: 5 }, 0, 0, false)).toBe(false);
   });
 });
 

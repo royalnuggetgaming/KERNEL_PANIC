@@ -1,8 +1,10 @@
 /**
  * Settings / Controls / Credits sub-panels shared by MainMenu and Paused (not FSM states). While a panel is
  * open it owns every intent; a back intent closes it (unless the controls panel is capturing, offering a swap
- * or running the key test).
+ * or running the key test). Closing a panel flushes its debounced save writes (menus and Pause are never
+ * Playing); a write failure seen while a panel is open or on close is toasted (plan 6 "Failure handling").
  */
+import type { SaveStatus } from '../contracts/save';
 import type { Services } from '../contracts/services';
 import type { ControlsPanelVM, SettingsPanelVM, SubPanel } from '../contracts/ui';
 import { ControlsController } from './controlsPanel';
@@ -22,8 +24,13 @@ export class SubPanelController {
   readonly settings: SettingsController;
   readonly controls: ControlsController;
   private dirty = false;
+  private readonly s: Services;
+  /** Save status when the panel opened (or last checked): a change to memoryOnly means a write failed. */
+  private seenStatus: SaveStatus;
 
   constructor(s: Services) {
+    this.s = s;
+    this.seenStatus = s.save.status;
     this.settings = new SettingsController(s);
     this.controls = new ControlsController(s);
     this.controls.onChange = () => {
@@ -38,6 +45,7 @@ export class SubPanelController {
   open(p: SubPanel): void {
     this.controls.close();
     this.panel = p;
+    this.seenStatus = this.s.save.status;
     if (p === 'settings') this.settings.open();
     if (p === 'controls') this.controls.open();
     this.dirty = true;
@@ -45,6 +53,10 @@ export class SubPanelController {
 
   close(): void {
     this.controls.close();
+    if (this.panel !== 'none') {
+      this.s.save.flush();
+      this.checkWrites();
+    }
     this.panel = 'none';
     this.dirty = true;
   }
@@ -66,7 +78,16 @@ export class SubPanelController {
 
   /** Per-frame work (key test refresh). */
   tick(): void {
+    if (this.panel === 'none') return;
     if (this.panel === 'controls' && this.controls.tick()) this.dirty = true;
+    this.checkWrites();
+  }
+
+  private checkWrites(): void {
+    const status = this.s.save.status;
+    if (status === 'memoryOnly' && this.seenStatus !== 'memoryOnly')
+      this.s.ui.toast('Could not write the save: changes are kept for this session only.', 'error');
+    this.seenStatus = status;
   }
 
   /** Returns and clears the changed flag. */

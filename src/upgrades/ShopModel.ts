@@ -244,7 +244,13 @@ export function createShopModel(init: ShopModelInit): ShopModel {
     },
     update(frameDtMs: number): void {
       const dt = Number.isFinite(frameDtMs) && frameDtMs > 0 ? frameDtMs : 0;
-      for (const id of TEAM_ITEM_IDS) s.frameTeamBuys[id] = -1;
+      // The same-frame team guard ends with the frame: re-snapshot so the partner no longer sees SOLD OUT.
+      let guardEnded = false;
+      for (const id of TEAM_ITEM_IDS) {
+        if (s.frameTeamBuys[id] !== -1) guardEnded = true;
+        s.frameTeamBuys[id] = -1;
+      }
+      if (guardEnded) s.version++;
       if (s.guardMs > 0) {
         s.guardMs = Math.max(0, s.guardMs - dt);
       }

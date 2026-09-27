@@ -5,7 +5,7 @@
  * every purchase.
  */
 import { META_UPGRADE_IDS, VEHICLE_IDS, type MetaUpgradeId, type VehicleId } from '../contracts/ids';
-import type { SaveDelta } from '../contracts/save';
+import type { SaveDataV1, SaveDelta } from '../contracts/save';
 import type { Services } from '../contracts/services';
 import type { HangarVM } from '../contracts/ui';
 import { metaDef, metaLevel } from '../config/metaCatalog';
@@ -129,16 +129,15 @@ export class HangarController {
     const n = s.theme().names;
     const meta = metaIdOf(itemId);
     if (meta !== null) {
-      const r = metaBuy(s.save.data, meta);
       this.respecArmed = false;
-      if (this.settle(r))
+      if (this.settle((d) => metaBuy(d, meta)))
         this.message = `${metaDef(meta).label} upgraded to level ${metaLevel(s.save.data.meta, meta)}`;
       return;
     }
     const vehicle = vehicleOf(itemId);
     if (vehicle !== null) {
       this.respecArmed = false;
-      if (this.settle(metaUnlock(s.save.data, vehicle))) this.message = `${n.vehicles[vehicle]} unlocked`;
+      if (this.settle((d) => metaUnlock(d, vehicle))) this.message = `${n.vehicles[vehicle]} unlocked`;
       return;
     }
     if (itemId !== RESPEC_ITEM) return;
@@ -154,29 +153,42 @@ export class HangarController {
       return;
     }
     this.respecArmed = false;
-    if (this.settle(r)) this.message = `Refunded ${r.price} ${n.metaCurrency}`;
+    if (this.settle(metaRespec)) this.message = `Refunded ${r.price} ${n.metaCurrency}`;
   }
 
-  /** Commits a successful result; returns true when the purchase went through. */
-  private settle(r: MetaResult): boolean {
+  /**
+   * Evaluates `op` on the cached save and commits it; returns true when the purchase went through. SaveStore
+   * re-validates the delta against the stored save: when another tab changed it, the delta is refused, the
+   * cache is refreshed and `op` is re-evaluated to explain why.
+   */
+  private settle(op: (d: SaveDataV1) => MetaResult): boolean {
+    const r = op(this.s.save.data);
     if (!r.ok) {
       this.deny(this.failText(r.reason));
       return false;
     }
-    this.commit(r.delta);
+    if (!this.commit(r.delta)) {
+      const again = op(this.s.save.data);
+      this.deny(again.ok ? 'The save changed in another tab: try again.' : this.failText(again.reason));
+      return false;
+    }
     this.s.audio.play('uiBuy');
     return true;
   }
 
-  private commit(delta: SaveDelta): void {
+  /** False only when the store refused a stale delta (nothing was applied). */
+  private commit(delta: SaveDelta): boolean {
     const res = this.s.save.commit(delta);
-    if (res.ok) return;
+    if (res.ok) return true;
     if (res.error === 'readOnly') {
       this.s.ui.toast('Read-only save: the purchase was not stored.', 'warn');
-      return;
+      return true;
     }
+    // A refused stale delta reports 'unavailable' without touching the status; a failed write sets memoryOnly.
+    if (res.error === 'unavailable' && this.s.save.status !== 'memoryOnly') return false;
     // The change is applied in memory; only persisting failed (quota / storage unavailable).
     this.s.ui.toast('Could not write the save: progress is kept for this session only.', 'error');
+    return true;
   }
 
   private failText(reason: MetaFailure): string {

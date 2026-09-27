@@ -5,8 +5,9 @@
  *
  * Upload discipline (three 0.186): InterleavedBuffer.addUpdateRange() allocates a {start,count} object per
  * call, so the batch keeps its own persistent range objects and writes them into `updateRanges` directly;
- * three's WebGLAttributes uploads the ranges and then calls clearUpdateRanges() itself. needsUpdate bumps
- * the buffer version. Zero allocation per frame.
+ * three's WebGLAttributes uploads the ranges and then calls clearUpdateRanges(), which is replaced per buffer
+ * by a no-op so the list (and its backing store) persists. needsUpdate bumps the buffer version. Zero
+ * allocation per frame.
  */
 import {
   DynamicDrawUsage,
@@ -26,6 +27,10 @@ interface UpdateRange {
   count: number;
 }
 
+function keepUpdateRanges(): void {
+  // Intentionally keeps the persistent range list (see the constructor).
+}
+
 export class InstanceBatch {
   readonly capacity: number;
   readonly geometry: InstancedBufferGeometry;
@@ -43,6 +48,10 @@ export class InstanceBatch {
     this.data = new Float32Array(capacity * STRIDE);
     this.buffer = new InstancedInterleavedBuffer(this.data, STRIDE, 1);
     this.buffer.setUsage(DynamicDrawUsage);
+    // three's clearUpdateRanges() (after each upload) sets length = 0, which drops the array's backing store so
+    // the next push reallocates it every frame. The batch owns its single persistent range and rewrites it
+    // before every needsUpdate, so the list is kept as is (three reads it only on a version bump).
+    this.buffer.clearUpdateRanges = keepUpdateRanges;
     const g = new InstancedBufferGeometry();
     g.index = base.index;
     for (const key of Object.keys(base.attributes)) {
@@ -145,8 +154,10 @@ export class InstanceBatch {
     r.start = first * STRIDE;
     r.count = (last - first + 1) * STRIDE;
     const list = this.buffer.updateRanges;
-    list.length = 0;
-    list.push(r);
+    if (list.length !== 1 || list[0] !== r) {
+      list.length = 0;
+      list.push(r);
+    }
     this.buffer.needsUpdate = true;
   }
 

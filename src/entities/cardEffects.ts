@@ -5,14 +5,21 @@
  */
 import { NO_HANDLE, type PlayerIndex } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
-import { PROJECTILE_KINDS, TRAIL_POINTS, type PlayerEntity, type ProjectileSpec } from '../contracts/sim';
+import {
+  PROJECTILE_KINDS,
+  TRAIL_POINTS,
+  type EnemyEntity,
+  type PlayerEntity,
+  type ProjectileEntity,
+  type ProjectileSpec,
+} from '../contracts/sim';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { CARD_PARAMS } from '../config/cards';
 import { SIM } from '../config/tuning';
 import { CARD_BIT, cardStacks, hasCard } from './cardBits';
-import { applyBossDamage, applyDamage } from './damage';
+import { HIT_IN, applyBossDamage, applyDamage, hitEnemy } from './damage';
 import { nearestEnemy, spawnProjectile } from './projectiles';
-import { emitArc, emitPlayer } from './simEventsOut';
+import { emitPlayer } from './simEventsOut';
 
 /** Area card effects deal damage every N ticks (0.1 s) instead of every tick. */
 export const DAMAGE_TICK_EVERY = 12;
@@ -39,23 +46,11 @@ const SPEC: ProjectileSpec = {
 };
 
 const PICKED = new Int32Array(8);
+/** Arc origin and per-hop damage: [x, z, damage] (scratch, so the per-hit path passes no boxed doubles). */
+const ARC = new Float64Array(3);
 
-/**
- * Arcs from (x, z) to up to `count` enemies (each hop picks the nearest unhit enemy within `range` of the
- * previous point), dealing `damage` each. excludeSlot (the enemy already hit) is skipped. Returns hops made.
- */
-export function arcChain(
-  w: WorldState,
-  owner: PlayerIndex,
-  x: number,
-  z: number,
-  damage: number,
-  count: number,
-  range: number,
-  excludeSlot: number,
-): number {
-  let fx = x;
-  let fz = z;
+/** arcChain from ARC: nearest-unhit-enemy hops, each emitting an arc event and dealing ARC[2]. */
+function runArc(w: WorldState, owner: PlayerIndex, count: number, range: number, excludeSlot: number): number {
   let hops = 0;
   const max = count < PICKED.length ? count : PICKED.length;
   const pool = w.enemies;
@@ -63,6 +58,8 @@ export function arcChain(
   for (let h = 0; h < max; h++) {
     let best = -1;
     let bestD = r2;
+    const fx = ARC[0]!;
+    const fz = ARC[1]!;
     for (let i = 0; i < pool.count; i++) {
       const e = pool.active[i]!;
       if (e.dying || e.slot === excludeSlot) continue;
@@ -80,12 +77,59 @@ export function arcChain(
     if (best < 0) break;
     const e = pool.active[best]!;
     PICKED[hops++] = e.slot;
-    emitArc(w, fx, fz, e.x, e.z, owner);
-    applyDamage(w, e, damage, owner, fx, fz, false);
-    fx = e.x;
-    fz = e.z;
+    const a = w.events.arc.push();
+    a.x0 = fx;
+    a.z0 = fz;
+    a.x1 = e.x;
+    a.z1 = e.z;
+    a.owner = owner;
+    HIT_IN[0] = ARC[2]!;
+    HIT_IN[1] = fx;
+    HIT_IN[2] = fz;
+    hitEnemy(w, e, owner, false);
+    ARC[0] = e.x;
+    ARC[1] = e.z;
   }
   return hops;
+}
+
+/**
+ * Arcs from (x, z) to up to `count` enemies (each hop picks the nearest unhit enemy within `range` of the
+ * previous point), dealing `damage` each. excludeSlot (the enemy already hit) is skipped. Returns hops made.
+ */
+export function arcChain(
+  w: WorldState,
+  owner: PlayerIndex,
+  x: number,
+  z: number,
+  damage: number,
+  count: number,
+  range: number,
+  excludeSlot: number,
+): number {
+  ARC[0] = x;
+  ARC[1] = z;
+  ARC[2] = damage;
+  return runArc(w, owner, count, range, excludeSlot);
+}
+
+/** arcChain starting at the enemy `from` just struck by shot s (Tinker arc pistol), dealing s.damage per hop. */
+export function arcChainFromShot(
+  w: WorldState,
+  owner: PlayerIndex,
+  from: Readonly<EnemyEntity>,
+  s: Readonly<ProjectileEntity>,
+  count: number,
+  range: number,
+): number {
+  ARC[0] = from.x;
+  ARC[1] = from.z;
+  ARC[2] = s.damage;
+  return runArc(w, owner, count, range, from.slot);
+}
+
+function chainArcRoll(w: WorldState, owner: PlayerIndex): boolean {
+  return hasCard(w.players[owner], CARD_BIT.chainArc) && w.rng.sim.chance(CARD_PARAMS.chainArc.chance);
 }
 
 /** Chain Arc card: 15% chance on a weapon hit to arc to 3 enemies for 50% damage. */
@@ -97,11 +141,24 @@ export function chainArcOnHit(
   hitDamage: number,
   excludeSlot: number,
 ): void {
-  const p = w.players[owner];
-  if (!hasCard(p, CARD_BIT.chainArc)) return;
+  if (!chainArcRoll(w, owner)) return;
   const c = CARD_PARAMS.chainArc;
-  if (!w.rng.sim.chance(c.chance)) return;
   arcChain(w, owner, x, z, hitDamage * c.damageMul, c.targets, c.range, excludeSlot);
+}
+
+/** chainArcOnHit for shot s striking enemy `from` (no boxed double arguments on the per-hit path). */
+export function chainArcFromShot(
+  w: WorldState,
+  owner: PlayerIndex,
+  from: Readonly<EnemyEntity>,
+  s: Readonly<ProjectileEntity>,
+): void {
+  if (!chainArcRoll(w, owner)) return;
+  const c = CARD_PARAMS.chainArc;
+  ARC[0] = from.x;
+  ARC[1] = from.z;
+  ARC[2] = s.damage * c.damageMul;
+  runArc(w, owner, c.targets, c.range, from.slot);
 }
 
 /** Damages every enemy / boss part touching the circle (cx, cz, r) once. */

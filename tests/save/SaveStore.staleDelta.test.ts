@@ -1,23 +1,19 @@
 /**
- * ECON critic reproductions (FAIL on current code): Hangar deltas are computed from the tab's cached
- * save.data (MetaShop.metaBuy/metaUnlock/metaRespec) and SaveStore.commitDelta re-reads the stored value but
- * only re-applies the delta + sanitises it (plan section 6 "Writes": re-read, apply, VALIDATE, write). When
- * another tab changed the save and this tab has not processed the storage event yet (event still queued, or
- * the tab was "in run" which defers reloads), the stale delta:
- * - grants a Firmware level for Cores the stored profile no longer has (cores clamp at 0: currency creation);
- * - refunds a respec twice (currency creation);
- * - charges an unlock twice (currency loss).
+ * Plan section 6 "Writes": re-read, apply, VALIDATE, write. Hangar deltas are computed from the tab's cached
+ * save.data; when another tab changed the save and this tab has not processed the storage event yet, the
+ * stale delta must be refused (deltaConflicts) and the re-read value adopted, instead of creating Cores (a buy
+ * paid from Cores that are gone, a double respec refund) or losing them (a double unlock charge).
  */
 import { describe, expect, it } from 'vitest';
-import { SAVE_KEYS } from '../../../src/contracts/save';
-import { createMemoryLogger } from '../../../src/core/logger';
-import { decodeEnvelope } from '../../../src/save/envelope';
-import { MIGRATIONS } from '../../../src/save/migrations';
-import { createSaveStore, type SaveStore } from '../../../src/save/SaveStore';
-import { createKeyValueStorage } from '../../../src/save/storage';
-import { metaBuy, metaRespec, metaUnlock } from '../../../src/upgrades/MetaShop';
-import { FakeClock } from '../../helpers/fakeClock';
-import { MemoryStorage } from '../../helpers/memoryStorage';
+import { SAVE_KEYS } from '../../src/contracts/save';
+import { createMemoryLogger } from '../../src/core/logger';
+import { decodeEnvelope } from '../../src/save/envelope';
+import { MIGRATIONS } from '../../src/save/migrations';
+import { createSaveStore, type SaveStore } from '../../src/save/SaveStore';
+import { createKeyValueStorage } from '../../src/save/storage';
+import { metaBuy, metaRespec, metaUnlock } from '../../src/upgrades/MetaShop';
+import { FakeClock } from '../helpers/fakeClock';
+import { MemoryStorage } from '../helpers/memoryStorage';
 
 function tab(mem: MemoryStorage, inRun = false): SaveStore {
   const { kv, memoryOnly } = createKeyValueStorage(mem);
@@ -46,7 +42,7 @@ function twoTabs(cores: number, meta: Record<string, number> = {}, spent: Record
   return { mem, a: tab(mem), b: tab(mem) };
 }
 
-describe('ECON: Hangar deltas are validated against the re-read save', () => {
+describe('SaveStore: Hangar deltas are validated against the re-read save', () => {
   it('a stale buy cannot take a Firmware level the stored Cores cannot pay for', () => {
     const { mem, a, b } = twoTabs(150);
     const rb = metaBuy(b.data, 'secondBoot'); // 150
@@ -82,5 +78,39 @@ describe('ECON: Hangar deltas are validated against the re-read save', () => {
     expect(s.unlocks).toContain('specter');
     // Observed: 80 (60 charged twice for one unlock).
     expect(s.cores).toBe(140);
+  });
+
+  it('a refused stale delta adopts the stored save and notifies listeners', () => {
+    const { a, b } = twoTabs(150);
+    const rb = metaBuy(b.data, 'secondBoot');
+    expect(rb.ok && b.commit(rb.delta).ok).toBe(true);
+    let seen = 0;
+    a.onExternalChange(() => {
+      seen++;
+    });
+    const ra = metaBuy(a.data, 'legendaryPool');
+    expect(ra.ok).toBe(true);
+    if (!ra.ok) return;
+    expect(a.commit(ra.delta)).toEqual({ ok: false, error: 'unavailable' });
+    expect(a.status).toBe('ok');
+    expect(seen).toBe(1);
+    expect(a.data.cores).toBe(0);
+    expect(a.data.meta.secondBoot).toBe(1);
+    expect(metaBuy(a.data, 'legendaryPool')).toEqual({ ok: false, reason: 'funds' });
+  });
+
+  it('a stale buy of the same Firmware level is refused (levels are absolute)', () => {
+    const { mem, a, b } = twoTabs(1000);
+    const rb = metaBuy(b.data, 'hullFw');
+    expect(rb.ok && b.commit(rb.delta).ok).toBe(true);
+    const ra = metaBuy(a.data, 'hullFw');
+    if (ra.ok) expect(a.commit(ra.delta).ok).toBe(false);
+    const s = stored(mem);
+    expect(s.meta.hullFw).toBe(1);
+    expect(s.cores).toBe(a.data.cores);
+    // Re-evaluated on the refreshed cache, the next level goes through.
+    const again = metaBuy(a.data, 'hullFw');
+    expect(again.ok && a.commit(again.delta).ok).toBe(true);
+    expect(stored(mem).meta.hullFw).toBe(2);
   });
 });

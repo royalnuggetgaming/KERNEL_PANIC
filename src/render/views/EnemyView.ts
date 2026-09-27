@@ -8,8 +8,8 @@ import { ENEMY_KINDS, type EnemyKind } from '../../contracts/ids';
 import { ENEMY_DEFS } from '../../config/enemies';
 import { CAPACITY } from '../../config/tuning';
 import { TINT } from '../../shaders/tints';
-import { lerpAngle } from '../../core/math';
-import { lerp1, seed01, type BatchSink, type FrameContext } from './types';
+import { TAU } from '../../core/math';
+import { appendRecord, REC, seed01, type BatchSink, type FrameContext } from './types';
 
 /** Visual scale of CORRUPTED elites. */
 export const ELITE_SCALE = 1.2;
@@ -57,16 +57,21 @@ export class EnemyView {
       }
       const base = ENEMY_DEFS[e.kind].radius;
       const scale = (base > 0 ? e.radius / base : 1) * (e.elite ? ELITE_SCALE : 1);
-      batch.push(
-        lerp1(e.prevX, e.x, a),
-        lerp1(e.prevZ, e.z, a),
-        lerpAngle(e.prevYaw, e.yaw, a),
-        scale,
-        flash,
-        spawnT,
-        e.elite ? TINT.ELITE : TINT.ENEMY,
-        seed01(e.seed),
-      );
+      const o = appendRecord(batch);
+      if (o < 0) continue;
+      const d = batch.data;
+      // Interpolation written inline: helper calls with double arguments/returns get boxed when not inlined.
+      d[o + REC.X] = e.prevX + (e.x - e.prevX) * a;
+      d[o + REC.Z] = e.prevZ + (e.z - e.prevZ) * a;
+      let dy = (e.yaw - e.prevYaw) % TAU;
+      if (dy <= -Math.PI) dy += TAU;
+      else if (dy > Math.PI) dy -= TAU;
+      d[o + REC.YAW] = e.prevYaw + dy * a;
+      d[o + REC.SCALE] = scale;
+      d[o + REC.FLASH] = flash;
+      d[o + REC.SPAWN] = spawnT;
+      d[o + REC.TINT] = e.elite ? TINT.ELITE : TINT.ENEMY;
+      d[o + REC.SEED] = seed01(e.seed);
     }
     for (let i = 0; i < b.length; i++) b[i]!.commit();
   }

@@ -119,3 +119,31 @@ export function mergeSaveDelta(a: SaveDelta | null, b: SaveDelta): SaveDelta {
   if (run !== undefined) out.run = run;
   return out;
 }
+
+/**
+ * Plan section 6 "Writes" VALIDATE step for Hangar deltas computed from a possibly stale cache (another tab
+ * wrote in between): true when `d` no longer fits the freshly re-read `base`. A spend must be affordable, a
+ * paid Firmware level must be the next one after the stored level, a paid unlock must not be owned already,
+ * and a respec must refund exactly the stored recorded spend. Settings and run deltas never conflict.
+ */
+export function deltaConflicts(base: SaveDataV1, d: SaveDelta): boolean {
+  const coresDelta =
+    d.coresDelta !== undefined && Number.isFinite(d.coresDelta) ? Math.trunc(d.coresDelta) : 0;
+  if (d.respec === true) {
+    let spent = 0;
+    for (const v of Object.values(base.firmwareSpent)) if (v > 0) spent += v;
+    let levels = 0;
+    for (const v of Object.values(base.meta)) if (v > 0) levels += v;
+    return coresDelta !== spent || (spent === 0 && levels === 0);
+  }
+  if (coresDelta >= 0) return false;
+  if (base.cores + coresDelta < 0) return true;
+  if (d.unlock !== undefined && base.unlocks.includes(d.unlock)) return true;
+  if (d.meta !== undefined) {
+    for (const key of Object.keys(d.meta) as MetaUpgradeId[]) {
+      const next = d.meta[key];
+      if (next !== undefined && next !== (base.meta[key] ?? 0) + 1) return true;
+    }
+  }
+  return false;
+}

@@ -13,6 +13,7 @@ import type {
 import { CARD_PARAMS, cardDef } from '../config/cards';
 import { metaLevel } from '../config/metaCatalog';
 import { REPAIR } from '../config/runCatalog';
+import { ECONOMY } from '../config/tuning';
 import { sectorOf } from '../config/waves';
 import { drawOffers, type LockedCard } from './offers';
 import {
@@ -229,6 +230,9 @@ export function undo(s: ShopState, p: PlayerIndex): PurchaseResult {
   const e = rec.entry;
   const player = s.players[p];
   if (e.teamSnapshot !== null && s.teamLog[s.teamLog.length - 1] !== e.id) return fail('teamDependency');
+  // An exact refund must fit under WALLET_MAX (gifts may have refilled the wallet); clamping would burn Shards.
+  const refund = e.tx.kind === 'gift' ? e.pricePaid : e.pricePaid - rec.grant;
+  if (player.wallet + refund > ECONOMY.WALLET_MAX) return fail('heldCap');
   if (e.tx.kind === 'gift') {
     const q = partnerOf(p);
     if (s.players[q].wallet < e.pricePaid) return fail('teamDependency');

@@ -49,7 +49,7 @@ export function failureText(reason: PurchaseFailure, tx: ShopTx, runCurrency: st
     case 'visitLimit':
       return 'Limit reached this visit';
     case 'heldCap':
-      return 'Holding the maximum';
+      return tx.kind === 'undo' ? 'Wallet is full' : 'Holding the maximum';
     case 'alreadyOwned':
       return 'Already owned';
     case 'nothingToUndo':
@@ -178,14 +178,20 @@ export class MidrunShopController {
       return false;
     }
     if (i.player === 'any') {
-      if (i.kind === 'back' && !i.pointer && !paused) return this.s.fsm.request('Paused', { reason: 'user' });
+      // Plan 5 "Pause: Escape or KeyP, from either player"; Backspace (shared back) also pauses here.
+      const wantsPause = i.kind === 'back' || i.kind === 'pause';
+      if (wantsPause && !i.pointer && !paused) return this.s.fsm.request('Paused', { reason: 'user' });
       return false;
     }
-    const p = i.player;
+    if (i.pointer) {
+      const ps = snap.players[i.player];
+      if (ps.joined) this.routePointer(i.player, i, ps, snap);
+      return false;
+    }
+    // SOLO (plan 5): both binding sets drive P1, so keys tagged with the unjoined player act for the other one.
+    const p: PlayerIndex = snap.players[i.player].joined ? i.player : i.player === 0 ? 1 : 0;
     const ps = snap.players[p];
-    if (!ps.joined) return false;
-    if (i.pointer) this.routePointer(p, i, ps, snap);
-    else this.routeKey(p, i, ps, snap);
+    if (ps.joined) this.routeKey(p, i, ps, snap);
     return false;
   }
 

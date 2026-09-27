@@ -58,16 +58,34 @@ export function burstSpec(
   };
 }
 
+/** A ground-plane point (sim events and scratch objects satisfy it; passed by reference, never boxed). */
+export interface XZ {
+  readonly x: number;
+  readonly z: number;
+}
+
+/** A point plus a heading (ShotEvent satisfies it). */
+export interface Ray extends XZ {
+  readonly dirX: number;
+  readonly dirZ: number;
+}
+
+/** Uniforms drawn per burst/cone particle. */
+const DRAWS = 6;
+
 export class ParticleSystem {
   private readonly ring: RingSink;
-  private readonly rng: Rng;
+  /** mulberry32 state, seeded once from the injected fx rng (visual randomness only, never the sim's). */
+  private readonly state = new Int32Array(1);
+  /** Scratch uniforms in [0, 1): filled in place so no double is returned across a call (no HeapNumbers). */
+  private readonly u = new Float64Array(DRAWS);
   private capScale = 1;
   /** Records written since the last commit. */
   pending = 0;
 
   constructor(ring: RingSink, rng: Rng) {
     this.ring = ring;
-    this.rng = rng;
+    this.state[0] = rng.nextU32() | 0;
   }
 
   /** Quality particle cap (Low = 4096 of 8192). */
@@ -76,9 +94,10 @@ export class ParticleSystem {
     this.capScale = s > 1 ? 1 : s < 0.1 ? 0.1 : s;
   }
 
-  /** Uniform [0, 1) from the fx rng. */
+  /** Uniform [0, 1) from the fx stream (for low-volume emitters). */
   random(): number {
-    return this.rng.next();
+    this.draw(1);
+    return this.u[0]!;
   }
 
   scaledCount(n: number): number {
@@ -86,6 +105,7 @@ export class ParticleSystem {
     return n > 0 && c < 1 ? 1 : c;
   }
 
+  /** One particle from explicit values (continuous emitters: a handful per frame). */
   emit(
     x: number,
     y: number,
@@ -118,66 +138,75 @@ export class ParticleSystem {
     this.pending++;
   }
 
-  /** Radial burst on the ground plane at (x, z). */
-  burst(x: number, z: number, y: number, t0: number, s: Readonly<BurstSpec>): void {
-    const rng = this.rng;
+  /** Radial burst on the ground plane at p. Writes straight into the ring (hot path: no boxed doubles). */
+  burst(p: Readonly<XZ>, y: number, t0: number, s: Readonly<BurstSpec>): void {
     const n = this.scaledCount(s.count);
+    const u = this.u;
+    const r = this.ring;
+    const d = r.data;
     for (let i = 0; i < n; i++) {
-      const ang = rng.next() * Math.PI * 2;
-      const sp = rng.range(s.speedMin, s.speedMax);
+      this.draw(DRAWS);
+      const ang = u[0]! * Math.PI * 2;
+      const sp = s.speedMin + (s.speedMax - s.speedMin) * u[1]!;
       const sx = Math.sin(ang);
       const sz = Math.cos(ang);
-      const j = rng.next() * s.spread;
-      this.emit(
-        x + sx * j,
-        y,
-        z + sz * j,
-        sx * sp,
-        rng.range(s.upMin, s.upMax),
-        sz * sp,
-        t0,
-        rng.range(s.lifeMin, s.lifeMax),
-        s.size * (0.7 + 0.6 * rng.next()),
-        s.drag,
-        s.gravity,
-        s.tint,
-      );
+      const j = u[2]! * s.spread;
+      const o = r.claim();
+      d[o + O_P0] = p.x + sx * j;
+      d[o + O_P0 + 1] = y;
+      d[o + O_P0 + 2] = p.z + sz * j;
+      d[o + O_P0 + 3] = t0;
+      d[o + O_V0] = sx * sp;
+      d[o + O_V0 + 1] = s.upMin + (s.upMax - s.upMin) * u[3]!;
+      d[o + O_V0 + 2] = sz * sp;
+      d[o + O_V0 + 3] = s.lifeMin + (s.lifeMax - s.lifeMin) * u[4]!;
+      d[o + O_PX] = s.size * (0.7 + 0.6 * u[5]!);
+      d[o + O_PX + 1] = s.drag;
+      d[o + O_PX + 2] = s.gravity;
+      d[o + O_PX + 3] = s.tint;
+      this.pending++;
     }
   }
 
-  /** Cone burst along (dirX, dirZ) (muzzle flashes, dash streaks, thrusters). */
+  /**
+   * Cone burst along the ray's heading from `forward` units ahead of it (muzzle flashes, dash streaks,
+   * thrusters). Writes straight into the ring.
+   */
   cone(
-    x: number,
-    z: number,
+    ray: Readonly<Ray>,
+    forward: number,
     y: number,
-    dirX: number,
-    dirZ: number,
     halfAngle: number,
     t0: number,
     s: Readonly<BurstSpec>,
   ): void {
-    const rng = this.rng;
-    const base = Math.atan2(dirX, dirZ);
+    const base = Math.atan2(ray.dirX, ray.dirZ);
+    const x = ray.x + ray.dirX * forward;
+    const z = ray.z + ray.dirZ * forward;
     const n = this.scaledCount(s.count);
+    const u = this.u;
+    const r = this.ring;
+    const d = r.data;
     for (let i = 0; i < n; i++) {
-      const ang = base + (rng.next() * 2 - 1) * halfAngle;
-      const sp = rng.range(s.speedMin, s.speedMax);
+      this.draw(DRAWS);
+      const ang = base + (u[0]! * 2 - 1) * halfAngle;
+      const sp = s.speedMin + (s.speedMax - s.speedMin) * u[1]!;
       const sx = Math.sin(ang);
       const sz = Math.cos(ang);
-      this.emit(
-        x,
-        y,
-        z,
-        sx * sp,
-        rng.range(s.upMin, s.upMax),
-        sz * sp,
-        t0,
-        rng.range(s.lifeMin, s.lifeMax),
-        s.size * (0.7 + 0.6 * rng.next()),
-        s.drag,
-        s.gravity,
-        s.tint,
-      );
+      const o = r.claim();
+      d[o + O_P0] = x;
+      d[o + O_P0 + 1] = y;
+      d[o + O_P0 + 2] = z;
+      d[o + O_P0 + 3] = t0;
+      d[o + O_V0] = sx * sp;
+      d[o + O_V0 + 1] = s.upMin + (s.upMax - s.upMin) * u[3]!;
+      d[o + O_V0 + 2] = sz * sp;
+      d[o + O_V0 + 3] = s.lifeMin + (s.lifeMax - s.lifeMin) * u[4]!;
+      d[o + O_PX] = s.size * (0.7 + 0.6 * u[5]!);
+      d[o + O_PX + 1] = s.drag;
+      d[o + O_PX + 2] = s.gravity;
+      d[o + O_PX + 3] = s.tint;
+      this.pending++;
     }
   }
 
@@ -190,5 +219,18 @@ export class ParticleSystem {
   reset(): void {
     this.ring.reset();
     this.pending = 0;
+  }
+
+  /** Fills u[0..n) with mulberry32 uniforms (integer math on a typed array; nothing escapes as a double). */
+  private draw(n: number): void {
+    const st = this.state;
+    const u = this.u;
+    for (let i = 0; i < n; i++) {
+      const a = (st[0]! + 0x6d2b79f5) | 0;
+      st[0] = a;
+      let t = Math.imul(a ^ (a >>> 15), a | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      u[i] = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
   }
 }

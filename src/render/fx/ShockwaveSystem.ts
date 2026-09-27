@@ -5,6 +5,7 @@
 import type { Vector4 } from 'three';
 import { SHOCKWAVE_RECORD } from '../../shaders/ringLayouts';
 import type { RingSink } from '../views/types';
+import type { XZ } from './ParticleSystem';
 
 function offsetOf(name: string): number {
   for (const a of SHOCKWAVE_RECORD.attributes) if (a.name === name) return a.offset;
@@ -25,9 +26,9 @@ export class ShockwaveSystem {
     this.ripples = ripples;
   }
 
+  /** Expanding ring at p (passed by reference: event positions are not boxed per call). */
   spawn(
-    x: number,
-    z: number,
+    p: Readonly<XZ>,
     t0: number,
     life: number,
     maxRadius: number,
@@ -37,8 +38,8 @@ export class ShockwaveSystem {
   ): void {
     const o = this.ring.claim();
     const d = this.ring.data;
-    d[o + O_W0] = x;
-    d[o + O_W0 + 1] = z;
+    d[o + O_W0] = p.x;
+    d[o + O_W0 + 1] = p.z;
     d[o + O_W0 + 2] = t0;
     d[o + O_W0 + 3] = life;
     d[o + O_W1] = maxRadius;
@@ -49,11 +50,14 @@ export class ShockwaveSystem {
   }
 
   /** Floor ripple (grid warp) in the shared uniform ring. */
-  ripple(x: number, z: number, t0: number, strength: number): void {
+  ripple(p: Readonly<XZ>, t0: number, strength: number): void {
     const n = this.ripples.length;
     if (n === 0) return;
     const v = this.ripples[this.rippleHead]!;
-    v.set(x, z, t0, strength);
+    v.x = p.x;
+    v.y = p.z;
+    v.z = t0;
+    v.w = strength;
     this.rippleHead = (this.rippleHead + 1) % n;
   }
 

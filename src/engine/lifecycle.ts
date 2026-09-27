@@ -1,6 +1,7 @@
 /**
  * Page lifecycle hooks (plan section 3). Pure-typed against injected listener targets (no DOM lib):
- * - blur, visibilitychange, pagehide, fullscreenchange and webglcontextlost/restored all call input.releaseAll();
+ * - blur, visibilitychange, pagehide, contextmenu, fullscreenchange and webglcontextlost/restored all call
+ *   input.releaseAll() (an opening native context menu swallows the keyup of held keys);
  * - Paused{reason} is requested only when Playing is on top (every other state only releases input);
  * - hidden suspends audio and flushes the save, visible resumes audio; pagehide flushes the save;
  * - webglcontextlost calls preventDefault() so the context can be restored.
@@ -85,6 +86,10 @@ export function installLifecycle(target: WindowLike, deps: LifecycleDeps): () =>
     flushSave();
   };
 
+  const onContextMenu: Listener = () => {
+    input.releaseAll();
+  };
+
   const onFullscreen: Listener = () => {
     input.releaseAll();
     // Leaving fullscreen (Esc) must not let the run continue unattended.
@@ -106,6 +111,7 @@ export function installLifecycle(target: WindowLike, deps: LifecycleDeps): () =>
   const bindings: Binding[] = [
     { target, type: 'blur', fn: onBlur },
     { target, type: 'pagehide', fn: onPageHide },
+    { target, type: 'contextmenu', fn: onContextMenu },
     { target: doc, type: 'visibilitychange', fn: onVisibility },
     { target: doc, type: 'fullscreenchange', fn: onFullscreen },
   ];

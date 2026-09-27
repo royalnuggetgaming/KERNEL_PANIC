@@ -120,10 +120,13 @@ export class TrailRibbon {
           oz = -dx * s;
         }
       }
+      // Point 0 holds the head (x, z): index the scratch instead of mixing the typed-array load with the
+      // tagged parameter in one expression, which makes TurboFan box the merged double (2 HeapNumbers/vertex).
+      const kk = visible ? k : 0;
       const o = v * 3;
-      pos[o] = (visible ? this.px[k]! : x) + ox;
+      pos[o] = this.px[kk]! + ox;
       pos[o + 1] = TRAIL_HEIGHT;
-      pos[o + 2] = (visible ? this.pz[k]! : z) + oz;
+      pos[o + 2] = this.pz[kk]! + oz;
     }
   }
 }

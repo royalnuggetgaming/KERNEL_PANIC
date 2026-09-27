@@ -35,6 +35,7 @@ export const KEY_TEST_PROMPT =
 const REJECT_TEXT = {
   forbidden: 'Ctrl, Cmd and Option cannot be bound (macOS eats them).',
   reserved: 'Escape and P are reserved for pause.',
+  menu: 'Enter and Backspace are reserved for menus.',
   unknown: 'That key is not supported.',
 } as const;
 

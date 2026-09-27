@@ -7,7 +7,7 @@
 import { PROJECTILE_KINDS, type EnemyEntity } from '../contracts/sim';
 import type { WorldState } from '../contracts/world';
 import { ENEMY_DEFS } from '../config/enemies';
-import { DEG2RAD, TAU, inArc, turnToward } from '../core/math';
+import { DEG2RAD, TAU, inArc } from '../core/math';
 import {
   ENEMY_SHOT_RADIUS,
   emitEnemyShot,
@@ -43,6 +43,7 @@ const LEECH_SNAP_MUL = 3;
 const LEECH_T_MIN = 0.05;
 const LEECH_T_MAX = 0.95;
 
+const TGT = new Float64Array(3);
 const SHARD = ENEMY_DEFS.shard;
 const DART = ENEMY_DEFS.dart;
 const SPIKER = ENEMY_DEFS.spiker;
@@ -53,7 +54,16 @@ function steer(e: EnemyEntity, tx: number, tz: number, rate: number, speed: numb
   const dx = tx - e.x;
   const dz = tz - e.z;
   if (dx * dx + dz * dz > 1e-8) {
-    e.yaw = turnToward(e.yaw, Math.atan2(dx, dz), rate * dt);
+    const target = Math.atan2(dx, dz);
+    const maxStep = rate * dt;
+    let d = (target - e.yaw) % TAU;
+    if (d <= -Math.PI) d += TAU;
+    else if (d > Math.PI) d -= TAU;
+    let y = d > maxStep ? e.yaw + maxStep : d < -maxStep ? e.yaw - maxStep : target;
+    y %= TAU;
+    if (y <= -Math.PI) y += TAU;
+    else if (y > Math.PI) y -= TAU;
+    e.yaw = y;
   }
   e.dirX = Math.sin(e.yaw);
   e.dirZ = Math.cos(e.yaw);
@@ -75,12 +85,17 @@ function idle(e: EnemyEntity, dt: number): void {
   steer(e, 0, 0, DEFAULT_TURN, e.speed * IDLE_SPEED_MUL, dt);
 }
 
-function stepSeek(e: EnemyEntity, tx: number, tz: number, dt: number): void {
+function stepSeek(e: EnemyEntity, dt: number): void {
+  const tx = TGT[0]!;
+  const tz = TGT[1]!;
   const rate = e.kind === 'shard' ? SHARD.params.turnRate : DEFAULT_TURN;
   steer(e, tx, tz, rate, e.speed, dt);
 }
 
-function stepDart(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist: number, dt: number): void {
+function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
+  const tx = TGT[0]!;
+  const tz = TGT[1]!;
+  const dist = TGT[2]!;
   const p = DART.params;
   switch (e.ai) {
     case AI_STATE.TELEGRAPH:
@@ -118,7 +133,7 @@ function stepDart(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist: n
         return;
       }
       e.ai = AI_STATE.SEEK;
-      stepSeek(e, tx, tz, dt);
+      stepSeek(e, dt);
   }
 }
 
@@ -141,7 +156,10 @@ function fireSpikerRing(w: WorldState, e: EnemyEntity): void {
   emitEnemyShot(w, e.x, e.z, false);
 }
 
-function stepSpiker(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist: number, dt: number): void {
+function stepSpiker(w: WorldState, e: EnemyEntity, dt: number): void {
+  const tx = TGT[0]!;
+  const tz = TGT[1]!;
+  const dist = TGT[2]!;
   const p = SPIKER.params;
   if (e.ai === AI_STATE.CHARGE) {
     stop(e);
@@ -167,7 +185,7 @@ function stepSpiker(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist:
   if (e.ai === AI_STATE.HOLD && dist > p.keepRange * 1.25) e.ai = AI_STATE.SEEK;
   else if (e.ai !== AI_STATE.HOLD && dist <= p.keepRange) e.ai = AI_STATE.HOLD;
   if (e.ai !== AI_STATE.HOLD || dist < 1e-6) {
-    stepSeek(e, tx, tz, dt);
+    stepSeek(e, dt);
     return;
   }
   // Orbit the target at keep range (clockwise or counter-clockwise by seed); back off when too close.
@@ -183,7 +201,10 @@ function stepSpiker(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist:
   e.dirZ = nz;
 }
 
-function stepWarden(w: WorldState, e: EnemyEntity, tx: number, tz: number, dist: number, dt: number): void {
+function stepWarden(w: WorldState, e: EnemyEntity, dt: number): void {
+  const tx = TGT[0]!;
+  const tz = TGT[1]!;
+  const dist = TGT[2]!;
   const p = WARDEN.params;
   const speed = dist <= WARDEN_STOP_DIST ? 0 : e.speed;
   steer(e, tx, tz, p.turnRate, speed, dt);
@@ -234,14 +255,7 @@ function beamParam(w: WorldState, x: number, z: number): number {
   return t < 0 ? 0 : t > 1 ? 1 : t;
 }
 
-function stepLeech(
-  w: WorldState,
-  e: EnemyEntity,
-  tx: number,
-  tz: number,
-  hasTarget: boolean,
-  dt: number,
-): void {
+function stepLeech(w: WorldState, e: EnemyEntity, hasTarget: boolean, dt: number): void {
   const l = w.link;
   if (e.latched === 1) {
     if (!beamPresent(w)) {
@@ -289,7 +303,7 @@ function stepLeech(
     idle(e, dt);
     return;
   }
-  stepSeek(e, tx, tz, dt);
+  stepSeek(e, dt);
 }
 
 /**
@@ -304,14 +318,18 @@ export function stepEnemyBehavior(w: WorldState, e: EnemyEntity, dt: number): vo
   const dx = tx - e.x;
   const dz = tz - e.z;
   const dist = Math.sqrt(dx * dx + dz * dz);
+  TGT[0] = tx;
+  TGT[1] = tz;
+  TGT[2] = dist;
   if (e.kind === 'leech') {
-    stepLeech(w, e, tx, tz, hasTarget, dt);
+    stepLeech(w, e, hasTarget, dt);
     return;
   }
   if (!hasTarget) {
     // A committed lunge still finishes; everything else drifts to the centre.
     if (e.kind === 'dart' && (e.ai === AI_STATE.LUNGE || e.ai === AI_STATE.RECOVER)) {
-      stepDart(w, e, tx, tz, Infinity, dt);
+      TGT[2] = Infinity;
+      stepDart(w, e, dt);
       return;
     }
     idle(e, dt);
@@ -319,18 +337,18 @@ export function stepEnemyBehavior(w: WorldState, e: EnemyEntity, dt: number): vo
   }
   switch (e.kind) {
     case 'dart':
-      stepDart(w, e, tx, tz, dist, dt);
+      stepDart(w, e, dt);
       return;
     case 'spiker':
-      stepSpiker(w, e, tx, tz, dist, dt);
+      stepSpiker(w, e, dt);
       return;
     case 'warden':
-      stepWarden(w, e, tx, tz, dist, dt);
+      stepWarden(w, e, dt);
       return;
     case 'shard':
     case 'fork':
       e.ai = AI_STATE.SEEK;
-      stepSeek(e, tx, tz, dt);
+      stepSeek(e, dt);
       return;
   }
 }

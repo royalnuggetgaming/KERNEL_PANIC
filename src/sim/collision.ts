@@ -5,16 +5,22 @@
  */
 import type { PlayerIndex } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
-import { PROJECTILE_KINDS, type PlayerEntity, type ProjectileEntity } from '../contracts/sim';
+import {
+  PROJECTILE_KINDS,
+  type BossEntity,
+  type EnemyEntity,
+  type PlayerEntity,
+  type ProjectileEntity,
+} from '../contracts/sim';
 import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
-import { angleDiff, pointSegDistSq, segCircleHit } from '../core/math';
+import { angleDiff, pointSegDistSq } from '../core/math';
 import { BOSS_DEFS } from '../config/bosses';
 import { ENEMY_DEFS } from '../config/enemies';
 import { ARENA, CAPACITY, COOP } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
-import { arcChain, chainArcOnHit } from '../entities/cardEffects';
-import { applyBossDamage, applyDamage, damagePlayer, isInvulnerable } from '../entities/damage';
+import { arcChainFromShot, chainArcFromShot } from '../entities/cardEffects';
+import { HIT_IN, applyBossDamage, damagePlayer, hitEnemy, isInvulnerable } from '../entities/damage';
 import { firewallActive } from '../entities/specials';
 import { emitExplosion, emitHit } from '../entities/simEventsOut';
 
@@ -66,43 +72,89 @@ function canHitOpponent(w: WorldState, s: ProjectileEntity): boolean {
 }
 
 const BEST = { t: 2, code: -1 };
+/** The swept shot being resolved and the circle tested against it: [ax, az, bx, bz, shot radius, cx, cz, r]. */
+const SEG = new Float64Array(8);
+
+function loadSegment(s: Readonly<ProjectileEntity>): void {
+  SEG[0] = s.prevX;
+  SEG[1] = s.prevZ;
+  SEG[2] = s.x;
+  SEG[3] = s.z;
+  SEG[4] = s.radius;
+}
+
+/**
+ * core/math segCircleHit of the SEG sweep against the SEG circle (its radius + the shot radius), same arithmetic,
+ * inlined here so the per-shot loops pass no boxed doubles (callers copy the circle into SEG from a monomorphic
+ * site). Records `code` in BEST when it is hit earlier than the best so far.
+ */
+function sweep(code: number): void {
+  const ax = SEG[0]!;
+  const az = SEG[1]!;
+  const r = SEG[7]! + SEG[4]!;
+  const fx = ax - SEG[5]!;
+  const fz = az - SEG[6]!;
+  const cc = fx * fx + fz * fz - r * r;
+  let t = 0;
+  if (cc > 0) {
+    const dx = SEG[2]! - ax;
+    const dz = SEG[3]! - az;
+    const a = dx * dx + dz * dz;
+    if (a <= 1e-12) return;
+    const b = 2 * (fx * dx + fz * dz);
+    const disc = b * b - 4 * a * cc;
+    if (disc < 0) return;
+    t = (-b - Math.sqrt(disc)) / (2 * a);
+    if (!(t >= 0 && t <= 1)) return;
+  }
+  if (t < BEST.t) {
+    BEST.t = t;
+    BEST.code = code;
+  }
+}
+
+function sweepEnemy(e: Readonly<EnemyEntity>): void {
+  SEG[5] = e.x;
+  SEG[6] = e.z;
+  SEG[7] = e.radius;
+  sweep(e.slot);
+}
+
+function sweepBoss(b: Readonly<BossEntity>, code: number): void {
+  SEG[5] = b.x;
+  SEG[6] = b.z;
+  SEG[7] = b.radius;
+  sweep(code);
+}
+
+function sweepPlayer(p: Readonly<PlayerEntity>, code: number): void {
+  SEG[5] = p.x;
+  SEG[6] = p.z;
+  SEG[7] = p.radius;
+  sweep(code);
+}
 
 function findFirstHit(w: WorldState, s: ProjectileEntity, n: number, hits: number): void {
   BEST.t = 2;
   BEST.code = -1;
-  const ax = s.prevX;
-  const az = s.prevZ;
-  const bx = s.x;
-  const bz = s.z;
+  loadSegment(s);
   const pool = w.enemies;
   for (let c = 0; c < n; c++) {
     const e = pool.atSlot(CANDS[c]!);
     if (!pool.isAlive(e) || e.dying || e.slot === s.lastHit || hitBefore(e.slot, hits)) continue;
-    const t = segCircleHit(ax, az, bx, bz, e.x, e.z, e.radius + s.radius);
-    if (t >= 0 && t < BEST.t) {
-      BEST.t = t;
-      BEST.code = e.slot;
-    }
+    sweepEnemy(e);
   }
   for (let k = 0; k < w.bosses.length; k++) {
     const b = w.bosses[k]!;
     const code = BOSS_CODE + k;
     if (!b.alive || b.introTimer > 0 || s.lastHit === code || hitBefore(code, hits)) continue;
-    const t = segCircleHit(ax, az, bx, bz, b.x, b.z, b.radius + s.radius);
-    if (t >= 0 && t < BEST.t) {
-      BEST.t = t;
-      BEST.code = code;
-    }
+    sweepBoss(b, code);
   }
   if (!canHitOpponent(w, s)) return;
   const q = w.players[s.owner === 0 ? 1 : 0];
   const code = PLAYER_CODE + q.index;
   if (q.life !== 'alive' || isInvulnerable(w, q) || s.lastHit === code || hitBefore(code, hits)) return;
-  const t = segCircleHit(ax, az, bx, bz, q.x, q.z, q.radius + s.radius);
-  if (t >= 0 && t < BEST.t) {
-    BEST.t = t;
-    BEST.code = code;
-  }
+  sweepPlayer(q, code);
 }
 
 /** Applies one hit; returns true when the shot is consumed regardless of pierce (shield block, mine). */
@@ -115,14 +167,13 @@ function applyShotHit(w: WorldState, s: ProjectileEntity, owner: PlayerIndex, co
     applyBossDamage(w, w.bosses[code - BOSS_CODE]!, s.damage, owner, s.crit);
   } else {
     const e = w.enemies.atSlot(code);
-    const ex = e.x;
-    const ez = e.z;
-    const dealt = applyDamage(w, e, s.damage, owner, s.prevX, s.prevZ, s.crit);
-    if (dealt <= 0) return true;
-    if (s.kind === PROJECTILE_KINDS.arc) {
-      arcChain(w, owner, ex, ez, s.damage, TINKER_CHAIN, TINKER_CHAIN_RANGE, code);
-    }
-    if (isWeaponShot(s.kind)) chainArcOnHit(w, owner, ex, ez, s.damage, code);
+    HIT_IN[0] = s.damage;
+    HIT_IN[1] = s.prevX;
+    HIT_IN[2] = s.prevZ;
+    if (!hitEnemy(w, e, owner, s.crit)) return true;
+    // Arcs start at the struck enemy (its position is unchanged by the hit; despawn happens in resolveDeaths).
+    if (s.kind === PROJECTILE_KINDS.arc) arcChainFromShot(w, owner, e, s, TINKER_CHAIN, TINKER_CHAIN_RANGE);
+    if (isWeaponShot(s.kind)) chainArcFromShot(w, owner, e, s);
   }
   if (mine) {
     emitExplosion(w, s.x, s.z, 1.5, 0.5);
@@ -194,18 +245,16 @@ function enemyShots(w: WorldState): void {
   const pool = w.enemyShots;
   for (let i = pool.count - 1; i >= 0; i--) {
     const s = pool.active[i]!;
-    let bestT = 2;
-    let target: PlayerEntity | null = null;
+    BEST.t = 2;
+    BEST.code = -1;
+    loadSegment(s);
     for (let pi = 0; pi < 2; pi++) {
       const p = w.players[pi as PlayerIndex];
       if (p.life !== 'alive' || isInvulnerable(w, p)) continue;
-      const t = segCircleHit(s.prevX, s.prevZ, s.x, s.z, p.x, p.z, p.radius + s.radius);
-      if (t >= 0 && t < bestT) {
-        bestT = t;
-        target = p;
-      }
+      sweepPlayer(p, pi);
     }
-    if (target === null) continue;
+    if (BEST.code < 0) continue;
+    const target = w.players[BEST.code as PlayerIndex];
     damagePlayer(w, target, s.damage, SOURCE_WORLD, s.prevX, s.prevZ, 'projectile');
     pool.despawn(s);
   }

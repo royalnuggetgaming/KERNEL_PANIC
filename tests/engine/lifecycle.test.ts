@@ -122,9 +122,9 @@ describe('installLifecycle', () => {
     expect(s.log.count('info')).toBe(1);
   });
 
-  it('works without a canvas', () => {
+  it('works without a canvas (blur, pagehide, contextmenu on the window)', () => {
     const s = setup(['Playing'], { canvas: false });
-    expect(s.win.listenerCount()).toBe(2);
+    expect(s.win.listenerCount()).toBe(3);
     expect(s.win.document.listenerCount()).toBe(2);
   });
 
@@ -139,7 +139,7 @@ describe('installLifecycle', () => {
 
   it('uninstall removes every listener and is idempotent', () => {
     const s = setup(['Playing']);
-    expect(s.win.listenerCount() + s.win.document.listenerCount() + s.canvas!.listenerCount()).toBe(6);
+    expect(s.win.listenerCount() + s.win.document.listenerCount() + s.canvas!.listenerCount()).toBe(7);
     s.uninstall();
     s.uninstall();
     expect(s.win.listenerCount() + s.win.document.listenerCount() + s.canvas!.listenerCount()).toBe(0);

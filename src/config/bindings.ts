@@ -6,7 +6,7 @@ import { PLAYER_INDICES, type PlayerIndex } from '../contracts/ids';
 import { ACTIONS, type Action, type Bindings, type KeyCode, type PlayerBindings } from '../contracts/input';
 import { DEFAULT_BINDINGS, FORBIDDEN_CODES, KNOWN_CODES, RESERVED_CODES } from './keys';
 
-export type BindingErrorKind = 'forbidden' | 'reserved' | 'duplicate' | 'empty' | 'unknown';
+export type BindingErrorKind = 'forbidden' | 'reserved' | 'menu' | 'duplicate' | 'empty' | 'unknown';
 
 export interface BindingError {
   readonly kind: BindingErrorKind;
@@ -18,6 +18,12 @@ export interface BindingError {
 const KNOWN = new Set<KeyCode>(KNOWN_CODES);
 const FORBIDDEN = new Set<KeyCode>(FORBIDDEN_CODES);
 const RESERVED = new Set<KeyCode>(RESERVED_CODES);
+/**
+ * Shared menu keys (MENU_KEYS confirm/back) that the navigator also emits as 'any' intents: bound to a player
+ * action they would fire two intents per press (for example undo AND Pause in the shop). NumpadEnter stays
+ * bindable: it is the default P2 SPECIAL, whose 'ready' intent the menus handle as that player's confirm.
+ */
+const SHARED_MENU = new Set<KeyCode>(['Enter', 'Backspace']);
 
 /** Every problem in a binding set (empty array = valid). Duplicates are reported on the second occurrence. */
 export function validateBindings(b: Bindings): BindingError[] {
@@ -35,6 +41,7 @@ export function validateBindings(b: Bindings): BindingError[] {
         if (!KNOWN.has(code)) errors.push({ kind: 'unknown', player, action, code });
         else if (FORBIDDEN.has(code)) errors.push({ kind: 'forbidden', player, action, code });
         else if (RESERVED.has(code)) errors.push({ kind: 'reserved', player, action, code });
+        else if (SHARED_MENU.has(code)) errors.push({ kind: 'menu', player, action, code });
         else if (seen.has(code)) errors.push({ kind: 'duplicate', player, action, code });
         else seen.set(code, `${String(player)}:${action}`);
       }
@@ -69,7 +76,7 @@ export type RebindResult =
       readonly bindings: Bindings;
       readonly swappedWith: { player: PlayerIndex; action: Action } | null;
     }
-  | { readonly ok: false; readonly reason: 'forbidden' | 'reserved' | 'unknown' };
+  | { readonly ok: false; readonly reason: 'forbidden' | 'reserved' | 'menu' | 'unknown' };
 
 /**
  * Makes `code` the primary key of (player, action). If the code is bound elsewhere, it is removed there and
@@ -79,6 +86,7 @@ export function proposeSwap(b: Bindings, player: PlayerIndex, action: Action, co
   if (!KNOWN.has(code)) return { ok: false, reason: 'unknown' };
   if (FORBIDDEN.has(code)) return { ok: false, reason: 'forbidden' };
   if (RESERVED.has(code)) return { ok: false, reason: 'reserved' };
+  if (SHARED_MENU.has(code)) return { ok: false, reason: 'menu' };
   const current = b.players[player][action];
   const previousPrimary = current[0] ?? null;
   const other = findBinding(b, code);
