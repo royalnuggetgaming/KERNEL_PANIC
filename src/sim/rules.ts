@@ -32,7 +32,7 @@ export function beginWave(w: WorldState, wave: number): void {
   run.wave = wave;
   run.sector = sectorOf(wave);
   run.overflow = wave > WAVES.TOTAL;
-  const plan = generateWavePlan(wave, run.playerCount, w.mode);
+  const plan = generateWavePlan(wave, run.playerCount, w.mode, w.config.difficulty);
   run.enemyHpMul = plan.hpMul;
   run.threatMul = plan.threatMul;
   run.waveDuration = plan.duration;

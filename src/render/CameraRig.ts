@@ -2,7 +2,7 @@
  * Camera modes (plan section 4): 'attract' (MenuBackdrop orbit), 'select' (SelectStage turntables), 'follow'
  * (adaptive shared framing: solveFraming on interpolated positions -> FollowController smoothing with asymmetric
  * zoom + hysteresis), 'gameover' (slow push-in at CAMERA.GAMEOVER_TIME_SCALE). Boss intro push-in, countdown swoop
- * from maxDist, solo speed zoom-out, snap on aspect jumps > CAMERA.ASPECT_SNAP. Trauma shake is applied after
+ * from maxDist (only on a hard cut: see countdownSwoop), solo speed zoom-out, snap on aspect jumps > CAMERA.ASPECT_SNAP. Trauma shake is applied after
  * framing and never feeds the solver or the published view rect. Allocation-free per frame.
  */
 import { PerspectiveCamera } from 'three';
@@ -50,6 +50,8 @@ export class CameraRig implements CameraCues {
   private aspectValue = 16 / 9;
   private maxDistValue = solveMaxDistance(16 / 9);
   private snapPending = true;
+  /** A countdown swoop was cued since the last update (consumed by it). */
+  private swoopCue = false;
   private bossIntroLeft = 0;
   private bossX = 0;
   private bossZ = 0;
@@ -121,10 +123,16 @@ export class CameraRig implements CameraCues {
     this.follow.forceZoomIn();
   }
 
+  /**
+   * Wave/round countdown cue. The swoop (start at maxDist, then zoom in) only happens when the camera is cutting
+   * anyway (world attach, i.e. the first wave coming from CharacterSelect). Mid-run the previous frame shows the
+   * same arena (the frozen shop frame, or live play), so jumping the distance to maxDist would be a hard cut that
+   * reads as the screen flashing; the sim also cues this every countdown second (3, 2, 1). There the camera just
+   * keeps easing, so the distance stays continuous.
+   */
   countdownSwoop(): void {
     if (this.reduceMotion) return;
-    this.follow.snap(this.follow.x, this.follow.z, this.maxDistValue);
-    this.follow.forceZoomIn();
+    this.swoopCue = true;
   }
 
   /** Ground rect of the unshaken pose (published to the sim). */
@@ -134,6 +142,8 @@ export class CameraRig implements CameraCues {
 
   update(w: WorldView | null, alpha: number, dt: number): void {
     this.shake.update(dt);
+    const swoop = this.swoopCue;
+    this.swoopCue = false;
     switch (this.modeValue) {
       case 'attract':
         this.updateAttract(dt);
@@ -144,7 +154,7 @@ export class CameraRig implements CameraCues {
         this.camera.lookAt(SELECT_LOOK.x, SELECT_LOOK.y, SELECT_LOOK.z);
         return;
       case 'follow':
-        this.updateFollow(w, alpha, dt);
+        this.updateFollow(w, alpha, dt, swoop);
         break;
       case 'gameover':
         this.updateGameover(dt);
@@ -161,7 +171,7 @@ export class CameraRig implements CameraCues {
     this.camera.lookAt(0, 3, 0);
   }
 
-  private updateFollow(w: WorldView | null, alpha: number, dt: number): void {
+  private updateFollow(w: WorldView | null, alpha: number, dt: number, swoop: boolean): void {
     const f = this.follow;
     const g = this.goal;
     g.targetX = f.x;
@@ -188,7 +198,12 @@ export class CameraRig implements CameraCues {
     }
     if (this.snapPending) {
       this.snapPending = false;
-      f.snap(g.targetX, g.targetZ, g.distance);
+      if (swoop) {
+        f.snap(g.targetX, g.targetZ, this.maxDistValue);
+        f.forceZoomIn();
+      } else {
+        f.snap(g.targetX, g.targetZ, g.distance);
+      }
     } else {
       f.update(g.targetX, g.targetZ, g.distance, dt);
     }

@@ -18,6 +18,7 @@ import type { DerivedStats, PlayerRunState, TeamState } from '../contracts/upgra
 import type { WorldConfig, WorldPlayerInit } from '../contracts/world';
 import { invariant } from '../core/assert';
 import { META_EFFECTS, metaLevel } from '../config/metaCatalog';
+import { DEFAULT_DIFFICULTY, DIFFICULTY } from '../config/difficulty';
 import { COOP } from '../config/tuning';
 import { computeStats, emptyRowLevels, emptyTeamLevels } from '../upgrades/stats';
 
@@ -42,6 +43,11 @@ export function validateRunConfig(config: RunConfig): void {
     seen[idx] = true;
   }
   invariant(seen[0] === true, 'RunConfig: player 0 is always joined');
+  const diff: unknown = config.difficulty;
+  invariant(
+    diff === undefined || (typeof diff === 'string' && diff in DIFFICULTY),
+    'RunConfig: unknown difficulty',
+  );
 }
 
 /** The pick for player p, or null when p is not joined. */
@@ -94,6 +100,7 @@ export function buildWorldConfig(config: RunConfig): WorldConfig {
     players: [p0, init(1)],
     startShards: startShards(config.meta),
     startKernels: startKernels(config.meta),
+    difficulty: config.difficulty ?? DEFAULT_DIFFICULTY,
   };
 }
 

@@ -9,6 +9,7 @@ import type { BossEntity } from '../contracts/sim';
 import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState, WorldView } from '../contracts/world';
 import { BOSS_COMMON, BOSS_DEFS, FORK_BOMB_SPLITS } from '../config/bosses';
+import { difficultyDef } from '../config/difficulty';
 import { COOP, ECONOMY } from '../config/tuning';
 import { WAVES, waveHpMul } from '../config/waves';
 import { runPattern, stepLasers } from './bossPatterns';
@@ -77,7 +78,7 @@ export function raceWindow(playerCount: 1 | 2): number {
 /** Uses w.bosses records, 2P HP x1.6, intro (players invulnerable for the intro). */
 export function spawnBoss(w: WorldState, id: BossId): void {
   const def = BOSS_DEFS[id];
-  const hp = def.hp * bossHpMul(w.run.playerCount, w.run.wave);
+  const hp = def.hp * bossHpMul(w.run.playerCount, w.run.wave) * difficultyDef(w.config.difficulty).hp;
   for (let i = 0; i < w.bosses.length; i++) resetRecord(w.bosses[i]!);
   w.lasers.clear();
   for (let k = 0; k < def.parts && k < w.bosses.length; k++) {

@@ -106,7 +106,7 @@ class PlayingStateImpl implements GameState<'Playing'> {
     s.audio.duck(false);
     run.beginNextWave();
     this.syncMusic(run.world);
-    this.hud = new HudVmWriter(s.theme());
+    this.hud = new HudVmWriter(s.theme(), run);
     s.ui.show('hud', this.hud.write(run.world, null));
     this.setTimeScale(1);
     s.loop.resetAccumulator();

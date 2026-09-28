@@ -52,7 +52,7 @@ describe('CameraRig', () => {
     }
   });
 
-  it('boss intro pushes in on the boss; countdown swoops from maxDist', () => {
+  it('boss intro pushes in on the boss', () => {
     const w = createTestWorld({ mode: 'solo' });
     placePlayer(w, 0, 0, 10);
     const rig = new CameraRig();
@@ -62,11 +62,59 @@ describe('CameraRig', () => {
     rig.bossIntro(0, -12);
     run(rig, w, Math.floor(CAMERA.BOSS_INTRO * 120) - 1);
     expect(rig.pose.targetZ).toBeLessThan(-5);
+  });
+
+  it('countdown swoops from maxDist on a fresh world attach, then zooms in', () => {
+    const w = createTestWorld({ mode: 'solo' });
+    placePlayer(w, 0, 0, 10);
+    const rig = new CameraRig();
+    rig.setViewport(1600, 1000);
+    rig.setMode('follow');
+    rig.requestSnap();
     rig.countdownSwoop();
     rig.update(w, 1, DT);
     expect(rig.distance).toBeGreaterThan(rig.maxDist * 0.95);
     run(rig, w, 600);
     expect(rig.distance).toBeLessThan(rig.maxDist * 0.6);
+  });
+
+  // Regression ("the screen flashes weirdly before each wave starts"): the sim cues the swoop on every countdown
+  // second (3, 2, 1) and after every shop visit. Each cue used to snap the camera to maxDist mid-run, a hard cut
+  // of the whole frame. Mid-run cues must leave the distance continuous.
+  it('mid-run countdown cues never cut the camera distance', () => {
+    const w = createTestWorld({ mode: 'solo' });
+    placePlayer(w, 0, 0, 10);
+    const rig = new CameraRig();
+    rig.setViewport(1600, 1000);
+    rig.setMode('follow');
+    run(rig, w, 240);
+    const settled = rig.distance;
+    expect(settled).toBeLessThan(rig.maxDist * 0.8);
+    let prev = settled;
+    let maxStep = 0;
+    for (let f = 0; f < 3 * 120; f++) {
+      if (f % 120 === 0) rig.countdownSwoop();
+      rig.update(w, 1, DT);
+      maxStep = Math.max(maxStep, Math.abs(rig.distance - prev));
+      prev = rig.distance;
+    }
+    expect(maxStep).toBeLessThan(settled * 0.01);
+    expect(rig.distance).toBeCloseTo(settled, 3);
+  });
+
+  it('a stale swoop cue does not apply to a later snap', () => {
+    const w = createTestWorld({ mode: 'solo' });
+    placePlayer(w, 0, 0, 10);
+    const rig = new CameraRig();
+    rig.setViewport(1600, 1000);
+    rig.setMode('follow');
+    run(rig, w, 60);
+    const settled = rig.distance;
+    rig.countdownSwoop();
+    rig.update(w, 1, DT);
+    rig.requestSnap();
+    rig.update(w, 1, DT);
+    expect(rig.distance).toBeCloseTo(settled, 3);
   });
 
   it('solo zooms out up to +15% at max speed', () => {

@@ -8,6 +8,7 @@ import type { Intents } from '../contracts/input';
 import type { EnemyEntity } from '../contracts/sim';
 import { SOURCE_WORLD } from '../contracts/simEvents';
 import type { SimSystem, WorldState } from '../contracts/world';
+import { difficultyDef } from '../config/difficulty';
 import { CORRUPTED, ENEMY_AI, ENEMY_DEFS } from '../config/enemies';
 import { DEG2RAD } from '../core/math';
 import { GRID_IN, gridQueryCircleIn } from '../core/SpatialGrid';
@@ -36,7 +37,10 @@ function initialShotTimer(kind: EnemyKind, seed: number): number {
   return 0;
 }
 
-/** Applies w.run.enemyHpMul (fixed at wave start) and the elite multiplier; returns null when the pool is full. */
+/**
+ * Applies w.run.enemyHpMul (fixed at wave start, difficulty included), the elite multiplier and the difficulty
+ * speed multiplier; returns null when the pool is full.
+ */
 export function spawnEnemy(
   w: WorldState,
   kind: EnemyKind,
@@ -62,7 +66,7 @@ export function spawnEnemy(
   e.hp = hp;
   e.maxHp = hp;
   e.radius = d.radius;
-  e.speed = d.speed;
+  e.speed = d.speed * difficultyDef(w.config.difficulty).speed;
   e.ai = AI_STATE.SEEK;
   e.aiTimer = 0;
   e.dirX = Math.sin(yaw);

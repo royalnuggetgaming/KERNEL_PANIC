@@ -6,6 +6,7 @@
  */
 import { PROJECTILE_KINDS, type EnemyEntity } from '../contracts/sim';
 import type { WorldState } from '../contracts/world';
+import { difficultyDef } from '../config/difficulty';
 import { ENEMY_DEFS } from '../config/enemies';
 import { DEG2RAD, TAU } from '../core/math';
 import {
@@ -121,6 +122,7 @@ function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
   const tz = TGT[1]!;
   const dist = TGT[2]!;
   const p = DART.params;
+  const lungeSpeed = p.lungeSpeed * difficultyDef(w.config.difficulty).speed;
   switch (e.ai) {
     case AI_STATE.TELEGRAPH:
       stop(e);
@@ -131,8 +133,8 @@ function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
       }
       return;
     case AI_STATE.LUNGE:
-      e.vx = e.dirX * p.lungeSpeed;
-      e.vz = e.dirZ * p.lungeSpeed;
+      e.vx = e.dirX * lungeSpeed;
+      e.vz = e.dirZ * lungeSpeed;
       e.aiTimer -= dt;
       if (e.aiTimer <= 0) {
         e.ai = AI_STATE.RECOVER;
@@ -153,7 +155,7 @@ function stepDart(w: WorldState, e: EnemyEntity, dt: number): void {
         e.dirZ = (tz - e.z) / dist;
         e.yaw = Math.atan2(e.dirX, e.dirZ);
         stop(e);
-        emitTelegraph(w, 1, e.x, e.z, e.dirX, e.dirZ, p.lungeSpeed * p.lungeTime, p.telegraph);
+        emitTelegraph(w, 1, e.x, e.z, e.dirX, e.dirZ, lungeSpeed * p.lungeTime, p.telegraph);
         return;
       }
       e.ai = AI_STATE.SEEK;

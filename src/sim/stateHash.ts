@@ -24,6 +24,7 @@ import type {
   PlayerEntity,
   ProjectileEntity,
 } from '../contracts/sim';
+import { DIFFICULTY_IDS } from '../contracts/save';
 import { NUMERIC_STATS } from '../contracts/upgrades';
 import type { WavePhase, WorldState } from '../contracts/world';
 import { FNV_OFFSET, fnv1aMixF64, fnv1aMixU32 } from '../core/hash';
@@ -196,6 +197,7 @@ function mixWorldTail(h0: number, w: WorldState): number {
 function mixRun(h0: number, w: WorldState): number {
   const r = w.run;
   let h = fnv1aMixU32(h0, idx(RUN_MODES, r.mode));
+  h = fnv1aMixU32(h, idx(DIFFICULTY_IDS, w.config.difficulty ?? 'normal'));
   h = fnv1aMixU32(h, r.wave);
   h = fnv1aMixU32(h, idx(PHASES, r.phase));
   h = fnv1aMixF64(h, r.phaseTimer);

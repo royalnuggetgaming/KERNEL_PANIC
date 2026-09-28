@@ -24,6 +24,7 @@ import { isVehicleUnlocked, respecRefund } from '../upgrades/MetaShop';
 import { metaPrice } from '../upgrades/pricing';
 import type { RewardBreakdown, RewardLineId } from '../upgrades/rewards';
 import { clockText } from './hudViewModel';
+import { metaDesc, metaNext } from './powerupText';
 
 export { buildHudVM } from './hudViewModel';
 export { buildShopVM } from './shopViewModel';
@@ -123,7 +124,8 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
       id: META_ITEM_PREFIX + def.id,
       kind: 'meta',
       label: def.label.toUpperCase(),
-      blurb: def.blurb,
+      blurb: metaDesc(def.id, n.runCurrency),
+      next: metaNext(def.id, level, n.runCurrency),
       level,
       maxLevel: def.prices.length,
       price,
@@ -139,6 +141,7 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
       kind: 'unlock',
       label: `UNLOCK ${n.vehicles[v]}`,
       blurb: n.vehicleBlurbs[v],
+      next: owned ? 'Unlocked: pick it in character select' : `Special: ${n.specials[VEHICLES[v].special]}`,
       level: owned ? 1 : 0,
       maxLevel: 0,
       price: owned ? null : price,
@@ -153,6 +156,7 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
     kind: 'respec',
     label: 'RESPEC',
     blurb: `Reset all ${n.meta} and refund the ${n.metaCurrency} spent (unlocks stay).`,
+    next: '',
     level: 0,
     maxLevel: 0,
     price: refund,

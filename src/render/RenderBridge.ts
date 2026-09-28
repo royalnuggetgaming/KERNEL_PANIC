@@ -2,8 +2,8 @@
  * RenderPort implementation (plan section 8): owns the renderer, camera rig, scenes, world views, fx and PostFX.
  * frame(): shared uniforms -> view sync (prev/current interpolation, zero allocation) -> camera -> publish the
  * ground view rect to the sim -> scene into the HDR target -> post. renderFrozen() draws one dimmed/blurred frame
- * and the GPU idles until the next frame(); a resize while frozen re-renders the frozen frame. Before warmup()
- * completes, attachWorld/frame/renderFrozen are no-ops.
+ * and the GPU idles until the next frame(); a resize while frozen re-renders the frozen frame; the first live frames
+ * after it fade in from its dim (unfreezeFade.ts). Before warmup() completes, attachWorld/frame/renderFrozen no-op.
  */
 import { Scene } from 'three';
 import type { Logger, VehicleId } from '../contracts/ids';
@@ -28,6 +28,7 @@ import { ArenaScene } from './scenes/ArenaScene';
 import { MenuBackdrop } from './scenes/MenuBackdrop';
 import { SelectStage } from './scenes/SelectStage';
 import { warmupShaders, type WarmupDeps } from './ShaderWarmup';
+import { UnfreezeFade } from './unfreezeFade';
 import type { FrameContext } from './views/types';
 import { WorldViews } from './WorldViews';
 
@@ -87,6 +88,7 @@ class RenderBridgeImpl implements RenderBridge {
   private settings: Settings;
   private preset: QualityPreset;
   private frozenDim = -1;
+  private readonly fade = new UnfreezeFade();
   private mode: CameraMode = 'attract';
   private pendingSector: 1 | 2 | 3 = 1;
   private pendingBeat = 0;
@@ -235,6 +237,7 @@ class RenderBridgeImpl implements RenderBridge {
   frame(alpha: number, frameDt: number): void {
     const live = this.ready();
     if (live === null) return;
+    if (this.frozenDim > 0) this.fade.begin(this.frozenDim);
     this.frozenDim = -1;
     const dt = frameDt > 0 ? frameDt : 0;
     this.clock.advance(dt);
@@ -266,24 +269,25 @@ class RenderBridgeImpl implements RenderBridge {
       live.post.setChromatic(0);
     }
     live.post.setTime(this.clock.time);
-    this.draw(live, -1);
+    this.draw(live, -1, this.fade.step(dt, this.settings.reduceFlashes));
   }
 
   renderFrozen(dim: number): void {
     const live = this.ready();
     if (live === null) return;
     this.frozenDim = dim < 0 ? 0 : dim;
-    this.draw(live, this.frozenDim);
+    this.draw(live, this.frozenDim, 0);
   }
 
-  private draw(live: Live, frozenDim: number): void {
+  /** frozenDim >= 0 draws the frozen (blurred + dimmed) frame; otherwise a live frame darkened by `dim`. */
+  private draw(live: Live, frozenDim: number, dim: number): void {
     const r = this.sys.renderer;
     this.sys.beginFrame();
     r.setRenderTarget(live.post.sceneTarget);
     r.clear(true, true, false);
     r.render(live.scene, this.rig.camera);
     if (frozenDim >= 0) live.post.renderFrozen(null, frozenDim);
-    else live.post.render(null);
+    else live.post.render(null, dim);
   }
 
   applySettings(s: Settings): void {
@@ -326,11 +330,8 @@ class RenderBridgeImpl implements RenderBridge {
   }
 
   stats(): RenderStats {
-    const live = this.live;
-    return this.sys.stats(
-      live === null ? 1 : live.post.renderScale,
-      live === null ? this.preset.msaa : live.post.msaa,
-    );
+    const post = this.live?.post;
+    return this.sys.stats(post?.renderScale ?? 1, post?.msaa ?? this.preset.msaa);
   }
 
   dispose(): void {
@@ -369,7 +370,7 @@ class RenderBridgeImpl implements RenderBridge {
   private refreeze(): void {
     if (this.frozenDim < 0) return;
     const live = this.ready();
-    if (live !== null) this.draw(live, this.frozenDim);
+    if (live !== null) this.draw(live, this.frozenDim, 0);
   }
 
   private onRestored(): void {
