@@ -1,0 +1,72 @@
+/* Special gauge (SpecialGauge): 'NAME [KEY]', status (73% / READY / ACTIVE), meter. */
+.kp-sp {
+  margin-top: 0.35em;
+  padding: 0.2em 0.35em 0.3em;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.kp-sp-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+  margin-bottom: 0.2em;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+}
+
+.kp-sp-label {
+  color: var(--kp-dim);
+  white-space: nowrap;
+}
+
+.kp-sp-status {
+  color: var(--kp-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.kp-sp .kp-pp-od {
+  width: 100%;
+  height: 0.45em;
+}
+
+.kp-sp.is-ready {
+  border-color: var(--kp-pc);
+  background: rgba(var(--kp-pc-rgb), 0.14);
+  box-shadow: 0 0 12px rgba(var(--kp-pc-rgb), 0.55);
+  animation: kp-sp-pulse 0.9s ease-in-out infinite;
+}
+
+.kp-sp.is-ready .kp-sp-label,
+.kp-sp.is-ready .kp-sp-status {
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(var(--kp-pc-rgb), 0.9);
+}
+
+.kp-sp.is-ready .kp-pp-od {
+  --kp-pc: #ffffff;
+  animation: none;
+}
+
+.kp-sp.is-active .kp-pp-od {
+  --kp-pc: var(--kp-accent);
+}
+
+.kp-sp.is-active .kp-sp-status {
+  color: var(--kp-accent);
+}
+
+@keyframes kp-sp-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(var(--kp-pc-rgb), 0.35);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(var(--kp-pc-rgb), 0.85);
+  }
+}
+
+.kp-reduce-flashes .kp-sp.is-ready {
+  animation: none;
+}

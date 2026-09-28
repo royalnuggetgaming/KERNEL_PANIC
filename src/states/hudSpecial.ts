@@ -12,7 +12,9 @@ import { keyLabel } from '../config/keys';
 import { OVERDRIVE } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
 
-type SpecialFields = { -readonly [K in 'specialLabel' | 'specialPercent' | 'specialActiveFrac']: HudPlayerVM[K] };
+type SpecialFields = {
+  -readonly [K in 'specialLabel' | 'specialPercent' | 'specialActiveFrac']: HudPlayerVM[K];
+};
 
 /** Live bindings source (null: no key shown). */
 export type BindingsReader = () => Bindings | null;

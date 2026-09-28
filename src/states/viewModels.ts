@@ -19,7 +19,9 @@ import type {
 } from '../contracts/ui';
 import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { keyLabel } from '../config/keys';
-import { META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
+import { cheatDef } from '../config/cheats';
+import { cheatsBanner } from './cheatState';
+import { META_GROUPS, META_GROUP_OF, META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
 import { SPECIAL_BLURBS } from '../config/specials';
 import { VEHICLES } from '../config/vehicles';
 import { WAVES } from '../config/waves';
@@ -110,6 +112,7 @@ export function buildCharacterSelectVM(
     metaCurrency: n.metaCurrency,
     message: input.message,
     difficulty: DIFFICULTY_LABELS[save.settings.difficulty ?? DEFAULT_DIFFICULTY],
+    cheats: cheatsBanner(save, mode, n.metaCurrency),
   };
 }
 
@@ -119,24 +122,34 @@ export const RESPEC_ITEM = 'respec';
 export const META_ITEM_PREFIX = 'meta:';
 export const UNLOCK_ITEM_PREFIX = 'unlock:';
 
+export const CHEAT_ITEM_PREFIX = 'cheat:';
+
+/** Hangar: an explanation, Firmware grouped by META_GROUPS, the CRAFT unlocks, TERMINAL cheats, Respec. */
 export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef, message: string): HangarVM {
   const n = theme.names;
   const items: HangarItemVM[] = [];
-  for (const def of META_UPGRADES) {
-    const level = metaLevel(save.meta, def.id);
-    const price = metaPrice(def.id, level);
-    items.push({
-      id: META_ITEM_PREFIX + def.id,
-      kind: 'meta',
-      label: def.label.toUpperCase(),
-      blurb: metaDesc(def.id, n.runCurrency),
-      next: metaNext(def.id, level, n.runCurrency),
-      level,
-      maxLevel: def.prices.length,
-      price,
-      status: price === null ? 'maxed' : save.cores >= price ? 'available' : 'unaffordable',
-    });
+  for (const group of META_GROUPS) {
+    let first = true;
+    for (const def of META_UPGRADES) {
+      if (META_GROUP_OF[def.id] !== group) continue;
+      const level = metaLevel(save.meta, def.id);
+      const price = metaPrice(def.id, level);
+      items.push({
+        id: META_ITEM_PREFIX + def.id,
+        kind: 'meta',
+        label: def.label.toUpperCase(),
+        blurb: metaDesc(def.id, n.runCurrency),
+        next: metaNext(def.id, level, n.runCurrency),
+        level,
+        maxLevel: def.prices.length,
+        price,
+        status: price === null ? 'maxed' : save.cores >= price ? 'available' : 'unaffordable',
+        ...(first ? { group } : {}),
+      });
+      first = false;
+    }
   }
+  let firstCraft = true;
   for (const v of VEHICLE_IDS) {
     if (v !== 'specter' && v !== 'tinker') continue;
     const owned = isVehicleUnlocked(save, v);
@@ -151,7 +164,30 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
       maxLevel: 0,
       price: owned ? null : price,
       status: owned ? 'owned' : save.cores >= price ? 'available' : 'unaffordable',
+      ...(firstCraft ? { group: 'CRAFT (one-time unlocks)' } : {}),
     });
+    firstCraft = false;
+  }
+  const cheats = save.cheats ?? { unlocked: [], enabled: [] };
+  let firstCheat = true;
+  for (const id of cheats.unlocked) {
+    const c = cheatDef(id);
+    const on = cheats.enabled.includes(id);
+    items.push({
+      id: CHEAT_ITEM_PREFIX + id,
+      kind: 'cheat',
+      label: `${on ? '[ON] ' : '[OFF] '}${c.label}`,
+      blurb: c.desc,
+      next: on
+        ? 'ON for your next runs (no Cores, no records). Confirm to switch off.'
+        : 'Confirm to switch on',
+      level: 0,
+      maxLevel: 0,
+      price: null,
+      status: on ? 'owned' : 'available',
+      ...(firstCheat ? { group: 'TERMINAL CHEATS' } : {}),
+    });
+    firstCheat = false;
   }
   const refund = respecRefund(save);
   let anyLevel = false;
@@ -166,6 +202,7 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
     maxLevel: 0,
     price: refund,
     status: refund > 0 || anyLevel ? 'available' : 'unavailable',
+    group: 'RESET',
   });
   return {
     title: n.meta.toUpperCase(),
@@ -176,6 +213,9 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
     respecRefund: refund,
     message,
     readOnly: false,
+    intro:
+      `${n.metaCurrency} are earned at the end of every run (even losses). Spend them here on permanent ` +
+      `upgrades that apply to every future run automatically. Buy a line again to level it up.`,
   };
 }
 

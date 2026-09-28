@@ -18,6 +18,8 @@ import { computeRunRewards, type RewardBreakdown } from '../upgrades/rewards';
 import { IntentReader, indexOfId, wrapIndex, type UiIntent } from './intents';
 import { GAME_OVER_ITEMS, buildGameOverVM, runWon } from './viewModels';
 
+const NO_REWARDS: RewardBreakdown = { lines: [], uncapped: 0, total: 0, capped: false };
+
 /** Empty summary used when GameOver is entered without a run (defensive; never in normal flow). */
 function emptySummary(outcome: RunOutcome): RunSummary {
   return {
@@ -58,6 +60,7 @@ class GameOverStateImpl implements GameState<'GameOver'> {
   private summary: RunSummary = emptySummary('defeat');
   private rewards: RewardBreakdown = computeRunRewards(emptySummary('defeat'));
   private newBest = false;
+  private cheated = false;
   private cursor = 0;
   private dirty = true;
   private leaving = false;
@@ -77,10 +80,14 @@ class GameOverStateImpl implements GameState<'GameOver'> {
     const won = run !== null && run.config.mode !== 'versus' && run.world.run.victoryAchieved;
     const outcome: RunOutcome = won ? 'victory' : payload.outcome;
     this.summary = run === null ? emptySummary(outcome) : run.summary(outcome);
-    this.rewards = computeRunRewards(this.summary);
+    // TERMINAL cheat runs pay nothing and never reach records or the leaderboard.
+    this.cheated = run !== null && run.config.mode !== 'versus' && (run.config.cheats?.length ?? 0) > 0;
+    this.rewards = this.cheated ? NO_REWARDS : computeRunRewards(this.summary);
     // Re-entering for a run already shown keeps its "new best" (the records now include it).
-    if (!this.committed.has(this.summary.runId)) this.newBest = isNewBest(this.summary, s.save.data);
+    if (!this.committed.has(this.summary.runId))
+      this.newBest = !this.cheated && isNewBest(this.summary, s.save.data);
     this.commit();
+    if (this.cheated) s.ui.toast(`Cheats were on: no ${s.theme().names.metaCurrency} and no records this run.`, 'warn');
     s.input.setContext('menu');
     s.render.setCameraMode('gameover');
     s.audio.duck(false);
@@ -132,7 +139,8 @@ class GameOverStateImpl implements GameState<'GameOver'> {
       return;
     }
     this.committed.add(sm.runId);
-    const res = s.save.commitRun(sm.runId, { coresDelta: this.rewards.total, run: sm });
+    // A cheat run only marks its id as committed (no Cores, no records).
+    const res = s.save.commitRun(sm.runId, this.cheated ? {} : { coresDelta: this.rewards.total, run: sm });
     if (res.ok) return;
     switch (res.error) {
       case 'duplicate':

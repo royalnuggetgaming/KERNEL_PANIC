@@ -9,6 +9,7 @@ import type { LoadoutPick, RunMode, VehicleId } from '../contracts/ids';
 import type { RunConfig } from '../contracts/run';
 import type { Services } from '../contracts/services';
 import type { GameState, StatePayloads } from '../contracts/states';
+import { runCheatIds } from './cheatState';
 import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { VEHICLES } from '../config/vehicles';
 import { isVehicleUnlocked } from '../upgrades/MetaShop';
@@ -167,7 +168,7 @@ class CharacterSelectStateImpl implements GameState<'CharacterSelect'> {
     const mode: RunMode = effectiveMode(m);
     const players: LoadoutPick[] = picksOf(m);
     const save = s.save.data;
-    const config: RunConfig = {
+    let config: RunConfig = {
       runId: s.newRunId(),
       seed: s.env.seedOverride ?? s.newSeed(),
       mode,
@@ -179,6 +180,8 @@ class CharacterSelectStateImpl implements GameState<'CharacterSelect'> {
       // Snapshot like meta: a difficulty change mid-run (pause settings) only affects the next run.
       difficulty: save.settings.difficulty ?? DEFAULT_DIFFICULTY,
     };
+    const cheats = runCheatIds(save, mode);
+    if (cheats.length > 0) config = { ...config, cheats };
     s.session.lastPicks = players;
     s.session.lastMode = mode;
     s.audio.play('uiConfirm');

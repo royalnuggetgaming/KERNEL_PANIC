@@ -193,12 +193,14 @@ describe('shop to sim: each patch card bought through RunSession changes the sim
   it('SUDO: the special fires twice', () => {
     const [a, b] = pair(buyCardTx('sudo'), 'solo', { legendaryPool: 1 });
     const casts = (s: RunSession): number => {
+      // lab() freezes the world in 'countdown', where specials are now locked (the meter is kept): use 'idle',
+      // which the rules leave alone and specials may fire in.
+      s.state.run.phase = 'idle';
       s.state.players[0].overdrive = OVERDRIVE.MAX;
       let n = 0;
       const intents = createIntents();
       for (let t = 0; t < 1_500; t++) {
-        // Held until the first cast: specials are locked during the wave countdown (the meter is kept).
-        intents[0].specialPressed = n === 0;
+        intents[0].specialPressed = t === 0;
         s.tick(intents);
         n += s.state.events.special.count;
         s.clearEvents();

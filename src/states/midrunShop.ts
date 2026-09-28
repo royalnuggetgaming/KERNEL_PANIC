@@ -6,7 +6,8 @@
  * (Escape/Backspace) opens Pause. When the ready countdown ends: pop back to Playing, or GameOver{victory}
  * on EXTRACT. Versus uses the same flow between rounds (team row and gift hidden by the snapshot).
  */
-import type { PlayerIndex } from '../contracts/ids';
+import type { CardId, PlayerIndex } from '../contracts/ids';
+import { cardDef } from '../config/cards';
 import type { PlayerLoadout, ShopApi, ShopPlayerSnapshot, ShopVisitSnapshot } from '../contracts/run';
 import type { Services } from '../contracts/services';
 import type { ShopVM } from '../contracts/ui';
@@ -69,6 +70,7 @@ export class MidrunShopController {
     { row: 0, col: 0 },
   ];
   private readonly toasts: [string | null, string | null] = [null, null];
+  private readonly mythicShown: [boolean, boolean] = [false, false];
   private readonly toastLeft: [number, number] = [0, 0];
   private readonly txs: [ShopTx[], ShopTx[]] = [[], []];
   private lastSnap: ShopVisitSnapshot | null = null;
@@ -94,6 +96,8 @@ export class MidrunShopController {
     }
     this.toasts[0] = null;
     this.toasts[1] = null;
+    this.mythicShown[0] = false;
+    this.mythicShown[1] = false;
     this.leaving = false;
     this.lastSnap = null;
     s.input.setContext('menu');
@@ -145,7 +149,24 @@ export class MidrunShopController {
     if (next !== this.lastSnap || this.dirty) this.s.ui.update('shop', this.vm(next));
   }
 
+  /** Banner + fanfare the first time a MYTHIC card shows up in a player's offers (again after it leaves). */
+  private noteMythic(snap: ShopVisitSnapshot): void {
+    for (let i = 0; i < 2; i++) {
+      const p: PlayerIndex = i === 0 ? 0 : 1;
+      const pl = snap.players[p];
+      let found: CardId | null = null;
+      for (const c of pl.cards) if (c.rarity === 'M' && c.id !== null) found = c.id;
+      if (found !== null && !this.mythicShown[p]) {
+        const who = snap.players[1].joined ? `P${p + 1}: ` : '';
+        this.s.ui.toast(`${who}MYTHIC PATCH DETECTED: ${cardDef(found).label}`, 'warn');
+        this.s.audio.play('specialReady');
+      }
+      this.mythicShown[p] = found !== null;
+    }
+  }
+
   private vm(snap: ShopVisitSnapshot): ShopVM {
+    this.noteMythic(snap);
     this.lastSnap = snap;
     this.dirty = false;
     for (let p = 0; p < 2; p++) this.clampCursor(p === 0 ? 0 : 1, snap);

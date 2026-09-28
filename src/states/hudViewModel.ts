@@ -137,7 +137,11 @@ export class HudVmWriter {
    * `loadouts` (the run session) feeds the installed-powerup strip; null shows none. `bindings` supplies the live
    * key shown next to the special's name.
    */
-  constructor(theme: ThemeDef, loadouts: LoadoutReader | null = null, bindings: BindingsReader | null = null) {
+  constructor(
+    theme: ThemeDef,
+    loadouts: LoadoutReader | null = null,
+    bindings: BindingsReader | null = null,
+  ) {
     this.theme = theme;
     this.special = new HudSpecialWriter(theme, bindings);
     this.buffers = [blankHud(theme), blankHud(theme)];
@@ -234,7 +238,7 @@ export class HudVmWriter {
       if (sig === this.loadoutSig[p] && this.loadoutKeys[p] > 0) continue;
       this.loadoutSig[p] = sig;
       this.loadoutItems[p] =
-        w.players[p].life === 'absent' ? NO_ITEMS : installedItems(l, this.theme, !versus);
+        w.players[p].life === 'absent' ? NO_ITEMS : installedItems(l, this.theme, !versus, true);
       this.loadoutKeys[p]++;
     }
   }

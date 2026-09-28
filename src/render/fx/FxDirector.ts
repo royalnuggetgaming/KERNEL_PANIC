@@ -81,7 +81,9 @@ export class FxDirector {
     this.specialSinks = {
       particles: deps.particles,
       shockwaves: deps.shockwaves,
-      trauma: (a: number): void => deps.cues.trauma(a),
+      trauma: (a: number): void => {
+        deps.cues.trauma(a);
+      },
     };
   }
 
@@ -202,6 +204,9 @@ export class FxDirector {
           break;
         case 'shieldBlock':
           sw.spawn(AT, t, 0.3, 2, 0.3, TINT.ACCENT, 0.8);
+          break;
+        case 'specialReady':
+          // Drawn by consumeSpecialFx.
           break;
       }
     }
