@@ -17,6 +17,23 @@
   align-items: baseline;
 }
 
+.kp-select-diff {
+  letter-spacing: 0.08em;
+}
+
+.kp-select-diff-value {
+  font-weight: 700;
+  color: var(--kp-text);
+}
+
+.kp-select-diff-value.diff-casual {
+  color: var(--kp-good);
+}
+
+.kp-select-diff-value.diff-hard {
+  color: var(--kp-danger);
+}
+
 .kp-slots {
   display: grid;
   flex: 1;

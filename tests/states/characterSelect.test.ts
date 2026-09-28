@@ -92,10 +92,20 @@ describe('CharacterSelectState', () => {
   it('snapshots the saved difficulty into the RunConfig', () => {
     const { set, state, frame } = rig({ difficulty: 'hard' });
     state.enter({ prefill: null, mode: null }, 'MainMenu');
+    expect(set.ui.vm('characterSelect')?.difficulty).toBe('HARD');
     set.input.queueMenu({ player: 0, kind: 'confirm' });
     for (let i = 0; i < 41; i++) frame();
     const config = (set.fsm.lastRequest()?.payload as { config: RunConfig }).config;
     expect(config.difficulty).toBe('hard');
+  });
+
+  it('shows NORMAL for saves without a difficulty and CASUAL when chosen', () => {
+    const a = rig();
+    a.state.enter({ prefill: null, mode: null }, 'MainMenu');
+    expect(a.set.ui.vm('characterSelect')?.difficulty).toBe('NORMAL');
+    const b = rig({ difficulty: 'casual' });
+    b.state.enter({ prefill: null, mode: null }, 'MainMenu');
+    expect(b.set.ui.vm('characterSelect')?.difficulty).toBe('CASUAL');
   });
 
   it('un-readying cancels the countdown; P2 joins by click and leaves with dash', () => {

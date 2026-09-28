@@ -173,6 +173,8 @@ export interface CharacterSelectVM {
   readonly cores: number;
   readonly metaCurrency: string;
   readonly message: string;
+  /** v2: the difficulty the run will start with (from settings), e.g. 'CASUAL'. */
+  readonly difficulty: string;
 }
 
 export interface HudPlayerVM {

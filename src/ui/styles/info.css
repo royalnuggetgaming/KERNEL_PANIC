@@ -43,7 +43,7 @@
 /* Installed-powerup strip: compact chips, rebuilt only when the loadout changes (between waves). */
 .kp-pp-loadout {
   margin-top: 0.35em;
-  font-size: 0.62em;
+  font-size: 0.72em;
   letter-spacing: 0.04em;
 }
 
@@ -220,6 +220,10 @@
 .kp-mb-p {
   margin: 0.2em 0 0.45em;
   color: var(--kp-text);
+}
+
+.kp-mb-item + .kp-mb-p {
+  margin-top: 0.7em;
 }
 
 .kp-mb-h {

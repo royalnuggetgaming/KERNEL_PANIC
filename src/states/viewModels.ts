@@ -17,6 +17,7 @@ import type {
   SelectSlotVM,
   StatBarVM,
 } from '../contracts/ui';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { keyLabel } from '../config/keys';
 import { META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
 import { VEHICLES } from '../config/vehicles';
@@ -26,6 +27,7 @@ import { metaPrice } from '../upgrades/pricing';
 import type { RewardBreakdown, RewardLineId } from '../upgrades/rewards';
 import { clockText } from './hudViewModel';
 import { metaDesc, metaNext } from './powerupText';
+import { DIFFICULTY_LABELS } from './settingsPanel';
 
 export { buildHudVM } from './hudViewModel';
 export { buildShopVM } from './shopViewModel';
@@ -106,6 +108,7 @@ export function buildCharacterSelectVM(
     cores: save.cores,
     metaCurrency: n.metaCurrency,
     message: input.message,
+    difficulty: DIFFICULTY_LABELS[save.settings.difficulty ?? DEFAULT_DIFFICULTY],
   };
 }
 

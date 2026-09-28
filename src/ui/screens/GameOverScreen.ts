@@ -35,18 +35,7 @@ class PlayerRowView {
     const shards = cell('kp-num');
     const extra = cell('kp-num');
     const combo = cell('kp-num');
-    this.el = h(
-      doc,
-      'tr',
-      { className: 'kp-go-row' },
-      who,
-      score,
-      kills,
-      damage,
-      shards,
-      extra,
-      combo,
-    );
+    this.el = h(doc, 'tr', { className: 'kp-go-row' }, who, score, kills, damage, shards, extra, combo);
     this.tag = new TextSlot(tagEl);
     this.name = new TextSlot(nameEl);
     this.badge = new TextSlot(badgeEl);

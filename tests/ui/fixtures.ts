@@ -220,6 +220,7 @@ export function selectVM(patch: Partial<CharacterSelectVM> = {}): CharacterSelec
     cores: 90,
     metaCurrency: 'Cores',
     message: '',
+    difficulty: 'NORMAL',
     ...patch,
   };
 }

@@ -100,6 +100,10 @@ describe('ui/CharacterSelectScreen', () => {
     );
     expect(mode.classList.contains('mode-coop')).toBe(true);
     expect(el.first('kp-select-countdown').hidden).toBe(true);
+    expect(el.first('kp-select-diff-value').textContent).toBe('NORMAL');
+    s.render(selectVM({ difficulty: 'HARD' }));
+    expect(el.first('kp-select-diff-value').textContent).toBe('HARD');
+    expect(el.first('kp-select-diff-value').classList.contains('diff-hard')).toBe(true);
   });
 });
 

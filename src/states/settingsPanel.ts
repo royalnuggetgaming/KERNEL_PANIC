@@ -44,7 +44,7 @@ const FRAME_CAPS: readonly FrameCap[] = ['auto', 60, 120, 'uncapped'];
 const SLIDER_STEP = 0.1;
 /** Shown after a difficulty change (the running game, if any, keeps its own difficulty). */
 export const DIFFICULTY_NOTE = 'Difficulty applies from the next run.';
-const DIFFICULTY_LABELS: Readonly<Record<DifficultyId, string>> = {
+export const DIFFICULTY_LABELS: Readonly<Record<DifficultyId, string>> = {
   casual: 'CASUAL',
   normal: 'NORMAL',
   hard: 'HARD',
