@@ -18,7 +18,7 @@ import { CARD_PARAMS } from '../config/cards';
 import { SIM } from '../config/tuning';
 import { CARD_BIT, cardStacks, hasCard } from './cardBits';
 import { HIT_IN, applyBossDamage, applyDamage, hitEnemy } from './damage';
-import { nearestEnemy, spawnProjectile } from './projectiles';
+import { nearestTarget, spawnProjectile } from './projectiles';
 import { emitPlayer } from './simEventsOut';
 
 /** Area card effects deal damage every N ticks (0.1 s) instead of every tick. */
@@ -212,8 +212,8 @@ function stepMissiles(w: WorldState, p: PlayerEntity, dt: number): void {
   const cr = p.cards;
   cr.missileTimer += dt;
   if (cr.missileTimer < c.interval) return;
-  const first = nearestEnemy(w, p.x, p.z, 1e4);
-  if (first === null) {
+  const first = nearestTarget(w, p.x, p.z, 1e4);
+  if (first === NO_HANDLE) {
     cr.missileTimer = c.interval;
     return;
   }
@@ -223,7 +223,7 @@ function stepMissiles(w: WorldState, p: PlayerEntity, dt: number): void {
   SPEC.owner = p.index;
   SPEC.damage = c.damage;
   SPEC.life = c.life;
-  SPEC.homing = w.enemies.handleOf(first);
+  SPEC.homing = first;
   for (let k = 0; k < n; k++) {
     const side = (k & 1) === 0 ? -1 : 1;
     const a = base + side * MISSILE_SPLAY * (1 + (k >> 1) * 0.3);

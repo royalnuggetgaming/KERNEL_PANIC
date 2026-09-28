@@ -29,13 +29,13 @@ the in-game manual shows your own bindings.
 
 You are antivirus daemons inside a crashing server. Corrupted processes pour out of portals around the arena: destroy them, survive every cycle and keep the kernel alive.
 
-|                   |                                                                                                               |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| **The run**       | 3 sectors × 5 cycles = 15 cycles. The last cycle of every sector is a boss.                                   |
-| **Between waves** | Spend the Bits you collected in the Patch Bay on upgrades that last for the rest of the run.                  |
-| **Winning**       | Beat the final boss, then choose EXTRACT (bank the victory) or PUSH DEEPER into endless OVERFLOW waves.       |
-| **Losing**        | The run ends when every player is down and no Spare Kernels are left. You still earn Cores for your progress. |
-| **Modes**         | SOLO, CO-OP (two players, one keyboard) and VERSUS (a best-of-five duel).                                     |
+|                    |                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| **The run**        | 3 sectors × 5 cycles = 15 cycles. The last cycle of every sector is a boss.                                   |
+| **Between cycles** | Spend the Bits you collected in the Patch Bay on upgrades that last for the rest of the run.                  |
+| **Winning**        | Beat the final boss, then choose EXTRACT (bank the victory) or PUSH DEEPER into endless OVERFLOW waves.       |
+| **Losing**         | The run ends when every player is down and no Spare Kernels are left. You still earn Cores for your progress. |
+| **Modes**          | SOLO, CO-OP (two players, one keyboard) and VERSUS (a best-of-five duel).                                     |
 
 Every run pays Cores for permanent Firmware upgrades, so each attempt makes the next one easier.
 
@@ -43,22 +43,22 @@ Every run pays Cores for permanent Firmware upgrades, so each attempt makes the 
 
 These are your current key bindings. Change them in CONTROLS (main menu or pause).
 
-|                  |                                           |
-| ---------------- | ----------------------------------------- |
-| **Move**         | P1: W A S D · P2: ↑ ← ↓ →                 |
-| **Fire / Focus** | P1: SPACE / F · P2: . / NUM 0             |
-| **Dash**         | P1: L-SHIFT / Q · P2: / / R-SHIFT / NUM . |
-| **Special**      | P1: E / R · P2: , / NUM ENTER             |
-| **Pause**        | ESC / P                                   |
+|                  |                                                      |
+| ---------------- | ---------------------------------------------------- |
+| **Move**         | P1: W A S D · P2: ↑ ← ↓ →                            |
+| **Fire / Focus** | P1: SPACE or F · P2: PERIOD (.) or NUM 0             |
+| **Dash**         | P1: L-SHIFT or Q · P2: SLASH (/) or R-SHIFT or NUM . |
+| **Special**      | P1: E or R · P2: COMMA (,) or NUM ENTER              |
+| **Pause**        | ESC or P                                             |
 
 ### Menus
 
-|              |                                          |
-| ------------ | ---------------------------------------- |
-| **Navigate** | Either player’s move keys                |
-| **Confirm**  | ENTER / NUM ENTER or a player’s Fire key |
-| **Back**     | BKSP / ESC or a player’s Dash key        |
-| **Mouse**    | Click any menu item, shop row or button  |
+|              |                                           |
+| ------------ | ----------------------------------------- |
+| **Navigate** | Either player’s move keys                 |
+| **Confirm**  | ENTER or NUM ENTER or a player’s Fire key |
+| **Back**     | BKSP or ESC or a player’s Dash key        |
+| **Mouse**    | Click any menu item, shop row or button   |
 
 ### Patch Bay and character select
 
@@ -124,25 +124,25 @@ In CO-OP, when both players score a kill within 0.4 s of each other, each gets +
 
 ## Bits & the Patch Bay
 
-|                |                                                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Bits**       | Enemies drop Bits pickups. Your magnet (3.5 u to start) pulls them in; uncollected ones blink and vanish after 12 s. Each player has their own wallet. |
-| **Catch-up**   | A player whose wallet is below 60% of their partner’s gets +20% from pickups.                                                                          |
-| **Wave clear** | Clearing a cycle vacuums every pickup to the nearest player and pays a clear bonus that grows each cycle.                                              |
+|                 |                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Bits**        | Enemies drop Bits pickups. Your magnet (3.5 u to start) pulls them in; uncollected ones blink and vanish after 12 s. Each player has their own wallet. |
+| **Catch-up**    | A player whose wallet is below 60% of their partner’s gets +20% from pickups.                                                                          |
+| **Cycle clear** | Clearing a cycle vacuums every pickup to the nearest player and pays a clear bonus that grows each cycle.                                              |
 
 ### The Patch Bay
 
 After every cycle the Patch Bay opens with one panel per player. Every row shows what it does, and upgrades show what the next level adds. The INSTALLED list shows what you own.
 
-|                   |                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------- |
-| **Systems**       | Eight stat rows you can level up at any visit; prices rise per level and per wave.                        |
-| **Repair**        | Heal part of your max HP.                                                                                 |
-| **Patch cards**   | Three random cards per visit with special effects. Rarer cards appear in later sectors.                   |
-| **Lock**          | Keep one card for your next visit at the same price (move right on a card row).                           |
-| **Team row**      | Shared items either player can pay for: Spare Kernels, Link Amplifier, Link Range, Revive Protocol.       |
-| **Reroll / Gift** | Draw new cards; send Bits to your partner.                                                                |
-| **Keys**          | Fire buys, Dash undoes (full refund), Special toggles READY. The next wave starts when everyone is READY. |
+|                   |                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Systems**       | Eight stat rows you can level up at any visit; prices rise per level and per cycle.                        |
+| **Repair**        | Heal part of your max HP.                                                                                  |
+| **Patch cards**   | Three random cards per visit with special effects. Rarer cards appear in later sectors.                    |
+| **Lock**          | Keep one card for your next visit at the same price (move right on a card row).                            |
+| **Team row**      | Shared items either player can pay for: Spare Kernels, Link Amplifier, Link Range, Revive Protocol.        |
+| **Reroll / Gift** | Draw new cards; send Bits to your partner.                                                                 |
+| **Keys**          | Fire buys, Dash undoes (full refund), Special toggles READY. The next cycle starts when everyone is READY. |
 
 The next pages list every powerup.
 
@@ -150,17 +150,17 @@ The next pages list every powerup.
 
 Stat rows are always on sale. Each level adds the listed amount; prices rise with level and wave.
 
-|                    |                                                                                               |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| **Thrusters**      | +7% move speed per level (6 levels)                                                           |
-| **Plating**        | +20 max HP per level (heals you by the same amount) (8 levels)                                |
-| **Overclock**      | +12% fire rate per level (8 levels)                                                           |
-| **Payload**        | +15% damage per level (8 levels)                                                              |
-| **Magnet**         | +25% pickup radius per level (5 levels)                                                       |
-| **Coolant**        | -12% dash cooldown per level (5 levels)                                                       |
-| **Capacitor**      | +20% special charge rate per level (5 levels)                                                 |
-| **Special Tuning** | Each level: special tier +1: +25% special radius, duration and damage (max tier 3) (2 levels) |
-| **Repair**         | Heal 35% of your max HP (up to 2 per visit; price rises each time)                            |
+|                    |                                                                |
+| ------------------ | -------------------------------------------------------------- |
+| **Thrusters**      | +7% move speed per level (6 levels)                            |
+| **Plating**        | +20 max HP per level (heals you by the same amount) (8 levels) |
+| **Overclock**      | +12% fire rate per level (8 levels)                            |
+| **Payload**        | +15% damage per level (8 levels)                               |
+| **Magnet**         | +25% pickup radius per level (5 levels)                        |
+| **Coolant**        | -12% dash cooldown per level (5 levels)                        |
+| **Capacitor**      | +20% special charge rate per level (5 levels)                  |
+| **Special Tuning** | +25% special radius, duration and damage per level (2 levels)  |
+| **Repair**         | Heal 35% of your max HP (up to 2 per visit)                    |
 
 ## Powerups: Patch Cards (Common, Uncommon)
 
@@ -203,7 +203,7 @@ Unique cards can be owned once; the others stack up to the listed count.
 |                 |                                                 |
 | --------------- | ----------------------------------------------- |
 | **FORK()**      | Every 5th volley fires twice                    |
-| **SUDO**        | Your special fires twice per use                |
+| **SUDO**        | Your special fires 2 times per use              |
 | **ROOT ACCESS** | Combo tier +1 permanently (more score and Bits) |
 
 Legendary cards appear only after you buy the Legendary Pool Firmware.
@@ -212,21 +212,21 @@ Legendary cards appear only after you buy the Legendary Pool Firmware.
 
 Team items are shared: either player can pay from their own wallet and both benefit. Hidden in VERSUS.
 
-|                     |                                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| **Spare Kernel**    | Team extra life: a downed player with no partner left reboots instead of the run ending (hold 3) |
-| **Link Amplifier**  | +40% link beam damage per level for both players (3 levels)                                      |
-| **Link Range**      | +4 u max link length per level (base 14 u) (2 levels)                                            |
-| **Revive Protocol** | Revives take 1.2 s instead of 2 s and restore 60% HP instead of 40% (1 level)                    |
+|                     |                                                                               |
+| ------------------- | ----------------------------------------------------------------------------- |
+| **Spare Kernel**    | Extra team life, spent automatically to reboot a lost player (hold up to 3)   |
+| **Link Amplifier**  | +40% link beam damage per level for both players (3 levels)                   |
+| **Link Range**      | +4 u max link length per level (base 14 u) (2 levels)                         |
+| **Revive Protocol** | Revives take 1.2 s instead of 2 s and restore 60% HP instead of 40% (1 level) |
 
 ### Utility
 
-|            |                                                                                         |
-| ---------- | --------------------------------------------------------------------------------------- |
-| **Reroll** | Replace your 3 patch cards with new ones (a locked card stays); price rises each reroll |
-| **Lock**   | Lock keeps 1 card for your next visit at today's price                                  |
-| **Gift**   | Give 10 Bits to your partner (Undo refunds it); CO-OP only                              |
-| **Undo**   | Dash undoes your last purchase this visit for a full refund                             |
+|            |                                                                         |
+| ---------- | ----------------------------------------------------------------------- |
+| **Reroll** | Draw 3 new patch cards (a locked card stays); the price rises each time |
+| **Lock**   | Lock keeps 1 card for your next visit at today's price                  |
+| **Gift**   | Give 10 Bits to your partner (Undo refunds it); CO-OP only              |
+| **Undo**   | Dash undoes your last purchase this visit for a full refund             |
 
 ## Downed, Revive & Spare Kernels
 
@@ -288,7 +288,7 @@ Every run ends at the results screen, which pays Cores: 1 per 10 Bits earned, +3
 | ------------------ | --------------------------------------------------------------------------------------- |
 | **Hull FW**        | +5% max HP per level, permanently (5 levels)                                            |
 | **Boot Cache**     | Start every run with +25 Bits per level (4 levels)                                      |
-| **Reroll Cache**   | +1 free Patch Bay reroll every visit per level (2 levels)                               |
+| **Reroll Cache**   | Each level: +1 free Patch Bay reroll per visit (2 levels)                               |
 | **Magnet FW**      | +10% pickup radius per level, permanently (3 levels)                                    |
 | **Overclock FW**   | +3% fire rate per level, permanently (5 levels)                                         |
 | **Field Medic**    | -10% revive time per level, permanently (3 levels)                                      |
@@ -313,15 +313,15 @@ Once Player 2 joins, set the MODE row at character select to VERSUS. First to 3 
 
 ## Difficulty
 
-Pick a difficulty in SETTINGS before a run. It changes how hard the arena hits, never the rules.
+Pick a difficulty in SETTINGS before a run (character select shows the current one). It changes how hard the arena hits, never the rules.
 
-|            |                                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------- |
-| **CASUAL** | Fewer, slower enemies that deal less damage. Best for learning the game or relaxed co-op. |
-| **NORMAL** | The intended balance.                                                                     |
-| **HARD**   | More, faster and harder-hitting enemies for players who know every pattern.               |
+|            |                                                                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **CASUAL** | Enemy speed -20%, enemy count -30%, damage to you -40%, enemy HP -20%. Best for learning the game or relaxed co-op.                       |
+| **NORMAL** | The intended balance (the default).                                                                                                       |
+| **HARD**   | Enemy speed +35%, enemy count +75%, damage to you +75%, enemy HP +25%. Close to the original release; for players who know every pattern. |
 
-The difficulty in effect when a run starts stays for the whole run.
+The difficulty in effect when a run starts stays for the whole run. Cores rewards are the same on every difficulty.
 
 ## Tips
 

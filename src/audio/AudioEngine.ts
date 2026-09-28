@@ -14,7 +14,7 @@ import { type AudioEventRouter, type AudioRequestSink, createAudioRequestRouter 
 import { type SectorComposer, createComposer } from './Composer';
 import { Mixer } from './Mixer';
 import { MusicGraph } from './MusicGraph';
-import { type SequencerApi, createSequencer } from './Sequencer';
+import { BEAT_PHASE_IDLE, type SequencerApi, createSequencer } from './Sequencer';
 import { SfxBank, sfxIndex } from './SfxBank';
 import { TIMBRES, type TimbrePreset } from './timbre';
 import { CATEGORY_LIMITS, VOICE_COUNT, VOICE_IN, VoicePool } from './VoicePool';
@@ -278,7 +278,7 @@ class Engine implements AudioEngine, AudioRequestSink {
   /** Read once per frame by the renderer: doubles as the rAF scheduler tick. */
   get beatPhase(): number {
     const seq = this.seq;
-    if (seq === null) return 0;
+    if (seq === null) return BEAT_PHASE_IDLE;
     seq.tick();
     return seq.beatPhase;
   }

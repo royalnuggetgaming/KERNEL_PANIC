@@ -48,7 +48,8 @@ function applyRun(records: SaveRecords, run: RunSummary, nowMs: number): SaveRec
   }
   return {
     runs: Math.min(max, records.runs + 1),
-    victories: records.victories + (!versus && run.outcome === 'victory' ? 1 : 0),
+    // A run that won and then pushed into OVERFLOW ends by dying or abandoning, but the win was banked.
+    victories: records.victories + (!versus && (run.outcome === 'victory' || run.victoryAchieved) ? 1 : 0),
     bestWave: versus ? records.bestWave : Math.max(records.bestWave, clampInt(run.waveReached, 0, 1_000_000)),
     bestScore: versus ? records.bestScore : Math.max(records.bestScore, score),
     versusMatches: records.versusMatches + (versus ? 1 : 0),

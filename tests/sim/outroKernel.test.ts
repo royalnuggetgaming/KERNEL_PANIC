@@ -1,11 +1,11 @@
 /**
- * Critic v2: stepRevive keeps bleeding Downed players out during the wave-clear outro (2 s, slow-mo) although
+ * Regression (critic v2): stepRevive keeps bleeding Downed players out during the wave-clear outro (2 s, slow-mo) although
  * the wave is already won and finishWave's reboot would revive them for free. A player downed shortly before the
  * last kill burns a Spare Kernel (150 Shards in the shop) or goes Offline (30% instead of 40% reboot HP).
  */
 import { expect, it } from 'vitest';
-import { createIntents } from '../../helpers/scriptedIntents';
-import { newSession } from '../../sim/runDriver';
+import { createIntents } from '../helpers/scriptedIntents';
+import { newSession } from './runDriver';
 
 it('a Downed player does not spend a Spare Kernel during the wave-clear outro', () => {
   const s = newSession('coop', 5);

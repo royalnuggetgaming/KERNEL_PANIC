@@ -59,6 +59,8 @@ export interface RunSession extends RunSessionApi {
   economy(p: PlayerIndex): PlayerRunState;
   /** Copy of the team stock (kernels synced from the world at openShop). */
   team(): TeamState;
+  /** Installed powerups of one player (live during an open visit); always present on the concrete session. */
+  loadout(p: PlayerIndex): PlayerLoadout;
 }
 
 function isJoined(w: WorldState, p: PlayerIndex): boolean {

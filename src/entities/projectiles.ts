@@ -6,7 +6,6 @@ import { NO_HANDLE, type EntityHandle, type PlayerIndex } from '../contracts/ids
 import type { Intents } from '../contracts/input';
 import {
   PROJECTILE_KINDS,
-  type EnemyEntity,
   type EntityPoolApi,
   type ProjectileEntity,
   type ProjectileSpec,
@@ -54,10 +53,23 @@ export function spawnProjectile(w: WorldState, spec: Readonly<ProjectileSpec>): 
   return s;
 }
 
-/** Nearest live, non-dying enemy within `range` of (x, z); null when none. */
-export function nearestEnemy(w: WorldState, x: number, z: number, range: number): EnemyEntity | null {
-  let best: EnemyEntity | null = null;
+/** Homing handles <= this encode a boss part: handle = BASE - index into w.bosses. */
+export const BOSS_HOMING_BASE = -20;
+
+export function bossHomingHandle(k: number): EntityHandle {
+  return BOSS_HOMING_BASE - k;
+}
+
+/** Result of the last nearestTarget call (reused, allocation-free). */
+export const NEAREST = { x: 0, z: 0, handle: NO_HANDLE as EntityHandle };
+
+/**
+ * Nearest hittable target within `range` of (x, z): live non-dying enemies and living boss parts past their
+ * intro. Fills NEAREST (x, z, homing handle) and returns the handle, or NO_HANDLE when none is in range.
+ */
+export function nearestTarget(w: WorldState, x: number, z: number, range: number): EntityHandle {
   let bestD = range * range;
+  NEAREST.handle = NO_HANDLE;
   const pool = w.enemies;
   for (let i = 0; i < pool.count; i++) {
     const e = pool.active[i]!;
@@ -67,10 +79,25 @@ export function nearestEnemy(w: WorldState, x: number, z: number, range: number)
     const d = dx * dx + dz * dz;
     if (d < bestD) {
       bestD = d;
-      best = e;
+      NEAREST.x = e.x;
+      NEAREST.z = e.z;
+      NEAREST.handle = pool.handleOf(e);
     }
   }
-  return best;
+  for (let k = 0; k < w.bosses.length; k++) {
+    const b = w.bosses[k]!;
+    if (!b.alive || b.introTimer > 0) continue;
+    const dx = b.x - x;
+    const dz = b.z - z;
+    const d = dx * dx + dz * dz;
+    if (d < bestD) {
+      bestD = d;
+      NEAREST.x = b.x;
+      NEAREST.z = b.z;
+      NEAREST.handle = bossHomingHandle(k);
+    }
+  }
+  return NEAREST.handle;
 }
 
 /** Restarts GPU extrapolation after a velocity change. */
@@ -86,6 +113,14 @@ const TARGET = { x: 0, z: 0, ok: false };
 function resolveTarget(w: WorldState, h: EntityHandle): void {
   TARGET.ok = false;
   if (h === NO_HANDLE) return;
+  if (h <= BOSS_HOMING_BASE) {
+    const b = w.bosses[BOSS_HOMING_BASE - h];
+    if (!b?.alive) return;
+    TARGET.x = b.x;
+    TARGET.z = b.z;
+    TARGET.ok = true;
+    return;
+  }
   if (h <= PLAYER_HOMING_BASE) {
     const idx = PLAYER_HOMING_BASE - h;
     if (idx !== 0 && idx !== 1) return;
@@ -104,15 +139,12 @@ function resolveTarget(w: WorldState, h: EntityHandle): void {
 }
 
 function acquireMineTarget(w: WorldState, s: ProjectileEntity): void {
-  const e = nearestEnemy(w, s.x, s.z, MINE_SEEK_RANGE);
   let bestD = MINE_SEEK_RANGE * MINE_SEEK_RANGE;
-  if (e !== null) {
-    s.homing = w.enemies.handleOf(e);
-    const dx = e.x - s.x;
-    const dz = e.z - s.z;
+  s.homing = nearestTarget(w, s.x, s.z, MINE_SEEK_RANGE);
+  if (s.homing !== NO_HANDLE) {
+    const dx = NEAREST.x - s.x;
+    const dz = NEAREST.z - s.z;
     bestD = dx * dx + dz * dz;
-  } else {
-    s.homing = NO_HANDLE;
   }
   if (w.mode === 'versus' && (s.owner === 0 || s.owner === 1)) {
     const q = w.players[s.owner === 0 ? 1 : 0];
@@ -152,8 +184,7 @@ function steer(w: WorldState, s: ProjectileEntity, dt: number): void {
   if (s.homing === NO_HANDLE) return;
   resolveTarget(w, s.homing);
   if (!TARGET.ok && s.kind === PROJECTILE_KINDS.missile) {
-    const e = nearestEnemy(w, s.x, s.z, ARENA.RADIUS * 2);
-    s.homing = e === null ? NO_HANDLE : w.enemies.handleOf(e);
+    s.homing = nearestTarget(w, s.x, s.z, ARENA.RADIUS * 2);
     resolveTarget(w, s.homing);
   }
   if (!TARGET.ok) return;

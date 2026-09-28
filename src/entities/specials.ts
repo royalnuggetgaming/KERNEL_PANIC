@@ -13,7 +13,7 @@ import { ARENA, OVERDRIVE, STAT_CAPS } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
 import { CARD_BIT, hasCard } from './cardBits';
 import { HIT_IN, applyBossDamage, damagePlayer, hitEnemy } from './damage';
-import { nearestEnemy, spawnProjectile } from './projectiles';
+import { NEAREST, nearestTarget, spawnProjectile } from './projectiles';
 import { emitPlayer } from './simEventsOut';
 
 export { addOverdrive } from './overdrive';
@@ -235,14 +235,14 @@ function stepDrone(w: WorldState, p: PlayerEntity, dt: number, emit: boolean): v
   }
   s.fireAcc += cfg.turretRate * dt;
   if (s.fireAcc < 1) return;
-  const e = nearestEnemy(w, s.x, s.z, cfg.turretRange);
-  if (e === null) {
+  const target = nearestTarget(w, s.x, s.z, cfg.turretRange);
+  if (target === NO_HANDLE) {
     s.fireAcc = 1;
     return;
   }
   s.fireAcc -= 1;
-  const dx = e.x - s.x;
-  const dz = e.z - s.z;
+  const dx = NEAREST.x - s.x;
+  const dz = NEAREST.z - s.z;
   const l = Math.sqrt(dx * dx + dz * dz);
   if (l < 1e-6) return;
   SPEC.owner = p.index;
@@ -257,7 +257,7 @@ function stepDrone(w: WorldState, p: PlayerEntity, dt: number, emit: boolean): v
   SPEC.pierce = 0;
   SPEC.bounces = 0;
   SPEC.crit = false;
-  SPEC.homing = w.enemies.handleOf(e);
+  SPEC.homing = target;
   spawnProjectile(w, SPEC);
 }
 

@@ -76,6 +76,15 @@ describe('PlayingState', () => {
     expect(other.set.fsm.lastRequest()).toEqual({ to: 'GameOver', payload: { outcome: 'defeat' } });
   });
 
+  it('a team wipe in OVERFLOW after beating the final boss requests GameOver victory', () => {
+    const { set, state, run } = rig();
+    run.world.run.victoryAchieved = true;
+    run.world.run.overflow = true;
+    run.setFlags({ defeat: true });
+    state.fixedUpdate?.(1 / 120);
+    expect(set.fsm.lastRequest()).toEqual({ to: 'GameOver', payload: { outcome: 'victory' } });
+  });
+
   it('versus: roundOver pushes the shop, matchOver replaces with GameOver victory', () => {
     const a = rig('versus');
     a.run.setFlags({ roundOver: true });

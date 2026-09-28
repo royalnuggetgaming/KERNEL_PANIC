@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { MusicMood } from '../../src/contracts/audio';
 import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
 import { type Composer, type NoteEvent, createComposer } from '../../src/audio/Composer';
-import { LATE_TOLERANCE_S, LOOKAHEAD_S, START_DELAY_S, createSequencer } from '../../src/audio/Sequencer';
+import {
+  BEAT_PHASE_IDLE,
+  LATE_TOLERANCE_S,
+  LOOKAHEAD_S,
+  START_DELAY_S,
+  createSequencer,
+} from '../../src/audio/Sequencer';
 
 interface Scheduled {
   readonly at: number;
@@ -69,7 +75,8 @@ describe('Sequencer', () => {
 
   it('beatPhase is derived from the clock', () => {
     const { clock, seq } = setup(120, METRONOME);
-    expect(seq.beatPhase).toBe(0);
+    // Idle (no music) rests at the bar tail so the floor beat pulse is dark, not held at full brightness.
+    expect(seq.beatPhase).toBe(BEAT_PHASE_IDLE);
     seq.setMood('combat');
     seq.start();
     const t0 = clock.t + START_DELAY_S;
@@ -79,7 +86,7 @@ describe('Sequencer', () => {
     expect(seq.beatPhase).toBeCloseTo(0.25, 9);
     expect(seq.beatPosition).toBeCloseTo(2.25, 9);
     seq.stop();
-    expect(seq.beatPhase).toBe(0);
+    expect(seq.beatPhase).toBe(BEAT_PHASE_IDLE);
     expect(seq.running).toBe(false);
   });
 

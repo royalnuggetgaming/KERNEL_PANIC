@@ -20,6 +20,7 @@ import type {
 import { keyLabel } from '../config/keys';
 import { META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
 import { VEHICLES } from '../config/vehicles';
+import { WAVES } from '../config/waves';
 import { isVehicleUnlocked, respecRefund } from '../upgrades/MetaShop';
 import { metaPrice } from '../upgrades/pricing';
 import type { RewardBreakdown, RewardLineId } from '../upgrades/rewards';
@@ -199,6 +200,15 @@ function lineLabel(id: RewardLineId, theme: ThemeDef): string {
   }
 }
 
+/**
+ * Co-op/solo: a run counts as won once the final boss fell (summary.victoryAchieved), even when it then pushed
+ * into OVERFLOW and ended by dying or abandoning. Versus: a decided match.
+ */
+export function runWon(summary: RunSummary): boolean {
+  if (summary.mode === 'versus') return summary.winner !== null && summary.outcome !== 'abandoned';
+  return summary.outcome === 'victory' || summary.victoryAchieved;
+}
+
 function titles(summary: RunSummary, theme: ThemeDef): { title: string; subtitle: string } {
   const n = theme.names;
   if (summary.mode === 'versus') {
@@ -207,12 +217,14 @@ function titles(summary: RunSummary, theme: ThemeDef): { title: string; subtitle
     return { title: `${n.versus} COMPLETE`, subtitle: `ROUNDS ${score}` };
   }
   const reached = `${n.wave.toUpperCase()} ${summary.waveReached}`;
+  if (runWon(summary)) {
+    return summary.waveReached > WAVES.TOTAL
+      ? { title: 'VICTORY', subtitle: `${n.overflow} survived to ${reached}` }
+      : { title: `${n.extract} COMPLETE`, subtitle: 'The kernel is safe.' };
+  }
   switch (summary.outcome) {
     case 'victory':
-      return {
-        title: `${n.extract} COMPLETE`,
-        subtitle: summary.waveReached > 15 ? `${n.overflow} survived to ${reached}` : 'The kernel is safe.',
-      };
+      return { title: `${n.extract} COMPLETE`, subtitle: 'The kernel is safe.' };
     case 'defeat':
       return { title: 'SYSTEM FAILURE', subtitle: `Purged at ${reached}` };
     case 'abandoned':
@@ -250,7 +262,8 @@ export function buildGameOverVM(
   }));
   const t = titles(summary, theme);
   return {
-    outcome: summary.outcome,
+    // A won run that ended in OVERFLOW is styled as a victory whatever ended it.
+    outcome: !versus && runWon(summary) ? 'victory' : summary.outcome,
     mode: summary.mode,
     title: t.title,
     subtitle: t.subtitle,

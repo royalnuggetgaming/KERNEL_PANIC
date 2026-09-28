@@ -14,7 +14,6 @@ class PlayerRowView {
   private readonly tag: TextSlot;
   private readonly name: TextSlot;
   private readonly badge: TextSlot;
-  private readonly vehicle: TextSlot;
   private readonly score: NumSlot;
   private readonly kills: NumSlot;
   private readonly damage: NumSlot;
@@ -30,7 +29,6 @@ class PlayerRowView {
     const nameEl = h(doc, 'span', { className: 'kp-go-name' });
     const badgeEl = h(doc, 'span', { className: 'kp-badge' });
     const who = h(doc, 'td', { className: 'kp-go-who' }, tagEl, nameEl, badgeEl);
-    const vehicle = cell('kp-go-veh');
     const score = cell('kp-num');
     const kills = cell('kp-num');
     const damage = cell('kp-num');
@@ -42,7 +40,6 @@ class PlayerRowView {
       'tr',
       { className: 'kp-go-row' },
       who,
-      vehicle,
       score,
       kills,
       damage,
@@ -53,7 +50,6 @@ class PlayerRowView {
     this.tag = new TextSlot(tagEl);
     this.name = new TextSlot(nameEl);
     this.badge = new TextSlot(badgeEl);
-    this.vehicle = new TextSlot(vehicle);
     this.score = new NumSlot(score, formatShards);
     this.kills = new NumSlot(kills, formatShards);
     this.damage = new NumSlot(damage, formatShards);
@@ -67,10 +63,10 @@ class PlayerRowView {
   set(vm: GameOverPlayerVM, versus: boolean): void {
     this.tag.set(playerTag(vm.player));
     this.playerClass.set(vm.player === 0 ? 'kp-p1' : 'kp-p2');
-    this.name.set(vm.name);
+    // The tag already says P1/P2 (vm.name is the same tag), so the name slot shows the craft.
+    this.name.set(vm.vehicleName);
     this.badge.set(versus ? (vm.winner ? 'WINNER' : '') : vm.mvp ? 'MVP' : '');
     this.highlight.set(versus ? vm.winner : vm.mvp);
-    this.vehicle.set(vm.vehicleName);
     this.score.set(vm.score);
     this.kills.set(vm.kills);
     this.damage.set(vm.damage);
@@ -158,7 +154,6 @@ export class GameOverScreen implements ScreenView<'gameOver'> {
           'tr',
           undefined,
           th('PLAYER', ''),
-          th('DAEMON', ''),
           th('SCORE'),
           th('KILLS'),
           th('DAMAGE'),

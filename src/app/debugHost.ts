@@ -8,6 +8,7 @@ import type { PlayerIntent } from '../contracts/input';
 import type { RunConfig } from '../contracts/run';
 import type { StateId } from '../contracts/states';
 import type { WorldState, WorldView } from '../contracts/world';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { Autopilot } from '../debug/Autopilot';
 import type { DebugHost, FrameStat, GotoOptions, StressSpec } from '../debug/devApi';
 import type { AppServices } from './createServices';
@@ -77,6 +78,7 @@ export function createDebugHost(
       autofire: [save.settings.autofire[0], save.settings.autofire[1]],
       focusToggle: [save.settings.focusToggle[0], save.settings.focusToggle[1]],
       themeId: s.theme().id,
+      difficulty: save.settings.difficulty ?? DEFAULT_DIFFICULTY,
     };
   };
 

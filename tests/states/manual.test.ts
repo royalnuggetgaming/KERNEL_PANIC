@@ -79,7 +79,7 @@ describe('HOW TO PLAY content', () => {
     const controls = buildManualPages(KERNEL_PANIC, custom).find((p) => p.id === 'controls')!;
     const fire = controls.blocks.find((b) => b.term === 'Fire / Focus')!;
     expect(fire.text).toMatch(/^P1: J /);
-    expect(fire.text).toContain('P2: .');
+    expect(fire.text).toContain('P2: PERIOD (.) or NUM 0'); // punctuation keys are spelled out
     const move = controls.blocks.find((b) => b.term === 'Move')!;
     expect(move.text).toBe('P1: W A S D   ·   P2: ↑ ← ↓ →');
   });

@@ -1,12 +1,12 @@
 /**
- * Critic v2: checkWipe only runs in 'combat' and 'boss'. When the wave timer expires inside the 1 s wipe grace,
+ * Regression (critic v2): checkWipe only runs in 'combat' and 'boss'. When the wave timer expires inside the 1 s wipe grace,
  * startPurge resets wipeGrace, the purge/outro never check for a wipe and finishWave reboots the whole team:
  * a full team wipe with no Spare Kernels is turned into a wave clear.
  */
 import { expect, it } from 'vitest';
-import { createIntents } from '../../helpers/scriptedIntents';
-import { addTestEnemy } from '../../helpers/worldFixture';
-import { newSession } from '../../sim/runDriver';
+import { createIntents } from '../helpers/scriptedIntents';
+import { addTestEnemy } from '../helpers/worldFixture';
+import { newSession } from './runDriver';
 
 it('a team wipe just before the wave timer ends is still a defeat', () => {
   const s = newSession('coop', 9);

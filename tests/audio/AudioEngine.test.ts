@@ -9,6 +9,7 @@ import {
   type TimerPort,
   createAudioEngine,
 } from '../../src/audio/AudioEngine';
+import { BEAT_PHASE_IDLE } from '../../src/audio/Sequencer';
 import { DUCK_CUTOFF_HZ, LIMITER_RATIO, LIMITER_THRESHOLD_DB, LOUNGE_CUTOFF_HZ } from '../../src/audio/Mixer';
 import { CATEGORY_LIMITS, VOICE_COUNT } from '../../src/audio/VoicePool';
 import { FakeContext, FakeOfflineContext } from './fakeWebAudio';
@@ -62,7 +63,7 @@ describe('AudioEngine', () => {
     engine.consumeEvents(createSimEvents());
     expect(contexts).toHaveLength(0);
     expect(engine.unlocked).toBe(false);
-    expect(engine.beatPhase).toBe(0);
+    expect(engine.beatPhase).toBe(BEAT_PHASE_IDLE);
     expect(engine.stats()).toEqual({ voices: 0, stolen: 0, coalesced: 0, ctxState: 'none' });
   });
 

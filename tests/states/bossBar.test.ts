@@ -3,9 +3,9 @@
  * Condition twin) dies the bar jumps back UP: the dead part's max HP leaves the denominator.
  */
 import { expect, it } from 'vitest';
-import { HudVmWriter } from '../../../src/states/hudViewModel';
-import { THEMES } from '../../../src/themes/registry';
-import { createTestWorld } from '../../helpers/worldFixture';
+import { HudVmWriter } from '../../src/states/hudViewModel';
+import { THEMES } from '../../src/themes/registry';
+import { createTestWorld } from '../helpers/worldFixture';
 
 it('killing one Fork Bomb part never raises the boss HP bar', () => {
   const w = createTestWorld({ seed: 1, mode: 'coop' });

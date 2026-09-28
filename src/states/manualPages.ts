@@ -3,9 +3,10 @@
  * changes the manual too; key names come from the live bindings. The powerup, enemy, boss and Firmware reference
  * pages live in manualReference.ts.
  */
-import type { Action, Bindings } from '../contracts/input';
+import type { Action, Bindings, KeyCode } from '../contracts/input';
 import type { ThemeDef } from '../contracts/theme';
 import type { ManualBlockVM, ManualPageVM } from '../contracts/ui';
+import { DIFFICULTY, type DifficultyDef } from '../config/difficulty';
 import { MENU_KEYS, keyLabel } from '../config/keys';
 import { SPECIALS, SPECIAL_TIER_BONUS } from '../config/specials';
 import { COMBO, COOP, DASH, MOVEMENT, OVERDRIVE, PICKUPS } from '../config/tuning';
@@ -16,15 +17,21 @@ import { referencePages } from './manualReference';
 import { hd, item, page, para, pctText } from './manualBlocks';
 import { trimNum } from './powerupText';
 
-function keys(codes: readonly string[]): string {
-  return codes.length === 0 ? '(unbound)' : codes.map(keyLabel).join(', ');
+/** Punctuation keys read badly in a list (", , NUM ENTER"), so they are spelled out: "COMMA (,)". */
+function keyName(code: KeyCode): string {
+  const label = keyLabel(code);
+  return /^[!-/:-@[-`{-~]$/.test(label) ? `${code.toUpperCase()} (${label})` : label;
+}
+
+function keys(codes: readonly KeyCode[]): string {
+  return codes.length === 0 ? '(unbound)' : codes.map(keyName).join(' or ');
 }
 
 function moveKeys(b: Bindings, p: 0 | 1): string {
   const pb = b.players[p];
   const first = (a: Action): string => {
     const c = pb[a][0];
-    return c === undefined ? '?' : keyLabel(c);
+    return c === undefined ? '?' : keyName(c);
   };
   return `${first('up')} ${first('left')} ${first('down')} ${first('right')}`;
 }
@@ -45,7 +52,7 @@ function goalPage(t: ThemeDef): ManualPageVM {
       `${WAVES.SECTORS} ${n.sector.toLowerCase()}s × ${WAVES.WAVES_PER_SECTOR} ${cycles.toLowerCase()}s = ${WAVES.TOTAL} ${cycles.toLowerCase()}s. The last ${cycles.toLowerCase()} of every ${n.sector.toLowerCase()} is a boss.`,
     ),
     item(
-      'Between waves',
+      `Between ${cycles.toLowerCase()}s`,
       `Spend the ${n.runCurrency} you collected in the ${n.shop} on upgrades that last for the rest of the run.`,
     ),
     item(
@@ -193,7 +200,10 @@ function patchBayPage(t: ThemeDef): ManualPageVM {
     para(
       `After every ${n.wave.toLowerCase()} the ${n.shop} opens with one panel per player. Every row shows what it does, and upgrades show what the next level adds. The INSTALLED list shows what you own.`,
     ),
-    item('Systems', 'Eight stat rows you can level up at any visit; prices rise per level and per wave.'),
+    item(
+      'Systems',
+      `Eight stat rows you can level up at any visit; prices rise per level and per ${n.wave.toLowerCase()}.`,
+    ),
     item('Repair', 'Heal part of your max HP.'),
     item(
       'Patch cards',
@@ -207,7 +217,7 @@ function patchBayPage(t: ThemeDef): ManualPageVM {
     item('Reroll / Gift', `Draw new cards; send ${n.runCurrency} to your partner.`),
     item(
       'Keys',
-      'Fire buys, Dash undoes (full refund), Special toggles READY. The next wave starts when everyone is READY.',
+      `Fire buys, Dash undoes (full refund), Special toggles READY. The next ${n.wave.toLowerCase()} starts when everyone is READY.`,
     ),
     para('The next pages list every powerup.'),
   ]);
@@ -271,16 +281,29 @@ function versusPage(t: ThemeDef): ManualPageVM {
   ]);
 }
 
+function signedPct(mul: number): string {
+  const d = Math.round((mul - 1) * 100);
+  return d === 0 ? 'normal' : `${d > 0 ? '+' : ''}${d}%`;
+}
+
+function difficultyLine(d: DifficultyDef): string {
+  return `Enemy speed ${signedPct(d.speed)}, enemy count ${signedPct(d.budget)}, damage to you ${signedPct(d.damage)}, enemy HP ${signedPct(d.hp)}.`;
+}
+
 function difficultyPage(): ManualPageVM {
   return page('difficulty', 'Difficulty', [
-    para('Pick a difficulty in SETTINGS before a run. It changes how hard the arena hits, never the rules.'),
-    item(
-      'CASUAL',
-      'Fewer, slower enemies that deal less damage. Best for learning the game or relaxed co-op.',
+    para(
+      'Pick a difficulty in SETTINGS before a run (character select shows the current one). It changes how hard the arena hits, never the rules.',
     ),
-    item('NORMAL', 'The intended balance.'),
-    item('HARD', 'More, faster and harder-hitting enemies for players who know every pattern.'),
-    para('The difficulty in effect when a run starts stays for the whole run.'),
+    item('CASUAL', `${difficultyLine(DIFFICULTY.casual)} Best for learning the game or relaxed co-op.`),
+    item('NORMAL', 'The intended balance (the default).'),
+    item(
+      'HARD',
+      `${difficultyLine(DIFFICULTY.hard)} Close to the original release; for players who know every pattern.`,
+    ),
+    para(
+      'The difficulty in effect when a run starts stays for the whole run. Cores rewards are the same on every difficulty.',
+    ),
   ]);
 }
 
