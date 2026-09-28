@@ -58,24 +58,39 @@ export const CARD_IDS = [
   'sudo',
   'rootAccess',
   'shardCache',
+  'rootOfAllEvil',
 ] as const;
 export type CardId = (typeof CARD_IDS)[number];
 
 export const TEAM_ITEM_IDS = ['spareKernel', 'linkAmp', 'linkRange', 'reviveProtocol'] as const;
 export type TeamItemId = (typeof TEAM_ITEM_IDS)[number];
 
+/**
+ * Firmware lines. v3 merged Magnet FW + Reroll Cache into Boot Cache and Field Medic into Hull FW (save v2
+ * migration refunds their recorded spend, see save/migrations.ts).
+ */
 export const META_UPGRADE_IDS = [
   'hullFw',
-  'bootCache',
-  'rerollCache',
-  'magnetFw',
   'overclockFw',
-  'fieldMedic',
+  'bootCache',
   'preCharge',
   'secondBoot',
   'legendaryPool',
 ] as const;
 export type MetaUpgradeId = (typeof META_UPGRADE_IDS)[number];
+
+/** Terminal cheat codes (config/cheats.ts). Cheat runs pay no Cores and never touch records. */
+export const CHEAT_IDS = [
+  'god',
+  'glassCannon',
+  'bitRain',
+  'turbo',
+  'bulletStorm',
+  'blinkBlink',
+  'fullCharge',
+  'mythicStart',
+] as const;
+export type CheatId = (typeof CHEAT_IDS)[number];
 
 /** Generational pool handle: slot * 256 + (generation & 255). -1 means "none". */
 export type EntityHandle = number;

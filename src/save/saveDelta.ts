@@ -82,6 +82,7 @@ export function applySaveDelta(
     lastMode: d.lastMode ?? s.lastMode,
     records: d.run !== undefined ? applyRun(s.records, d.run, nowMs) : s.records,
     lastCommittedRunId: runId ?? s.lastCommittedRunId,
+    ...(d.cheats !== undefined ? { cheats: d.cheats } : s.cheats !== undefined ? { cheats: s.cheats } : {}),
   };
 }
 
@@ -118,6 +119,8 @@ export function mergeSaveDelta(a: SaveDelta | null, b: SaveDelta): SaveDelta {
   if (mode !== undefined) out.lastMode = mode;
   const run = b.run ?? a.run;
   if (run !== undefined) out.run = run;
+  const cheats = b.cheats ?? a.cheats;
+  if (cheats !== undefined) out.cheats = cheats;
   return out;
 }
 

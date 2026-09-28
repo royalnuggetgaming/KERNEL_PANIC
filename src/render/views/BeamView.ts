@@ -6,7 +6,7 @@
  */
 import { COOP } from '../../config/tuning';
 import { SIM } from '../../config/tuning';
-import { SPECIALS, specialTierMul } from '../../config/specials';
+import { railLength } from '../../config/specials';
 import { BEAM_KIND } from '../../shaders/beam';
 import { encodeStyle, TINT } from '../../shaders/tints';
 import type { TransientList } from '../fx/TransientList';
@@ -86,7 +86,7 @@ export class BeamView {
       const p = i === 0 ? p0 : p1;
       const sp = p.special;
       if (!sp.active || sp.kind !== 'railburst') continue;
-      const len = SPECIALS.railburst.length * specialTierMul(sp.tier);
+      const len = railLength(sp.x, sp.z, sp.dirX, sp.dirZ);
       const k = sp.duration > 0 ? sp.timer / sp.duration : 0;
       b.push(
         sp.x,

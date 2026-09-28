@@ -1,3 +1,4 @@
+import { SPECIAL_BLURBS } from '../../src/config/specials';
 import { describe, expect, it } from 'vitest';
 import type { RunSummary } from '../../src/contracts/run';
 import { HudVmWriter, clockText } from '../../src/states/hudViewModel';
@@ -302,7 +303,7 @@ describe('Hangar, CharacterSelect and GameOver view models', () => {
     expect(vm.modeLabel).toBe('SOLO');
     expect(vm.modeRowVisible).toBe(false);
     expect(vm.slots[0].cursorRow).toBe('vehicle');
-    expect(vm.slots[0].specialName).toBe('PATCH DRONE');
+    expect(vm.slots[0].specialName).toBe(`PATCH DRONE - ${SPECIAL_BLURBS.patchDrone}`);
     expect(vm.slots[1].joinHint).toBe('PRESS . TO JOIN');
     expect(vm.cores).toBe(12);
     const bars = vehicleStatBars('bulwark');

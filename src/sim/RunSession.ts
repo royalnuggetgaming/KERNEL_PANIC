@@ -32,6 +32,8 @@ import {
   cloneTeam,
   createPlayerRunState,
   createTeamState,
+  runCheats,
+  startCards,
   vehiclesOf,
 } from './runSetup';
 import { buildRunSummary } from './runSummary';
@@ -81,10 +83,23 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
   const log = deps.log;
   const vehicles = vehiclesOf(config);
   const meta = { ...config.meta };
+  const cheats = runCheats(config);
+  const cheatIds = cheats.any && config.cheats !== undefined ? [...config.cheats] : [];
   const economy: [PlayerRunState, PlayerRunState] = [
     createPlayerRunState(true, w.run.wallets[0], w.players[0].stats.maxHp),
     createPlayerRunState(isJoined(w, 1), w.run.wallets[1], w.players[1].stats.maxHp),
   ];
+  if (cheats.startCards.length > 0) {
+    // Cheat starting cards (SUDORMRF): owned from tick 0 in both the economy and the world.
+    const cards = startCards(cheats);
+    for (let i = 0; i < 2; i++) {
+      const p: PlayerIndex = i === 0 ? 0 : 1;
+      if (!isJoined(w, p)) continue;
+      economy[p].cards.set(cards);
+      w.players[p].cardStacks.set(cards.subarray(0, w.players[p].cardStacks.length));
+      w.players[p].cardMask = cardMaskOf(w.players[p].cardStacks);
+    }
+  }
   let team = createTeamState(w.run.spareKernels);
   let locked: [LockedCard | null, LockedCard | null] = [null, null];
   let visit = 0;
@@ -120,7 +135,7 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
       economy[p] = clonePlayer(r);
       if (!isJoined(w, p)) continue;
       w.run.wallets[p] = r.wallet;
-      const stats = computeStats(vehicles[p], meta, r.rows, r.cards, team.levels);
+      const stats = computeStats(vehicles[p], meta, r.rows, r.cards, team.levels, cheats.caps, cheats.modifiers);
       const pl = w.players[p];
       pl.cardStacks.set(r.cards.subarray(0, pl.cardStacks.length));
       pl.cardMask = cardMaskOf(pl.cardStacks);
@@ -183,6 +198,8 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
         meta,
         locked,
         rng: w.rng.shop,
+        ...(cheats.caps !== undefined ? { caps: cheats.caps } : {}),
+        ...(cheats.any ? { extraMods: cheats.modifiers } : {}),
       });
       return shop;
     },
@@ -273,7 +290,7 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
       const t = res === null ? team : res.team;
       const kernels = versus ? 0 : res === null ? w.run.spareKernels : t.kernels;
       const teamLevels = { ...t.levels, spareKernel: kernels };
-      return { rows: { ...e.rows }, cards: e.cards.slice(), team: teamLevels };
+      return { rows: { ...e.rows }, cards: e.cards.slice(), team: teamLevels, meta, cheats: cheatIds };
     },
   };
   return session;

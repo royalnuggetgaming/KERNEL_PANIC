@@ -146,6 +146,8 @@ export interface WorldConfig {
   readonly startKernels: number;
   /** Difficulty of the run (config/difficulty.ts multipliers). Absent = 'normal'. */
   readonly difficulty?: DifficultyId;
+  /** IDDQD cheat: world damage to players is ignored. Absent = false. */
+  readonly god?: boolean;
 }
 
 export interface WorldRngs {

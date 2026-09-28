@@ -52,7 +52,8 @@ export interface StatRowDef {
   readonly perLevel: readonly StatModifier[];
 }
 
-export type Rarity = 'C' | 'U' | 'R' | 'L';
+/** Common, Uncommon, Rare, Legendary, Mythic (one card, ~0.5% per offer slot from sector 2). */
+export type Rarity = 'C' | 'U' | 'R' | 'L' | 'M';
 
 export interface CardDef {
   readonly id: CardId;

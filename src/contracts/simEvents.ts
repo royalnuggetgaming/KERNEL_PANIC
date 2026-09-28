@@ -90,7 +90,9 @@ export type PlayerEventKind =
   | 'reboot'
   | 'heal'
   | 'shieldBlock'
-  | 'eliminated';
+  | 'eliminated'
+  /** The Overdrive meter just became full (special ready). */
+  | 'specialReady';
 
 export interface PlayerEvent {
   player: PlayerIndex;

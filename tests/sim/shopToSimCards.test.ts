@@ -197,7 +197,8 @@ describe('shop to sim: each patch card bought through RunSession changes the sim
       let n = 0;
       const intents = createIntents();
       for (let t = 0; t < 1_500; t++) {
-        intents[0].specialPressed = t === 0;
+        // Held until the first cast: specials are locked during the wave countdown (the meter is kept).
+        intents[0].specialPressed = n === 0;
         s.tick(intents);
         n += s.state.events.special.count;
         s.clearEvents();

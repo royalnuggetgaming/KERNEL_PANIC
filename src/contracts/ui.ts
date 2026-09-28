@@ -65,7 +65,33 @@ export interface ControlsPanelVM {
   readonly message: string;
 }
 
-export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual';
+export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual' | 'terminal';
+
+/** One cheat line in the TERMINAL (only unlocked cheats are listed). */
+export interface TerminalCheatVM {
+  /** 'cheat:<id>' (pointer item id; clicking toggles it). */
+  readonly id: string;
+  readonly code: string;
+  readonly label: string;
+  readonly desc: string;
+  readonly enabled: boolean;
+}
+
+/** TERMINAL sub-panel (main menu): a typed command line plus the unlocked cheats with ON/OFF toggles. */
+export interface TerminalVM {
+  /** Scrollback, oldest first (short lines). */
+  readonly lines: readonly string[];
+  /** What is typed so far. */
+  readonly input: string;
+  readonly cheats: readonly TerminalCheatVM[];
+  /** Highlighted cheat row (-1 = the prompt). */
+  readonly cursor: number;
+  /** 'granted' / 'denied' flash of the last command, '' otherwise. */
+  readonly flash: 'granted' | 'denied' | '';
+  readonly hint: string;
+  /** Always-visible warning: cheat runs pay no Cores and do not count for records. */
+  readonly warning: string;
+}
 
 // ---------------------------------------------------------------- manual (HOW TO PLAY) and installed powerups
 
@@ -92,9 +118,9 @@ export interface ManualVM {
 
 /** One installed powerup (stat row level, patch card stacks or team item level). */
 export interface InstalledItemVM {
-  /** 'row:<id>', 'card:<id>' or 'team:<id>'. */
+  /** 'row:<id>', 'card:<id>', 'team:<id>', 'fw:<id>' (Firmware) or 'cheat:<id>'. */
   readonly id: string;
-  readonly kind: 'stat' | 'card' | 'team';
+  readonly kind: 'stat' | 'card' | 'team' | 'firmware' | 'cheat';
   /** Display name ("Thrusters"). */
   readonly label: string;
   /** Compact HUD chip name ("THR"). */
@@ -136,6 +162,8 @@ export interface MainMenuVM {
   readonly metaCurrency: string;
   readonly cores: number;
   readonly version: string;
+  /** TERMINAL panel while open, else null (absent in old fixtures). */
+  readonly terminal?: TerminalVM | null;
 }
 
 export interface StatBarVM {
@@ -175,6 +203,8 @@ export interface CharacterSelectVM {
   readonly message: string;
   /** v2: the difficulty the run will start with (from settings), e.g. 'CASUAL'. */
   readonly difficulty: string;
+  /** "CHEATS ON: ..." when TERMINAL cheats will apply to the run, else '' (absent in old fixtures). */
+  readonly cheats?: string;
 }
 
 export interface HudPlayerVM {
@@ -202,6 +232,12 @@ export interface HudPlayerVM {
   readonly loadout: readonly InstalledItemVM[];
   /** Changes whenever `loadout` changes (the HUD rebuilds the strip only then). */
   readonly loadoutKey: number;
+  /** Special name + live key, e.g. 'RAILBURST [E]'. */
+  readonly specialLabel: string;
+  /** Overdrive meter as a whole percentage 0..100. */
+  readonly specialPercent: number;
+  /** Remaining fraction of the running special (0 when none is running). */
+  readonly specialActiveFrac: number;
 }
 
 export interface HudVM {
@@ -239,7 +275,7 @@ export interface ShopRowVM {
 }
 
 export interface ShopCardVM extends ShopRowVM {
-  readonly rarity: 'C' | 'U' | 'R' | 'L';
+  readonly rarity: 'C' | 'U' | 'R' | 'L' | 'M';
   readonly locked: boolean;
 }
 
@@ -286,7 +322,9 @@ export interface ShopVM {
 }
 
 export interface HangarItemVM extends ShopRowVM {
-  readonly kind: 'meta' | 'unlock' | 'respec';
+  readonly kind: 'meta' | 'unlock' | 'respec' | 'cheat';
+  /** Section heading shown above the first row of each group ('SURVIVAL', 'CRAFT', ...). */
+  readonly group?: string;
 }
 
 export interface HangarVM {
@@ -298,6 +336,8 @@ export interface HangarVM {
   readonly respecRefund: number;
   readonly message: string;
   readonly readOnly: boolean;
+  /** Plain explanation of Cores and Firmware shown under the title. */
+  readonly intro?: string;
 }
 
 export interface PauseVM {

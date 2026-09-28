@@ -81,6 +81,12 @@ describe('shop to sim: stat rows bought through RunSession change the sim', () =
     expect(a.state.players[0].stats.specialTier).toBe(1);
     const radius: number[] = [];
     for (const s of [a, b]) {
+      // Specials are locked during the wave countdown (the meter is kept), so cast once the wave is live.
+      const idle = createIntents();
+      while (s.state.run.phase === 'countdown') {
+        s.tick(idle);
+        s.clearEvents();
+      }
       s.state.players[0].overdrive = OVERDRIVE.MAX;
       const intents = createIntents();
       intents[0].specialPressed = true;

@@ -189,7 +189,7 @@ export function refreshOffers(s: ShopState, p: PlayerIndex, locked: LockedCard |
     owned: s.players[p].cards,
     legendaryPool: metaLevel(s.meta, 'legendaryPool') >= 1,
     locked,
-  });
+  }, s.mythicRng[p]);
   for (const o of offers) slots.push({ id: o.id, price: o.price, locked: o.locked, bought: false });
 }
 

@@ -11,6 +11,7 @@ import type { ThemeDef } from '../contracts/theme';
 import type { HudPlayerVM, HudVM, InstalledItemVM } from '../contracts/ui';
 import type { WorldView } from '../contracts/world';
 import { COMBO, COOP, OVERDRIVE } from '../config/tuning';
+import { HudSpecialWriter, type BindingsReader } from './hudSpecial';
 import { NO_ITEMS, installedItems, loadoutSignature } from './loadoutViewModel';
 
 /** Where the HUD reads installed powerups (RunSessionApi.loadout). */
@@ -67,6 +68,9 @@ function blankPlayer(): Mutable<HudPlayerVM> {
     roundWins: 0,
     loadout: NO_ITEMS,
     loadoutKey: 0,
+    specialLabel: '',
+    specialPercent: 0,
+    specialActiveFrac: 0,
   };
 }
 
@@ -127,9 +131,15 @@ export class HudVmWriter {
   ];
   private readonly loadoutKeys: [number, number] = [0, 0];
 
-  /** `loadouts` (the run session) feeds the installed-powerup strip; null shows none. */
-  constructor(theme: ThemeDef, loadouts: LoadoutReader | null = null) {
+  private readonly special: HudSpecialWriter;
+
+  /**
+   * `loadouts` (the run session) feeds the installed-powerup strip; null shows none. `bindings` supplies the live
+   * key shown next to the special's name.
+   */
+  constructor(theme: ThemeDef, loadouts: LoadoutReader | null = null, bindings: BindingsReader | null = null) {
     this.theme = theme;
+    this.special = new HudSpecialWriter(theme, bindings);
     this.buffers = [blankHud(theme), blankHud(theme)];
     this.loadouts = loadouts;
   }
@@ -204,6 +214,7 @@ export class HudVmWriter {
     o.roundWins = w.run.roundWins[i];
     o.loadout = this.loadoutItems[i];
     o.loadoutKey = this.loadoutKeys[i];
+    this.special.write(o, p, i);
   }
 
   /**

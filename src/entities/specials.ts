@@ -8,7 +8,7 @@ import type { Intents, PlayerIntent } from '../contracts/input';
 import { PROJECTILE_KINDS, type EnemyEntity, type PlayerEntity, type ProjectileSpec } from '../contracts/sim';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { pointSegDistSq } from '../core/math';
-import { SPECIALS, specialTierMul } from '../config/specials';
+import { SPECIALS, railLength, specialTierMul } from '../config/specials';
 import { ARENA, OVERDRIVE, STAT_CAPS } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
 import { CARD_BIT, hasCard } from './cardBits';
@@ -94,8 +94,9 @@ function fireRail(w: WorldState, p: PlayerEntity, damage: number): void {
   const s = p.special;
   const ax = s.x;
   const az = s.z;
-  const bx = ax + s.dirX * SPECIALS.railburst.length;
-  const bz = az + s.dirZ * SPECIALS.railburst.length;
+  const len = railLength(ax, az, s.dirX, s.dirZ);
+  const bx = ax + s.dirX * len;
+  const bz = az + s.dirZ * len;
   const half = s.radius;
   RAIL[0] = ax;
   RAIL[1] = az;
@@ -261,9 +262,17 @@ function stepDrone(w: WorldState, p: PlayerEntity, dt: number, emit: boolean): v
   spawnProjectile(w, SPEC);
 }
 
+/** No new casts (the meter is kept) while the wave/round is not live: countdown, outros, done. */
 function castLocked(w: WorldState): boolean {
   const ph = w.run.phase;
-  return ph === 'clearOutro' || ph === 'roundOutro' || ph === 'done';
+  return ph === 'countdown' || ph === 'clearOutro' || ph === 'roundOutro' || ph === 'done';
+}
+
+function endSpecial(p: PlayerEntity): void {
+  const s = p.special;
+  s.active = false;
+  s.timer = 0;
+  s.pendingCasts = 0;
 }
 
 export const stepSpecials: SimSystem = (w: WorldState, intents: Intents, dt: number): void => {
@@ -275,6 +284,11 @@ export const stepSpecials: SimSystem = (w: WorldState, intents: Intents, dt: num
       s.pendingCasts = 0;
       continue;
     }
+    const full = p.overdrive >= OVERDRIVE.MAX;
+    if (full && !s.readyCued) emitPlayer(w, p.index, 'specialReady', 0, p.x, p.z);
+    s.readyCued = full;
+    // A new wave/round starts clean: nothing carries over from the last one (drone, dome, SUDO repeat).
+    if (s.active && w.run.phase === 'countdown') endSpecial(p);
     const it = intents[i as PlayerIndex];
     if (s.active) {
       const prevTimer = s.timer;
@@ -289,7 +303,8 @@ export const stepSpecials: SimSystem = (w: WorldState, intents: Intents, dt: num
       if (s.timer <= TIMER_EPS) {
         s.active = false;
         s.timer = 0;
-        if (s.pendingCasts > 0) {
+        if (s.pendingCasts > 0 && castLocked(w)) s.pendingCasts = 0;
+        else if (s.pendingCasts > 0) {
           s.pendingCasts--;
           castSpecial(w, p, null);
         }

@@ -3,8 +3,8 @@
  * Firmware level clamping with Core refunds from firmwareSpent, unknown ids dropped, unlock dedupe (starters
  * always unlocked), binding re-validation and the 10-entry leaderboard cap. Never throws.
  */
-import { META_UPGRADE_IDS, type MetaUpgradeId, type VehicleId } from '../contracts/ids';
-import type { SaveDataV1 } from '../contracts/save';
+import { CHEAT_IDS, META_UPGRADE_IDS, type CheatId, type MetaUpgradeId, type VehicleId } from '../contracts/ids';
+import type { CheatSave, SaveDataV1 } from '../contracts/save';
 import { metaDef, metaMaxLevel } from '../config/metaCatalog';
 import { ECONOMY } from '../config/tuning';
 import { STARTER_VEHICLES } from '../config/vehicles';
@@ -85,6 +85,26 @@ function sanitizeUnlocks(raw: unknown): VehicleId[] {
   return out;
 }
 
+const CHEAT_SET: ReadonlySet<string> = new Set(CHEAT_IDS);
+
+function cheatList(raw: unknown, allowed: readonly CheatId[] | null): CheatId[] {
+  const out: CheatId[] = [];
+  if (!Array.isArray(raw)) return out;
+  for (const v of raw as readonly unknown[]) {
+    if (typeof v !== 'string' || !CHEAT_SET.has(v)) continue;
+    const id = v as CheatId;
+    if (!out.includes(id) && (allowed === null || allowed.includes(id))) out.push(id);
+  }
+  return out;
+}
+
+/** Known, de-duplicated cheat ids; only unlocked cheats can be enabled. */
+export function sanitizeCheats(raw: unknown): CheatSave {
+  const r: Loose = isRecord(raw) ? raw : {};
+  const unlocked = cheatList(r.unlocked, null);
+  return { unlocked, enabled: cheatList(r.enabled, unlocked) };
+}
+
 /** Builds a valid SaveDataV1 from anything. `changed` is true when the output differs from the input. */
 export function sanitizeSave(raw: unknown): SanitizeResult {
   const r: Loose = isRecord(raw) ? raw : {};
@@ -103,6 +123,7 @@ export function sanitizeSave(raw: unknown): SanitizeResult {
     lastMode: sanitizeMode(r.lastMode),
     records: sanitizeRecords(r.records),
     lastCommittedRunId: sanitizeRunId(r.lastCommittedRunId),
+    cheats: sanitizeCheats(r.cheats),
   };
   const changed = !isRecord(raw) || stableStringify(raw) !== stableStringify(data);
   return { data, refunded: meta.refunded, changed };

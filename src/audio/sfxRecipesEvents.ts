@@ -14,6 +14,8 @@ const UI_CONFIRM: readonly number[] = [880, 1320];
 const UI_BACK: readonly number[] = [880, 587.33];
 const UI_BUY: readonly number[] = [987.77, 1318.5];
 const UI_DENY: readonly number[] = [196, 196];
+/** Rising fifth + octave: 'special ready'. */
+const READY_NOTES: readonly number[] = [659.25, 987.77, 1318.5];
 
 export const EVENT_RECIPES = {
   dash: {
@@ -213,6 +215,15 @@ export const EVENT_RECIPES = {
     gain: 0.45,
     build(r) {
       blips(r, 'sawtooth', 0, UI_DENY, 0.1, 0.14, 0.07);
+    },
+  },
+  specialReady: {
+    category: 'player',
+    duration: 0.5,
+    gain: 0.5,
+    build(r) {
+      blips(r, 'square', 0, READY_NOTES, 0.06, 0.16, 0.12);
+      tone(r.ctx, r.out, 'sine', 0.12, 1318.5 * r.pitch, 1760 * r.pitch, 0.18, 0.12, 0.005, 0.3);
     },
   },
 } as const satisfies Record<string, SfxRecipe>;

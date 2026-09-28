@@ -20,6 +20,7 @@ import type {
 import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { keyLabel } from '../config/keys';
 import { META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
+import { SPECIAL_BLURBS } from '../config/specials';
 import { VEHICLES } from '../config/vehicles';
 import { WAVES } from '../config/waves';
 import { isVehicleUnlocked, respecRefund } from '../upgrades/MetaShop';
@@ -90,7 +91,7 @@ export function buildCharacterSelectVM(
       vehicle: v,
       vehicleName: n.vehicles[v],
       blurb: n.vehicleBlurbs[v],
-      specialName: n.specials[VEHICLES[v].special],
+      specialName: `${n.specials[VEHICLES[v].special]} - ${SPECIAL_BLURBS[VEHICLES[v].special]}`,
       locked,
       unlockPrice: locked ? VEHICLES[v].unlockCost : null,
       ready: input.ready[p],
