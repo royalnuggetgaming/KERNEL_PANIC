@@ -76,7 +76,7 @@ function runVisits(mode: RunMode, seed: number, ops: number): number {
       vehicles: ['lancer', 'specter'],
       players,
       team: t,
-      meta: { rerollCache: 1, legendaryPool: 1, hullFw: 2 },
+      meta: { bootCache: 2, legendaryPool: 1, hullFw: 2 },
       locked,
       rng: createRng(seed).fork('shop'),
     });

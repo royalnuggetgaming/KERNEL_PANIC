@@ -138,7 +138,7 @@ export class ShopPanel {
     this.undoShown = new Shown(undoBtn, false);
     const toastEl = h(doc, 'p', { className: 'kp-shop-toast' });
     this.toast = new TextSlot(toastEl);
-    this.installed = new InstalledList(doc, 'kp-shop-installed', 'Nothing installed yet');
+    this.installed = new InstalledList(doc, 'kp-shop-installed', 'Nothing yet: buy Systems or patch cards');
 
     const scrollEl = h(
       doc,

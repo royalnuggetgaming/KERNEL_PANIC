@@ -267,19 +267,28 @@ describe('Hangar, CharacterSelect and GameOver view models', () => {
   it('hangar statuses follow Cores, levels and unlocks', () => {
     const save = createTestSaveData({
       cores: 30,
-      meta: { hullFw: 5, magnetFw: 1 },
-      firmwareSpent: { hullFw: 300, magnetFw: 15 },
+      meta: { hullFw: 5, bootCache: 1 },
+      firmwareSpent: { hullFw: 300, bootCache: 25 },
       unlocks: ['lancer', 'bulwark', 'specter'],
     });
     const vm = buildHangarVM(save, 99, KERNEL_PANIC, 'msg');
     const by = (id: string) => vm.items.find((i) => i.id === id);
     expect(by('meta:hullFw')?.status).toBe('maxed');
-    expect(by('meta:magnetFw')?.status).toBe('available');
-    expect(by('meta:rerollCache')?.status).toBe('unaffordable');
+    expect(by('meta:overclockFw')?.status).toBe('available');
+    expect(by('meta:bootCache')?.status).toBe('unaffordable');
+    // v3 Hangar: sections in order, each heading on its first row, and a plain explanation of Cores.
+    expect(vm.items.filter((i) => i.group !== undefined).map((i) => i.group)).toEqual([
+      'SURVIVAL',
+      'FIREPOWER',
+      'ECONOMY',
+      'CRAFT (one-time unlocks)',
+      'RESET',
+    ]);
+    expect(vm.intro).toMatch(/earned at the end of every run \(even losses\)/);
     expect(by('unlock:specter')?.status).toBe('owned');
     expect(by('unlock:tinker')?.price).toBe(90);
     expect(by('respec')?.status).toBe('available');
-    expect(vm.respecRefund).toBe(315);
+    expect(vm.respecRefund).toBe(325);
     expect(vm.cursor).toBe(vm.items.length - 1);
     const empty = buildHangarVM(createTestSaveData(), 0, KERNEL_PANIC, '');
     expect(empty.items.find((i) => i.id === 'respec')?.status).toBe('unavailable');

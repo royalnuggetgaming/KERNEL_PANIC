@@ -1,0 +1,156 @@
+{
+  "v": 2,
+  "ts": 1758844800000,
+  "rev": 3,
+  "crc": 2695586426,
+  "data": {
+    "cores": 152,
+    "lifetimeCores": 612,
+    "meta": {
+      "hullFw": 2,
+      "legendaryPool": 1
+    },
+    "firmwareSpent": {
+      "hullFw": 55,
+      "legendaryPool": 120
+    },
+    "unlocks": [
+      "lancer",
+      "bulwark",
+      "specter"
+    ],
+    "settings": {
+      "master": 0.5,
+      "music": 0.4,
+      "sfx": 0.9,
+      "quality": "medium",
+      "frameCap": 120,
+      "screenShake": 0.5,
+      "reduceFlashes": true,
+      "reduceMotion": false,
+      "colorblind": true,
+      "autofire": [
+        true,
+        false
+      ],
+      "focusToggle": [
+        false,
+        true
+      ],
+      "showFps": true,
+      "themeId": "kernelPanic"
+    },
+    "bindings": {
+      "players": [
+        {
+          "up": [
+            "KeyW"
+          ],
+          "down": [
+            "KeyS"
+          ],
+          "left": [
+            "KeyA"
+          ],
+          "right": [
+            "KeyD"
+          ],
+          "fire": [
+            "KeyF",
+            "Space"
+          ],
+          "dash": [
+            "ShiftLeft",
+            "KeyQ"
+          ],
+          "special": [
+            "KeyE",
+            "KeyR"
+          ]
+        },
+        {
+          "up": [
+            "ArrowUp",
+            "Numpad8"
+          ],
+          "down": [
+            "ArrowDown",
+            "Numpad5",
+            "Numpad2"
+          ],
+          "left": [
+            "ArrowLeft",
+            "Numpad4"
+          ],
+          "right": [
+            "ArrowRight",
+            "Numpad6"
+          ],
+          "fire": [
+            "Period",
+            "Numpad0"
+          ],
+          "dash": [
+            "Slash",
+            "ShiftRight",
+            "NumpadDecimal"
+          ],
+          "special": [
+            "Comma",
+            "NumpadEnter"
+          ]
+        }
+      ],
+      "pause": [
+        "Escape",
+        "KeyP"
+      ]
+    },
+    "lastLoadout": [
+      {
+        "player": 0,
+        "vehicle": "specter"
+      },
+      {
+        "player": 1,
+        "vehicle": "bulwark"
+      }
+    ],
+    "lastMode": "coop",
+    "records": {
+      "runs": 9,
+      "victories": 1,
+      "bestWave": 15,
+      "bestScore": 88210,
+      "versusMatches": 2,
+      "leaderboard": [
+        {
+          "score": 88210,
+          "wave": 15,
+          "date": 1758800000000,
+          "players": 2,
+          "mode": "coop",
+          "vehicles": [
+            "specter",
+            "bulwark"
+          ]
+        },
+        {
+          "score": 40125,
+          "wave": 9,
+          "date": 1758700000000,
+          "players": 1,
+          "mode": "solo",
+          "vehicles": [
+            "lancer"
+          ]
+        }
+      ]
+    },
+    "lastCommittedRunId": "run-0009",
+    "cheats": {
+      "unlocked": [],
+      "enabled": []
+    }
+  }
+}

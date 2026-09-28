@@ -183,13 +183,17 @@ export function refreshOffers(s: ShopState, p: PlayerIndex, locked: LockedCard |
   const slots = s.offers[p];
   slots.length = 0;
   if (rng === null) return;
-  const offers = drawOffers(rng, {
-    sector: sectorOf(s.wave),
-    wave: s.wave,
-    owned: s.players[p].cards,
-    legendaryPool: metaLevel(s.meta, 'legendaryPool') >= 1,
-    locked,
-  }, s.mythicRng[p]);
+  const offers = drawOffers(
+    rng,
+    {
+      sector: sectorOf(s.wave),
+      wave: s.wave,
+      owned: s.players[p].cards,
+      legendaryPool: metaLevel(s.meta, 'legendaryPool') >= 1,
+      locked,
+    },
+    s.mythicRng[p],
+  );
   for (const o of offers) slots.push({ id: o.id, price: o.price, locked: o.locked, bought: false });
 }
 

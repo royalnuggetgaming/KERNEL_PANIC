@@ -3,6 +3,7 @@
  * through the concrete RunSession, stress/god-mode/autopilot applied through the input tap and the frame
  * hooks, and the keydown-to-sim input probe.
  */
+import { setMythicChanceOverride } from '../upgrades/offers';
 import type { PlayerIndex, RunMode } from '../contracts/ids';
 import type { PlayerIntent } from '../contracts/input';
 import type { RunConfig } from '../contracts/run';
@@ -165,6 +166,9 @@ export function createDebugHost(
     },
     godMode(on: boolean): void {
       god = on;
+    },
+    forceMythic(on: boolean): void {
+      setMythicChanceOverride(on ? 1 : null);
     },
     setSeed(n: number | null): void {
       app.parsed.seed.value = n === null ? null : Math.trunc(Math.abs(n)) >>> 0;

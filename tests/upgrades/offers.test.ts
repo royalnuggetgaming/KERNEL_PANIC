@@ -63,7 +63,7 @@ describe('drawOffers', () => {
   it('matches the rarity weights per sector', () => {
     for (const sector of [1, 2, 3] as const) {
       const rng = createRng(1000 + sector);
-      const counts = { C: 0, U: 0, R: 0, L: 0 };
+      const counts = { C: 0, U: 0, R: 0, L: 0, M: 0 };
       const n = 20000;
       // Only the first slot of a fresh set is an unbiased single draw (later slots shrink the pools).
       for (let i = 0; i < n; i++) {

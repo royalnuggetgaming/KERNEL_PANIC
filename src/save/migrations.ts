@@ -18,7 +18,9 @@ function isRecord(v: unknown): v is Loose {
 }
 
 function spentOf(v: unknown): number {
-  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.min(ECONOMY.CORES_MAX, Math.floor(v)) : 0;
+  return typeof v === 'number' && Number.isFinite(v) && v > 0
+    ? Math.min(ECONOMY.CORES_MAX, Math.floor(v))
+    : 0;
 }
 
 /** v1 -> v2: refund and drop the retired Firmware lines, add `cheats`. */

@@ -100,7 +100,7 @@ describe('computeStats', () => {
     };
     const owned = cards({ pierce: 20, ricochet: 20, doubleBuffer: 9 });
     for (const v of VEHICLE_IDS) {
-      const s = computeStats(v, { magnetFw: 3 }, rows, owned, emptyTeamLevels());
+      const s = computeStats(v, { bootCache: 3 }, rows, owned, emptyTeamLevels());
       const base = vehicleBaseStats(v);
       expect(s.moveSpeed).toBeCloseTo(base.moveSpeed * STAT_CAPS.moveSpeedMulMax, 10);
       expect(s.fireRate).toBe(STAT_CAPS.fireRateMax);

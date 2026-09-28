@@ -135,7 +135,15 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
       economy[p] = clonePlayer(r);
       if (!isJoined(w, p)) continue;
       w.run.wallets[p] = r.wallet;
-      const stats = computeStats(vehicles[p], meta, r.rows, r.cards, team.levels, cheats.caps, cheats.modifiers);
+      const stats = computeStats(
+        vehicles[p],
+        meta,
+        r.rows,
+        r.cards,
+        team.levels,
+        cheats.caps,
+        cheats.modifiers,
+      );
       const pl = w.players[p];
       pl.cardStacks.set(r.cards.subarray(0, pl.cardStacks.length));
       pl.cardMask = cardMaskOf(pl.cardStacks);

@@ -3,7 +3,13 @@
  * Firmware level clamping with Core refunds from firmwareSpent, unknown ids dropped, unlock dedupe (starters
  * always unlocked), binding re-validation and the 10-entry leaderboard cap. Never throws.
  */
-import { CHEAT_IDS, META_UPGRADE_IDS, type CheatId, type MetaUpgradeId, type VehicleId } from '../contracts/ids';
+import {
+  CHEAT_IDS,
+  META_UPGRADE_IDS,
+  type CheatId,
+  type MetaUpgradeId,
+  type VehicleId,
+} from '../contracts/ids';
 import type { CheatSave, SaveDataV1 } from '../contracts/save';
 import { metaDef, metaMaxLevel } from '../config/metaCatalog';
 import { ECONOMY } from '../config/tuning';

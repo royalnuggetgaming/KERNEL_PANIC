@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import validRaw from '../fixtures/saves/v1-valid.json?raw';
+import validRaw from '../fixtures/saves/v2-valid.json?raw';
 import { createDefaultSave, DEFAULT_SETTINGS } from '../../src/save/defaults';
 import { safeJsonParse, sanitizeSave } from '../../src/save/sanitize';
 import { sanitizeSettings } from '../../src/save/sanitizeParts';
@@ -15,7 +15,7 @@ describe('Settings.difficulty', () => {
     expect(sanitizeSettings(null).difficulty).toBe('normal');
   });
 
-  it('a v1 save without the key stays unchanged (absent reads as NORMAL)', () => {
+  it('a save without the key stays unchanged (absent reads as NORMAL)', () => {
     const r = sanitizeSave(v1Data());
     expect(r.changed).toBe(false);
     expect(r.data.settings.difficulty).toBeUndefined();

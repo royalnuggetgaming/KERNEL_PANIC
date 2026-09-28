@@ -36,7 +36,8 @@ let mythicChanceOverride: number | null = null;
 
 /** Debug: force (1), forbid (0) or restore (null) Mythic offers. Values are clamped to [0, 1]. */
 export function setMythicChanceOverride(chance: number | null): void {
-  mythicChanceOverride = chance === null || !Number.isFinite(chance) ? null : Math.min(1, Math.max(0, chance));
+  mythicChanceOverride =
+    chance === null || !Number.isFinite(chance) ? null : Math.min(1, Math.max(0, chance));
 }
 
 /** Mythic chance per fresh offer slot for a sector (0 before MYTHIC.fromSector). */
@@ -109,7 +110,9 @@ export function drawOffers(
   }
   const scratch: CardDef[] = [];
   while (offers.length < OFFERS_PER_VISIT) {
-    const card = (mythicRng === null ? null : rollMythic(mythicRng, ctx, taken)) ?? drawOne(rng, ctx, weights, taken, scratch);
+    const card =
+      (mythicRng === null ? null : rollMythic(mythicRng, ctx, taken)) ??
+      drawOne(rng, ctx, weights, taken, scratch);
     if (card.id !== 'shardCache') taken.add(card.id);
     offers.push({ id: card.id, price: cardPrice(card.id, ctx.wave), locked: false });
   }

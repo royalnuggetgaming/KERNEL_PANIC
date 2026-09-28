@@ -99,7 +99,8 @@ describe('ShopModel: transactions', () => {
   });
 
   it('reroll escalates, consumes free Firmware rerolls first and is never refundable', () => {
-    const shop = makeShop({ wave: 10, meta: { rerollCache: 2 } });
+    // v3: free rerolls come from Boot Cache (1 per 2 levels; level 4 = 2 free, as Reroll Cache 2 was).
+    const shop = makeShop({ wave: 10, meta: { bootCache: 4 } });
     const before = shop.snapshot().players[0].cards.map((c) => c.id);
     expect(shop.snapshot().players[0].reroll).toEqual({ price: 0, freeLeft: 2 });
     expect(expectOk(shop.apply(tx.reroll(0))).price).toBe(0);

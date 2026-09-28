@@ -58,11 +58,12 @@ const ROW_GOLDEN: Readonly<Record<number, Readonly<Record<StatRowId, readonly nu
   },
 };
 
-const CARD_GOLDEN: Readonly<Record<number, Readonly<Record<'C' | 'U' | 'R' | 'L', number>>>> = {
-  1: { C: 45, U: 75, R: 120, L: 190 },
-  5: { C: 55, U: 95, R: 150, L: 235 },
-  10: { C: 70, U: 115, R: 185, L: 295 },
-  15: { C: 85, U: 140, R: 220, L: 350 },
+// M (the v3 Mythic tier, base 250) added; the other columns are unchanged.
+const CARD_GOLDEN: Readonly<Record<number, Readonly<Record<'C' | 'U' | 'R' | 'L' | 'M', number>>>> = {
+  1: { C: 45, U: 75, R: 120, L: 190, M: 250 },
+  5: { C: 55, U: 95, R: 150, L: 235, M: 310 },
+  10: { C: 70, U: 115, R: 185, L: 295, M: 385 },
+  15: { C: 85, U: 140, R: 220, L: 350, M: 460 },
 };
 
 const REPAIR_GOLDEN: Readonly<Record<number, readonly number[]>> = {

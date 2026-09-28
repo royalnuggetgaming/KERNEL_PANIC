@@ -135,6 +135,7 @@ export function applyDelta(s: SaveDataV1, d: SaveDelta): SaveDataV1 {
     bindings: d.bindings ?? s.bindings,
     lastLoadout: d.lastLoadout ?? s.lastLoadout,
     lastMode: d.lastMode ?? s.lastMode,
+    ...(d.cheats !== undefined ? { cheats: d.cheats } : {}),
   };
   if (!d.run) return next;
   const r = d.run;

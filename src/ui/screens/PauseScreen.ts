@@ -24,7 +24,7 @@ class LoadoutColumn {
   constructor(doc: Document) {
     const tagEl = h(doc, 'span', { className: 'kp-tag' });
     const nameEl = h(doc, 'span', { className: 'kp-pause-lo-name' });
-    this.list = new InstalledList(doc, 'kp-pause-lo-list', 'Nothing installed yet', 'rows');
+    this.list = new InstalledList(doc, 'kp-pause-lo-list', 'Nothing yet: buy Systems or patch cards', 'rows');
     this.el = h(
       doc,
       'section',

@@ -43,11 +43,11 @@ describe('MetaShop', () => {
     expect(metaBuy(s, 'bogus' as MetaUpgradeId)).toEqual({ ok: false, reason: 'invalid' });
   });
 
-  it('maxing everything costs about 1,600 Cores', () => {
+  it('maxing every Firmware line costs about 1,200 Cores (v3: 6 lines, was 9 lines / ~1,660)', () => {
     let total = 0;
     for (const id of META_UPGRADE_IDS) for (const p of metaDef(id).prices) total += p;
-    expect(total).toBeGreaterThanOrEqual(1500);
-    expect(total).toBeLessThanOrEqual(1700);
+    expect(total).toBeGreaterThanOrEqual(1100);
+    expect(total).toBeLessThanOrEqual(1300);
   });
 
   it('respec refunds the recorded spend (not current prices) and keeps unlocks', () => {

@@ -14,6 +14,8 @@ const KIND_CLASS: Readonly<Record<InstalledItemVM['kind'], string>> = {
   stat: 'inst-stat',
   card: 'inst-card',
   team: 'inst-team',
+  firmware: 'inst-fw',
+  cheat: 'inst-cheat',
 };
 
 class InstalledItemView {

@@ -74,7 +74,7 @@ describe('config sanity', () => {
     expect(statRowDef('plating').maxLevel).toBe(8);
     expect(teamItemDef('linkRange').prices).toEqual([70, 130]);
     expect(TEAM_ITEMS).toHaveLength(4);
-    expect(META_UPGRADES.reduce((s, m) => s + m.prices.reduce((a, b) => a + b, 0), 0)).toBeGreaterThan(1300);
+    expect(META_UPGRADES.reduce((s, m) => s + m.prices.reduce((a, b) => a + b, 0), 0)).toBeGreaterThan(1100); // v3: 6 Firmware lines (1,215 Cores to max)
     expect(metaMaxLevel('hullFw')).toBe(5);
     expect(() => statRowDef('nope' as never)).toThrow(RangeError);
     expect(BOSS_DEFS.raceCondition.parts).toBe(2);

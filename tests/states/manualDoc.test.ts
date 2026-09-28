@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_BINDINGS } from '../../src/config/keys';
-import { manualMarkdown } from '../../src/states/manualMarkdown';
+import { cheatSpoilerMarkdown, manualMarkdown } from '../../src/states/manualMarkdown';
 import { buildManualPages } from '../../src/states/manualPages';
 import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
 
@@ -41,9 +41,23 @@ const MANUAL = new URL('../../MANUAL.md', import.meta.url);
 describe('MANUAL.md', () => {
   it('matches the in-game HOW TO PLAY pages (regenerate: UPDATE_MANUAL=1 npx vitest run tests/states/manualDoc.test.ts, then prettier)', async () => {
     const { fs, proc } = await node();
-    const md = manualMarkdown(KERNEL_PANIC.title, buildManualPages(KERNEL_PANIC, DEFAULT_BINDINGS));
+    const md = manualMarkdown(
+      KERNEL_PANIC.title,
+      buildManualPages(KERNEL_PANIC, DEFAULT_BINDINGS),
+      cheatSpoilerMarkdown(KERNEL_PANIC.names.metaCurrency),
+    );
     if (proc.env.UPDATE_MANUAL === '1') fs.writeFileSync(MANUAL, md, 'utf8');
     expect(normalize(fs.readFileSync(MANUAL, 'utf8'))).toBe(normalize(md));
+  });
+
+  it('keeps the cheat codes in a collapsed spoiler section only (never in the in-game pages)', () => {
+    const spoiler = cheatSpoilerMarkdown('Cores').join('\n');
+    expect(spoiler).toContain('<details>');
+    expect(spoiler).toContain('`IDDQD`');
+    expect(spoiler).toMatch(/no Cores/);
+    const pages = JSON.stringify(buildManualPages(KERNEL_PANIC, DEFAULT_BINDINGS));
+    expect(pages).not.toContain('IDDQD');
+    expect(pages).toContain('TERMINAL');
   });
 
   it('renders term rows as tables and pages as sections', () => {

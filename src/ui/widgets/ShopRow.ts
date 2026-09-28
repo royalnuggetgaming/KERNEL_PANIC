@@ -30,6 +30,7 @@ const RARITY_CLASS: Readonly<Record<ShopCardVM['rarity'], string>> = {
   U: 'rar-u',
   R: 'rar-r',
   L: 'rar-l',
+  M: 'rar-m',
 };
 
 const RARITY_NAME: Readonly<Record<ShopCardVM['rarity'], string>> = {
@@ -37,6 +38,7 @@ const RARITY_NAME: Readonly<Record<ShopCardVM['rarity'], string>> = {
   U: 'UNCOMMON',
   R: 'RARE',
   L: 'LEGENDARY',
+  M: '★ MYTHIC ★',
 };
 
 export class ShopRowView {

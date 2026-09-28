@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import overRaw from '../fixtures/saves/v1-overleveled.json?raw';
-import validRaw from '../fixtures/saves/v1-valid.json?raw';
+import validRaw from '../fixtures/saves/v2-valid.json?raw';
 import { DEFAULT_BINDINGS } from '../../src/config/keys';
 import { STARTER_VEHICLES } from '../../src/config/vehicles';
 import { createDefaultSave, DEFAULT_SAVE } from '../../src/save/defaults';
@@ -33,8 +33,8 @@ describe('sanitizeSave', () => {
     const r = sanitizeSave(dataOf(validRaw));
     expect(r.changed).toBe(false);
     expect(r.refunded).toBe(0);
-    expect(r.data.cores).toBe(137);
-    expect(r.data.meta).toEqual({ hullFw: 2, magnetFw: 1, legendaryPool: 1 });
+    expect(r.data.cores).toBe(152);
+    expect(r.data.meta).toEqual({ hullFw: 2, legendaryPool: 1 });
     expect(r.data.settings.frameCap).toBe(120);
     expect(r.data.bindings.players[0].fire).toEqual(['KeyF', 'Space']);
     expect(r.data.lastLoadout).toEqual([
@@ -46,11 +46,12 @@ describe('sanitizeSave', () => {
   it('clamps over-levelled Firmware, refunds the excess spend and drops unknown ids', () => {
     const r = sanitizeSave(dataOf(overRaw));
     expect(r.changed).toBe(true);
-    expect(r.data.meta).toEqual({ hullFw: 5, rerollCache: 2, preCharge: 1 });
-    // hullFw kept 300 of 400, rerollCache kept 180 of 300, bogusUpgrade 50 refunded in full.
-    expect(r.data.firmwareSpent).toEqual({ hullFw: 300, rerollCache: 180, preCharge: 80 });
-    expect(r.refunded).toBe(100 + 120 + 50);
-    expect(r.data.cores).toBe(10 + 270);
+    // v2: rerollCache is no longer a Firmware id, so (like bogusUpgrade) its whole spend is refunded.
+    expect(r.data.meta).toEqual({ hullFw: 5, preCharge: 1 });
+    // hullFw kept 300 of 400, rerollCache 300 and bogusUpgrade 50 refunded in full.
+    expect(r.data.firmwareSpent).toEqual({ hullFw: 300, preCharge: 80 });
+    expect(r.refunded).toBe(100 + 300 + 50);
+    expect(r.data.cores).toBe(10 + 450);
   });
 
   it.each([null, undefined, 42, 'text', [], [1, 2], true])('garbage %j becomes the defaults', (raw) => {
@@ -63,8 +64,8 @@ describe('sanitizeSave', () => {
     const r = sanitizeSave({
       cores: 1e20,
       lifetimeCores: -5,
-      meta: { hullFw: Number.NaN, magnetFw: 2.7, overclockFw: -1, fieldMedic: Number.POSITIVE_INFINITY },
-      firmwareSpent: { magnetFw: 45.9, fieldMedic: 'x' },
+      meta: { hullFw: Number.NaN, bootCache: 2.7, overclockFw: -1, secondBoot: Number.POSITIVE_INFINITY },
+      firmwareSpent: { bootCache: 45.9, secondBoot: 'x' },
       settings: {
         master: 7,
         music: -1,
@@ -78,8 +79,8 @@ describe('sanitizeSave', () => {
     });
     expect(r.data.cores).toBe(1_000_000_000);
     expect(r.data.lifetimeCores).toBe(0);
-    expect(r.data.meta).toEqual({ magnetFw: 2 }); // Infinity is not finite: level 0
-    expect(r.data.firmwareSpent).toEqual({ magnetFw: 45 });
+    expect(r.data.meta).toEqual({ bootCache: 2 }); // Infinity is not finite: level 0
+    expect(r.data.firmwareSpent).toEqual({ bootCache: 45 });
     expect(r.data.settings).toMatchObject({ master: 1, music: 0, sfx: 0.8, screenShake: 0.25 });
     expect(r.data.settings.quality).toBe('high');
     expect(r.data.settings.frameCap).toBe('auto');

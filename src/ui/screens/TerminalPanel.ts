@@ -4,7 +4,7 @@
  * element, so typing never reaches the page or the game).
  */
 import type { TerminalCheatVM, TerminalVM } from '../../contracts/ui';
-import { AttrSlot, ClassSwitch, Flag, Shown, TextSlot, ViewPool, button, h, markClick } from '../dom';
+import { ATTR_ITEM, AttrSlot, ClassSwitch, Flag, Shown, TextSlot, ViewPool, button, h, markClick } from '../dom';
 
 class LineView {
   readonly el: HTMLParagraphElement;
@@ -52,7 +52,7 @@ class CheatRowView {
     this.label = new TextSlot(labelEl);
     this.code = new TextSlot(codeEl);
     this.desc = new TextSlot(descEl);
-    this.item = new AttrSlot(this.el, 'data-item');
+    this.item = new AttrSlot(this.el, ATTR_ITEM);
     this.on = new Flag(this.el, 'is-on');
     this.cursor = new Flag(this.el, 'is-cursor');
   }
