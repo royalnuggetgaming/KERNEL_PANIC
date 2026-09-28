@@ -5,7 +5,14 @@
  */
 import type { Logger, PlayerIndex, RunOutcome } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
-import type { RunConfig, RunFlags, RunSessionApi, RunSummary, ShopApi } from '../contracts/run';
+import type {
+  PlayerLoadout,
+  RunConfig,
+  RunFlags,
+  RunSessionApi,
+  RunSummary,
+  ShopApi,
+} from '../contracts/run';
 import type { DerivedStats, FinalChoice, PlayerRunState, TeamState } from '../contracts/upgrades';
 import type { WorldState } from '../contracts/world';
 import { invariant } from '../core/assert';
@@ -52,6 +59,8 @@ export interface RunSession extends RunSessionApi {
   economy(p: PlayerIndex): PlayerRunState;
   /** Copy of the team stock (kernels synced from the world at openShop). */
   team(): TeamState;
+  /** Installed powerups of one player (live during an open visit); always present on the concrete session. */
+  loadout(p: PlayerIndex): PlayerLoadout;
 }
 
 function isJoined(w: WorldState, p: PlayerIndex): boolean {
@@ -256,6 +265,15 @@ export function createRunSession(config: RunConfig, deps: RunSessionDeps): RunSe
     },
     team(): TeamState {
       return cloneTeam(team);
+    },
+    loadout(p: PlayerIndex): PlayerLoadout {
+      // During a visit the open shop holds the live purchases; otherwise the committed economy does.
+      const res = shop === null ? null : shop.results();
+      const e = res === null ? economy[p] : res.players[p];
+      const t = res === null ? team : res.team;
+      const kernels = versus ? 0 : res === null ? w.run.spareKernels : t.kernels;
+      const teamLevels = { ...t.levels, spareKernel: kernels };
+      return { rows: { ...e.rows }, cards: e.cards.slice(), team: teamLevels };
     },
   };
   return session;

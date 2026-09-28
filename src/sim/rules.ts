@@ -32,7 +32,7 @@ export function beginWave(w: WorldState, wave: number): void {
   run.wave = wave;
   run.sector = sectorOf(wave);
   run.overflow = wave > WAVES.TOTAL;
-  const plan = generateWavePlan(wave, run.playerCount, w.mode);
+  const plan = generateWavePlan(wave, run.playerCount, w.mode, w.config.difficulty);
   run.enemyHpMul = plan.hpMul;
   run.threatMul = plan.threatMul;
   run.waveDuration = plan.duration;
@@ -82,12 +82,14 @@ function purgeAt(w: WorldState, i: number): void {
 /**
  * Starts PURGE: pending spawns and the remaining budget are dropped, and every surviving enemy gets a
  * staggered de-rez time within PURGE_TIME (stored in aiTimer; enemies are frozen outside combat).
+ * A boss kill is a won wave (clear beats wipe), so its purge drops the wipe grace; a wave-timer purge keeps
+ * it running because the wave is not won until the purge ends with someone standing.
  */
-function startPurge(w: WorldState): void {
+function startPurge(w: WorldState, won: boolean): void {
   const run = w.run;
   run.phase = 'purge';
   run.phaseTimer = WAVES.PURGE_TIME;
-  run.wipeGrace = -1;
+  if (won) run.wipeGrace = -1;
   w.director.pending.clear();
   w.director.budgetLeft = 0;
   const pool = w.enemies;
@@ -197,7 +199,7 @@ function stepRulesImpl(w: WorldState, _intents: Intents, dt: number): void {
         return;
       }
       if (run.waveTimer <= 0) {
-        startPurge(w);
+        startPurge(w, false);
         return;
       }
       checkWipe(w, dt);
@@ -205,15 +207,17 @@ function stepRulesImpl(w: WorldState, _intents: Intents, dt: number): void {
     case 'boss':
       run.waveTimer = run.waveTimer > dt ? run.waveTimer - dt : 0;
       if (w.director.bossSpawned && !bossAlive(w)) {
-        if (w.enemies.count > 0) startPurge(w);
+        if (w.enemies.count > 0) startPurge(w, true);
         else startOutro(w);
         return;
       }
       checkWipe(w, dt);
       return;
     case 'purge':
+      // Only a wave-timer purge can still be lost (boss waves purge after the kill, and their timer never purges).
+      if (bossForWave(run.wave) === null && checkWipe(w, dt)) return;
       purgeTick(w, dt);
-      if (w.enemies.count === 0) startOutro(w);
+      if (w.enemies.count === 0 && run.wipeGrace < 0) startOutro(w);
       return;
     case 'clearOutro':
       outroTick(w, dt);

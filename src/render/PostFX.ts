@@ -270,10 +270,13 @@ export class PostFX {
     this.uTime.value = t;
   }
 
-  /** Runs bloom + composite from sceneTarget into `output` (null = canvas). */
-  render(output: WebGLRenderTarget | null): void {
+  /**
+   * Runs bloom + composite from sceneTarget into `output` (null = canvas). `dim` (0..1) darkens the live frame:
+   * the fade back from a frozen overlay frame (render/unfreezeFade.ts).
+   */
+  render(output: WebGLRenderTarget | null, dim = 0): void {
     this.uFreeze.value = 0;
-    this.uDim.value = 0;
+    this.uDim.value = dim > 0 ? (dim < 1 ? dim : 1) : 0;
     this.uPreThreshold.value = this.effectiveThreshold();
     this.runChain();
     this.composite(output);

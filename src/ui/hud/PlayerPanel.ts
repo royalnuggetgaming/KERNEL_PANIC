@@ -1,6 +1,6 @@
 /**
  * One player's HUD corner: name + life state, HP bar, dash pips, Overdrive bar, wallet, score, combo, bleed-out
- * and revive bars (co-op), round-win pips (versus). Bars and flags update every render through transforms and
+ * and revive bars (co-op), round-win pips (versus), the installed-powerup strip (rebuilt only when its key changes). Bars and flags update every render through transforms and
  * class toggles; numeric text only when `text` is true (the Hud's 10 Hz gate) and only on change.
  */
 import type { PlayerIndex } from '../../contracts/ids';
@@ -8,6 +8,7 @@ import type { HudPlayerVM } from '../../contracts/ui';
 import type { UiContext } from '../view';
 import { ClassSwitch, Flag, NumSlot, Shown, TextSlot, ViewPool, h } from '../dom';
 import { formatCombo, formatHp, formatShards, playerTag } from '../format';
+import { InstalledList } from '../widgets/InstalledList';
 import { Meter } from '../widgets/Meter';
 
 const LIFE_LABEL: Readonly<Record<HudPlayerVM['life'], string>> = {
@@ -74,6 +75,9 @@ export class PlayerPanel {
   private readonly wins: ViewPool<Pip>;
   private readonly winsShown: Shown;
   private readonly lowHp: Flag;
+  private readonly loadout: InstalledList;
+  private readonly loadoutShown: Shown;
+  private loadoutKey = -1;
 
   constructor(ctx: UiContext, player: PlayerIndex) {
     const doc = ctx.doc;
@@ -92,6 +96,7 @@ export class PlayerPanel {
     this.comboMeter = new Meter(doc, 'kp-pp-combo-bar');
     this.bleed = new Meter(doc, 'kp-pp-bleed');
     this.revive = new Meter(doc, 'kp-pp-revive');
+    this.loadout = new InstalledList(doc, 'kp-pp-loadout', '', 'chips');
 
     const comboBox = h(doc, 'div', { className: 'kp-pp-combo' }, comboEl, this.comboMeter.el);
     const bleedBox = h(
@@ -148,6 +153,7 @@ export class PlayerPanel {
       comboBox,
       bleedBox,
       reviveBox,
+      this.loadout.el,
     );
 
     this.shown = new Shown(this.el, false);
@@ -167,6 +173,12 @@ export class PlayerPanel {
     this.wins = new ViewPool(winsEl, () => new Pip(doc, 'kp-win-pip'));
     this.winsShown = new Shown(winsEl, false);
     this.lowHp = new Flag(this.el, 'is-low-hp');
+    this.loadoutShown = new Shown(this.loadout.el, false);
+  }
+
+  /** A new run starts its loadout keys again: forget the last one so the strip is rebuilt. */
+  resetLoadout(): void {
+    this.loadoutKey = -1;
   }
 
   /** `versus` shows round-win pips; `winsNeeded` is the pip count (grown if a player has more wins). */
@@ -213,6 +225,11 @@ export class PlayerPanel {
     this.life.set(LIFE_LABEL[vm.life]);
     this.name.set(vm.name);
     if (!text) return;
+    if (vm.loadoutKey !== this.loadoutKey) {
+      this.loadoutKey = vm.loadoutKey;
+      this.loadoutShown.set(vm.loadout.length > 0);
+      this.loadout.render(vm.loadout);
+    }
     this.hpText.set(formatHp(vm.hp, vm.maxHp));
     this.wallet.set(vm.wallet);
     this.score.set(vm.score);

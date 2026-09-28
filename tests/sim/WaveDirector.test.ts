@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldState } from '../../src/contracts/world';
 import { ARENA, SIM } from '../../src/config/tuning';
-import { WAVES } from '../../src/config/waves';
+import { DIFFICULTY } from '../../src/config/difficulty';
+import { WAVES, waveBudget } from '../../src/config/waves';
 import { bossAlive } from '../../src/entities/bosses';
 import { stepEnemies } from '../../src/entities/enemies';
 import { choosePortals, formationPoint, portalPosition } from '../../src/sim/formations';
@@ -32,18 +33,20 @@ function combatWorld(wave: number, mode: 'coop' | 'solo' = 'coop', seed = 1): Wo
 }
 
 describe('generateWavePlan', () => {
-  it('tabled budgets at w1, w5, w10 and w15 (formula authoritative: 645 at w15), x1.5 in 2P', () => {
+  // v2 rebalance (user: "too many enemies"): round(18 + 8w + 0.9w^2) and x1.45 in 2P. v1 was
+  // round(30 + 14w + 1.8w^2) x1.5 = [46, 145, 350, 645] solo; HARD's budget multiplier restores roughly that.
+  it('tabled budgets at w1, w5, w10 and w15, x1.45 in 2P', () => {
     const solo = [1, 5, 10, 15].map((w) => generateWavePlan(w, 1, 'solo').budget);
     const coop = [1, 5, 10, 15].map((w) => generateWavePlan(w, 2, 'coop').budget);
-    expect(solo).toEqual([46, 145, 350, 645]);
-    expect(coop).toEqual([69, 218, 525, 968]);
-    expect(generateWavePlan(1, 2, 'coop').threatMul).toBe(1.5);
+    expect(solo).toEqual([27, 81, 188, 341]);
+    expect(coop).toEqual([39, 117, 273, 494]);
+    expect(generateWavePlan(1, 2, 'coop').threatMul).toBe(1.45);
     expect(generateWavePlan(1, 1, 'solo').threatMul).toBe(1);
   });
 
   it('versus uses 0.6 x the wave budget and never a boss', () => {
     const p = generateWavePlan(13, 2, 'versus');
-    expect(p.budget).toBe(Math.round((30 + 14 * 13 + 1.8 * 169) * 0.6));
+    expect(p.budget).toBe(Math.round(Math.round(18 + 8 * 13 + 0.9 * 169) * 0.6));
     expect(p.threatMul).toBe(0.6);
     expect(p.boss).toBeNull();
     expect(generateWavePlan(5, 2, 'versus').boss).toBeNull();
@@ -62,13 +65,35 @@ describe('generateWavePlan', () => {
     expect(generateWavePlan(4, 2, 'coop').boss).toBeNull();
     expect(generateWavePlan(20, 2, 'coop').boss).toBe('forkBomb');
     expect(generateWavePlan(25, 2, 'coop').boss).toBe('raceCondition');
-    expect(generateWavePlan(16, 1, 'solo').hpMul).toBeCloseTo(Math.pow(1.07, 14) * 1.12, 9);
+    expect(generateWavePlan(16, 1, 'solo').hpMul).toBeCloseTo(Math.pow(1.05, 14) * 1.12, 9);
   });
 
-  it('HP scaling 1.07^(w-1), x1.2 in 2P', () => {
+  // v2 rebalance: 5% HP growth per wave (v1: 7%) so later waves do not drag.
+  it('HP scaling 1.05^(w-1), x1.2 in 2P', () => {
     expect(generateWavePlan(1, 1, 'solo').hpMul).toBe(1);
-    expect(generateWavePlan(3, 1, 'solo').hpMul).toBeCloseTo(1.07 * 1.07, 12);
-    expect(generateWavePlan(3, 2, 'coop').hpMul).toBeCloseTo(1.07 * 1.07 * 1.2, 12);
+    expect(generateWavePlan(3, 1, 'solo').hpMul).toBeCloseTo(1.05 * 1.05, 12);
+    expect(generateWavePlan(3, 2, 'coop').hpMul).toBeCloseTo(1.05 * 1.05 * 1.2, 12);
+  });
+
+  it('difficulty scales the budget and enemy HP, never the boss or the timing', () => {
+    for (const id of ['casual', 'hard'] as const) {
+      const d = DIFFICULTY[id];
+      for (const [wave, n, mode] of [
+        [7, 1, 'solo'],
+        [7, 2, 'coop'],
+        [13, 2, 'versus'],
+        [10, 2, 'coop'],
+      ] as const) {
+        const base = generateWavePlan(wave, n, mode);
+        const plan = generateWavePlan(wave, n, mode, id);
+        expect(plan.budget).toBe(Math.round(waveBudget(wave) * base.threatMul * d.budget));
+        expect(plan.hpMul).toBeCloseTo(base.hpMul * d.hp, 12);
+        expect(plan.threatMul).toBe(base.threatMul);
+        expect(plan.boss).toBe(base.boss);
+        expect(plan.duration).toBe(base.duration);
+      }
+    }
+    expect(generateWavePlan(7, 2, 'coop', 'normal')).toEqual(generateWavePlan(7, 2, 'coop'));
   });
 
   it('unlock schedule', () => {
@@ -248,7 +273,8 @@ describe('stepWaveDirector', () => {
   it('spawns the boss when the boss phase starts and spends no pulse budget', () => {
     const w = combatWorld(5);
     expect(w.director.budgetLeft).toBe(0);
-    expect(w.director.budgetTotal).toBe(218);
+    // v2 rebalance: w5 co-op budget round(81 x 1.45) = 117 (v1: 218); still never spent on a boss wave.
+    expect(w.director.budgetTotal).toBe(117);
     stepSystem(w, stepWaveDirector, 1);
     expect(w.director.bossSpawned).toBe(true);
     expect(bossAlive(w)).toBe(true);

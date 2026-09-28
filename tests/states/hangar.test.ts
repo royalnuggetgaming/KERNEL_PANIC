@@ -5,6 +5,8 @@ import { bootToMenu, createHarness, type Harness } from './harness';
 async function toHangar(cores: number): Promise<Harness> {
   const h = createHarness({ save: new FakeSaveStore(createTestSaveData({ cores })) });
   await bootToMenu(h);
+  // v2: PLAY, HOW TO PLAY, FIRMWARE, ... (the hangar is the third item).
+  h.press({ player: 'any', kind: 'down' });
   h.press({ player: 'any', kind: 'down' });
   h.press({ player: 'any', kind: 'confirm' });
   h.frame();

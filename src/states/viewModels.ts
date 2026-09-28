@@ -17,13 +17,17 @@ import type {
   SelectSlotVM,
   StatBarVM,
 } from '../contracts/ui';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { keyLabel } from '../config/keys';
 import { META_UPGRADES, VEHICLE_UNLOCKS, metaLevel } from '../config/metaCatalog';
 import { VEHICLES } from '../config/vehicles';
+import { WAVES } from '../config/waves';
 import { isVehicleUnlocked, respecRefund } from '../upgrades/MetaShop';
 import { metaPrice } from '../upgrades/pricing';
 import type { RewardBreakdown, RewardLineId } from '../upgrades/rewards';
 import { clockText } from './hudViewModel';
+import { metaDesc, metaNext } from './powerupText';
+import { DIFFICULTY_LABELS } from './settingsPanel';
 
 export { buildHudVM } from './hudViewModel';
 export { buildShopVM } from './shopViewModel';
@@ -104,6 +108,7 @@ export function buildCharacterSelectVM(
     cores: save.cores,
     metaCurrency: n.metaCurrency,
     message: input.message,
+    difficulty: DIFFICULTY_LABELS[save.settings.difficulty ?? DEFAULT_DIFFICULTY],
   };
 }
 
@@ -123,7 +128,8 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
       id: META_ITEM_PREFIX + def.id,
       kind: 'meta',
       label: def.label.toUpperCase(),
-      blurb: def.blurb,
+      blurb: metaDesc(def.id, n.runCurrency),
+      next: metaNext(def.id, level, n.runCurrency),
       level,
       maxLevel: def.prices.length,
       price,
@@ -139,6 +145,7 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
       kind: 'unlock',
       label: `UNLOCK ${n.vehicles[v]}`,
       blurb: n.vehicleBlurbs[v],
+      next: owned ? 'Unlocked: pick it in character select' : `Special: ${n.specials[VEHICLES[v].special]}`,
       level: owned ? 1 : 0,
       maxLevel: 0,
       price: owned ? null : price,
@@ -153,6 +160,7 @@ export function buildHangarVM(save: SaveDataV1, cursor: number, theme: ThemeDef,
     kind: 'respec',
     label: 'RESPEC',
     blurb: `Reset all ${n.meta} and refund the ${n.metaCurrency} spent (unlocks stay).`,
+    next: '',
     level: 0,
     maxLevel: 0,
     price: refund,
@@ -195,6 +203,15 @@ function lineLabel(id: RewardLineId, theme: ThemeDef): string {
   }
 }
 
+/**
+ * Co-op/solo: a run counts as won once the final boss fell (summary.victoryAchieved), even when it then pushed
+ * into OVERFLOW and ended by dying or abandoning. Versus: a decided match.
+ */
+export function runWon(summary: RunSummary): boolean {
+  if (summary.mode === 'versus') return summary.winner !== null && summary.outcome !== 'abandoned';
+  return summary.outcome === 'victory' || summary.victoryAchieved;
+}
+
 function titles(summary: RunSummary, theme: ThemeDef): { title: string; subtitle: string } {
   const n = theme.names;
   if (summary.mode === 'versus') {
@@ -203,12 +220,14 @@ function titles(summary: RunSummary, theme: ThemeDef): { title: string; subtitle
     return { title: `${n.versus} COMPLETE`, subtitle: `ROUNDS ${score}` };
   }
   const reached = `${n.wave.toUpperCase()} ${summary.waveReached}`;
+  if (runWon(summary)) {
+    return summary.waveReached > WAVES.TOTAL
+      ? { title: 'VICTORY', subtitle: `${n.overflow} survived to ${reached}` }
+      : { title: `${n.extract} COMPLETE`, subtitle: 'The kernel is safe.' };
+  }
   switch (summary.outcome) {
     case 'victory':
-      return {
-        title: `${n.extract} COMPLETE`,
-        subtitle: summary.waveReached > 15 ? `${n.overflow} survived to ${reached}` : 'The kernel is safe.',
-      };
+      return { title: `${n.extract} COMPLETE`, subtitle: 'The kernel is safe.' };
     case 'defeat':
       return { title: 'SYSTEM FAILURE', subtitle: `Purged at ${reached}` };
     case 'abandoned':
@@ -246,7 +265,8 @@ export function buildGameOverVM(
   }));
   const t = titles(summary, theme);
   return {
-    outcome: summary.outcome,
+    // A won run that ended in OVERFLOW is styled as a victory whatever ended it.
+    outcome: !versus && runWon(summary) ? 'victory' : summary.outcome,
     mode: summary.mode,
     title: t.title,
     subtitle: t.subtitle,

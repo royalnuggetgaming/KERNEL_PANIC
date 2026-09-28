@@ -10,6 +10,10 @@ export type QualityLevel = (typeof QUALITY_LEVELS)[number];
 
 export type FrameCap = 'auto' | 60 | 120 | 'uncapped';
 
+/** Run difficulty (multipliers in config/difficulty.ts), snapshotted into RunConfig at run start. */
+export const DIFFICULTY_IDS = ['casual', 'normal', 'hard'] as const;
+export type DifficultyId = (typeof DIFFICULTY_IDS)[number];
+
 export interface Settings {
   /** Volumes in [0, 1]. */
   readonly master: number;
@@ -26,6 +30,8 @@ export interface Settings {
   readonly focusToggle: readonly [boolean, boolean];
   readonly showFps: boolean;
   readonly themeId: ThemeId;
+  /** Optional for pre-difficulty saves and fixtures; sanitizeSettings always fills it ('normal'). */
+  readonly difficulty?: DifficultyId;
 }
 
 export interface LeaderboardEntry {

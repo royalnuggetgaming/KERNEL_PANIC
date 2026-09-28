@@ -1,5 +1,5 @@
 /**
- * MainMenu: PLAY, Firmware hangar, Settings / Controls / Credits sub-panels over the attract backdrop
+ * MainMenu: PLAY, HOW TO PLAY (manual sub-panel), Firmware hangar, Settings / Controls / Credits sub-panels over the attract backdrop
  * (MenuBackdrop orbit, voxel title), music 'menu'. The Cores balance follows other-tab save changes.
  */
 import type { Services } from '../contracts/services';
@@ -8,13 +8,19 @@ import type { MainMenuVM, MenuItemVM, SubPanel } from '../contracts/ui';
 import { IntentReader, indexOfId, wrapIndex, type UiIntent } from './intents';
 import { CREDITS, SubPanelController } from './subPanels';
 
-export const MAIN_MENU_ITEM_IDS = ['play', 'hangar', 'settings', 'controls', 'credits'] as const;
+export const MAIN_MENU_ITEM_IDS = ['play', 'manual', 'hangar', 'settings', 'controls', 'credits'] as const;
 type MainMenuItemId = (typeof MAIN_MENU_ITEM_IDS)[number];
 
 function menuItems(s: Services): readonly MenuItemVM[] {
   const n = s.theme().names;
   return [
     { id: 'play', label: 'PLAY', enabled: true, hint: 'Co-op, solo or versus: P2 joins on the next screen' },
+    {
+      id: 'manual',
+      label: 'HOW TO PLAY',
+      enabled: true,
+      hint: 'Controls, rules, every powerup, enemies and bosses',
+    },
     {
       id: 'hangar',
       label: n.meta.toUpperCase(),
@@ -110,6 +116,7 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
       case 'hangar':
         this.leaving = s.fsm.request('UpgradesShop', { mode: 'meta' });
         return;
+      case 'manual':
       case 'settings':
       case 'controls':
       case 'credits':
@@ -134,6 +141,7 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
       settings: this.panels.settingsVM(),
       controls: this.panels.controlsVM(),
       credits: CREDITS,
+      manual: this.panels.manualVM(),
       metaCurrency: theme.names.metaCurrency,
       cores: s.save.data.cores,
       version: s.env.version,

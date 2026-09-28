@@ -12,7 +12,9 @@ import {
   type VehicleId,
 } from '../contracts/ids';
 import {
+  DIFFICULTY_IDS,
   QUALITY_LEVELS,
+  type DifficultyId,
   type FrameCap,
   type LeaderboardEntry,
   type QualityLevel,
@@ -20,6 +22,7 @@ import {
   type Settings,
 } from '../contracts/save';
 import { resetInvalidActions } from '../config/bindings';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { DEFAULT_BINDINGS } from '../config/keys';
 import { DEFAULT_SETTINGS } from './defaults';
 
@@ -67,7 +70,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   const r: Loose = isRecord(raw) ? raw : {};
   const frameCaps: readonly FrameCap[] = ['auto', 60, 120, 'uncapped'];
-  return {
+  const out: Settings = {
     master: unit(r.master, d.master),
     music: unit(r.music, d.music),
     sfx: unit(r.sfx, d.sfx),
@@ -81,6 +84,14 @@ export function sanitizeSettings(raw: unknown): Settings {
     focusToggle: boolPair(r.focusToggle, d.focusToggle),
     showFps: bool(r.showFps, d.showFps),
     themeId: oneOf<ThemeId>(THEME_IDS, r.themeId) ? r.themeId : d.themeId,
+  };
+  // Pre-difficulty (v1) settings have no key: absent means NORMAL everywhere, and leaving it absent keeps a valid
+  // old save byte-identical (no rewrite on load). Garbage settings get the full defaults (difficulty included);
+  // a present but unknown value resets to NORMAL.
+  if (isRecord(raw) && r.difficulty === undefined) return out;
+  return {
+    ...out,
+    difficulty: oneOf<DifficultyId>(DIFFICULTY_IDS, r.difficulty) ? r.difficulty : DEFAULT_DIFFICULTY,
   };
 }
 

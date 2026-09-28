@@ -9,6 +9,7 @@ import type { LoadoutPick, RunMode, VehicleId } from '../contracts/ids';
 import type { RunConfig } from '../contracts/run';
 import type { Services } from '../contracts/services';
 import type { GameState, StatePayloads } from '../contracts/states';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { VEHICLES } from '../config/vehicles';
 import { isVehicleUnlocked } from '../upgrades/MetaShop';
 import {
@@ -175,6 +176,8 @@ class CharacterSelectStateImpl implements GameState<'CharacterSelect'> {
       autofire: [save.settings.autofire[0], save.settings.autofire[1]],
       focusToggle: [save.settings.focusToggle[0], save.settings.focusToggle[1]],
       themeId: s.theme().id,
+      // Snapshot like meta: a difficulty change mid-run (pause settings) only affects the next run.
+      difficulty: save.settings.difficulty ?? DEFAULT_DIFFICULTY,
     };
     s.session.lastPicks = players;
     s.session.lastMode = mode;

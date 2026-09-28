@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Bindings } from '../../src/contracts/input';
 import type { Settings } from '../../src/contracts/save';
-import { adjustSetting, buildSettingsVM, SETTING_IDS } from '../../src/states/settingsPanel';
+import { adjustSetting, buildSettingsVM, DIFFICULTY_NOTE, SETTING_IDS } from '../../src/states/settingsPanel';
 import { SubPanelController } from '../../src/states/subPanels';
 import { TEST_SETTINGS } from '../helpers/fakeSave';
 import { bootToMenu, createHarness, type Harness } from './harness';
@@ -29,10 +29,12 @@ describe('Settings sub-panel', () => {
     const h = await openPanel('settings');
     const { ui, audio, render, input } = h.set;
     expect(ui.vm('mainMenu')?.panel).toBe('settings');
+    // v2: DIFFICULTY is the first row; MASTER VOLUME moved to row 1.
+    h.press({ player: 'any', kind: 'down' });
     h.press({ player: 'any', kind: 'right' });
     expect(lastSettingsPatch(h)).toEqual({ master: 0.9 });
     expect(audio.rec.last('setVolumes')?.args).toEqual([0.9, 0.7, 0.8]);
-    expect(ui.vm('mainMenu')?.settings?.rows[0]?.value).toBe('90%');
+    expect(ui.vm('mainMenu')?.settings?.rows[1]?.value).toBe('90%');
     ui.click({ screen: 'mainMenu', kind: 'confirm', player: 'any', itemId: 'colorblind' });
     h.frame();
     expect(lastSettingsPatch(h)).toEqual({ colorblind: true });
@@ -51,6 +53,25 @@ describe('Settings sub-panel', () => {
     expect(ui.vm('mainMenu')?.settings?.note).toBe('Only one theme is installed.');
     h.press({ player: 'any', kind: 'back' });
     expect(ui.vm('mainMenu')?.panel).toBe('none');
+  });
+
+  it('DIFFICULTY cycles CASUAL / NORMAL / HARD, saves and notes that it applies next run', async () => {
+    const h = await openPanel('settings');
+    const { ui } = h.set;
+    expect(ui.vm('mainMenu')?.settings?.rows[0]).toMatchObject({ id: 'difficulty', value: 'NORMAL' });
+    h.press({ player: 'any', kind: 'right' });
+    expect(lastSettingsPatch(h)).toEqual({ difficulty: 'hard' });
+    expect(ui.vm('mainMenu')?.settings?.rows[0]?.value).toBe('HARD');
+    expect(ui.vm('mainMenu')?.settings?.note).toBe(DIFFICULTY_NOTE);
+    h.press({ player: 'any', kind: 'right' });
+    expect(lastSettingsPatch(h)).toEqual({ difficulty: 'casual' });
+    expect(adjustSetting({ ...TEST_SETTINGS, difficulty: 'casual' }, 'difficulty', -1)).toEqual({
+      difficulty: 'hard',
+    });
+    // Saves from before the setting existed read as NORMAL.
+    const legacy: Settings = { ...TEST_SETTINGS };
+    delete (legacy as { difficulty?: unknown }).difficulty;
+    expect(buildSettingsVM(legacy, 0, '').rows[0]?.value).toBe('NORMAL');
   });
 
   it('adjustSetting covers every row; sliders clamp to [0, 1]', () => {

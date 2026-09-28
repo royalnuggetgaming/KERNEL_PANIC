@@ -5,12 +5,25 @@
  * is 'lock:card:<slot>' (ui LOCK_PREFIX + card id).
  */
 import type { PlayerIndex, StatRowId, TeamItemId } from '../contracts/ids';
-import type { ShopPlayerSnapshot, ShopVisitSnapshot } from '../contracts/run';
+import type { PlayerLoadout, ShopPlayerSnapshot, ShopVisitSnapshot } from '../contracts/run';
 import type { ThemeDef } from '../contracts/theme';
 import type { ShopCardVM, ShopPanelVM, ShopRowVM, ShopVM } from '../contracts/ui';
 import { cardDef } from '../config/cards';
-import { REPAIR, statRowDef, teamItemDef } from '../config/runCatalog';
+import { REPAIR, statRowDef } from '../config/runCatalog';
 import { sectorOf } from '../config/waves';
+import { NO_ITEMS, installedItems } from './loadoutViewModel';
+import {
+  cardDesc,
+  cardOwnedText,
+  giftDesc,
+  lockDesc,
+  repairDesc,
+  rerollDesc,
+  statRowDesc,
+  statRowNext,
+  teamDesc,
+  teamNext,
+} from './powerupText';
 
 export interface ShopCursor {
   readonly row: number;
@@ -50,6 +63,7 @@ export const TEAM_PREFIX = 'team:';
 export const LOCK_ITEM_PREFIX = 'lock:';
 
 const NO_TOASTS: readonly [string | null, string | null] = [null, null];
+const NO_LOADOUTS: readonly [PlayerLoadout | null, PlayerLoadout | null] = [null, null];
 
 function rowVM(p: ShopPlayerSnapshot, i: number): ShopRowVM {
   const r = p.rows[i]!;
@@ -57,7 +71,8 @@ function rowVM(p: ShopPlayerSnapshot, i: number): ShopRowVM {
   return {
     id: ROW_PREFIX + r.id,
     label: def.label.toUpperCase(),
-    blurb: def.blurb,
+    blurb: statRowDesc(r.id),
+    next: statRowNext(r.id, r.level),
     level: r.level,
     maxLevel: r.maxLevel,
     price: r.price,
@@ -65,13 +80,20 @@ function rowVM(p: ShopPlayerSnapshot, i: number): ShopRowVM {
   };
 }
 
-function cardVM(p: ShopPlayerSnapshot, i: number): ShopCardVM {
+function cardVM(p: ShopPlayerSnapshot, i: number, l: PlayerLoadout | null, currency: string): ShopCardVM {
   const c = p.cards[i]!;
   const def = c.id === null ? null : cardDef(c.id);
+  const owned = def === null || l === null ? 0 : (l.cards[def.bit] ?? 0);
   return {
     id: CARD_PREFIX + String(c.slot),
     label: def === null ? 'SOLD' : def.label.toUpperCase(),
-    blurb: def === null ? 'Bought this visit.' : def.blurb,
+    blurb: c.id === null ? 'Bought this visit.' : cardDesc(c.id, currency),
+    next:
+      c.id === null
+        ? ''
+        : c.locked
+          ? `${cardOwnedText(c.id, owned)} · LOCKED for next visit`
+          : cardOwnedText(c.id, owned),
     level: 0,
     maxLevel: 0,
     price: c.id === null ? null : c.price,
@@ -86,7 +108,8 @@ function teamVM(p: ShopPlayerSnapshot, i: number, theme: ThemeDef): ShopRowVM {
   return {
     id: TEAM_PREFIX + t.id,
     label: theme.names.teamItems[t.id].toUpperCase(),
-    blurb: teamItemDef(t.id).blurb,
+    blurb: teamDesc(t.id),
+    next: teamNext(t.id, t.level),
     level: t.level,
     maxLevel: Number.isFinite(t.maxLevel) ? t.maxLevel : 0,
     price: t.price,
@@ -100,12 +123,13 @@ function panelVM(
   cursor: ShopCursor,
   theme: ThemeDef,
   toast: string | null,
+  loadout: PlayerLoadout | null,
 ): ShopPanelVM {
   const n = theme.names;
   const rows: ShopRowVM[] = [];
   for (let i = 0; i < p.rows.length; i++) rows.push(rowVM(p, i));
   const cards: ShopCardVM[] = [];
-  for (let i = 0; i < p.cards.length; i++) cards.push(cardVM(p, i));
+  for (let i = 0; i < p.cards.length; i++) cards.push(cardVM(p, i, loadout, n.runCurrency));
   const team: ShopRowVM[] = [];
   if (snap.teamVisible) for (let i = 0; i < p.team.length; i++) team.push(teamVM(p, i, theme));
   const free = p.reroll.freeLeft;
@@ -121,7 +145,8 @@ function panelVM(
     repair: {
       id: 'repair',
       label: 'REPAIR',
-      blurb: `Heal ${Math.round(REPAIR.healFrac * 100)}% max HP (${p.repair.boughtThisVisit}/${REPAIR.maxPerVisit} this visit)`,
+      blurb: repairDesc(),
+      next: `HP ${Math.max(0, Math.ceil(p.hp))}/${Math.ceil(p.maxHp)} · ${p.repair.boughtThisVisit}/${REPAIR.maxPerVisit} bought`,
       level: 0,
       maxLevel: 0,
       price: p.repair.price,
@@ -132,7 +157,8 @@ function panelVM(
     reroll: {
       id: 'reroll',
       label: free > 0 ? `REROLL (${free} FREE)` : 'REROLL',
-      blurb: 'Draw 3 new patch cards (a locked card stays).',
+      blurb: rerollDesc(),
+      next: free > 0 ? `${free} free reroll${free > 1 ? 's' : ''} left · ${lockDesc()}` : lockDesc(),
       level: 0,
       maxLevel: 0,
       price: rerollPrice,
@@ -142,7 +168,8 @@ function panelVM(
       ? {
           id: 'gift',
           label: `GIFT ${p.gift.amount} ${n.runCurrency.toUpperCase()}`,
-          blurb: 'Send to your partner (undo refunds it).',
+          blurb: giftDesc(n.runCurrency),
+          next: '',
           level: 0,
           maxLevel: 0,
           price: p.gift.amount,
@@ -154,6 +181,7 @@ function panelVM(
     canUndo: p.canUndo,
     lastResult: p.lastResult,
     toast,
+    installed: loadout === null || !p.joined ? NO_ITEMS : installedItems(loadout, theme, snap.teamVisible),
   };
 }
 
@@ -164,15 +192,20 @@ function subtitleOf(snap: ShopVisitSnapshot, theme: ThemeDef): string {
   return `${n.sector.toUpperCase()} ${sectorOf(snap.wave)} · ${n.wave.toUpperCase()} ${snap.wave} · FIRE BUY · DASH UNDO · SPECIAL READY`;
 }
 
-/** Pure Patch Bay VM. `toasts` are per-player transient messages (for example "Partner bought it"). */
+/**
+ * Pure Patch Bay VM. `toasts` are per-player transient messages (for example "Partner bought it"); `loadouts`
+ * are the players' installed powerups (RunSessionApi.loadout, live during the visit) for the INSTALLED lists.
+ */
 export function buildShopVM(
   snap: ShopVisitSnapshot,
   cursors: readonly [ShopPanelVM['cursor'], ShopPanelVM['cursor']],
   theme: ThemeDef,
   toasts: readonly [string | null, string | null] = NO_TOASTS,
+  loadouts: readonly [PlayerLoadout | null, PlayerLoadout | null] = NO_LOADOUTS,
 ): ShopVM {
   const n = theme.names;
-  const panel = (i: PlayerIndex): ShopPanelVM => panelVM(snap, snap.players[i], cursors[i], theme, toasts[i]);
+  const panel = (i: PlayerIndex): ShopPanelVM =>
+    panelVM(snap, snap.players[i], cursors[i], theme, toasts[i], loadouts[i]);
   return {
     mode: snap.mode,
     title: n.shop.toUpperCase(),

@@ -160,6 +160,8 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
   private readonly cores: NumSlot;
   private readonly currency: TextSlot;
   private readonly message: TextSlot;
+  private readonly difficulty: TextSlot;
+  private readonly difficultyClass: ClassSwitch;
 
   constructor(ctx: UiContext) {
     const doc = ctx.doc;
@@ -181,6 +183,7 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     const coresEl = h(doc, 'span', { className: 'kp-cores-num' });
     const currencyEl = h(doc, 'span', { className: 'kp-unit' });
     const msgEl = h(doc, 'p', { className: 'kp-select-msg kp-warn' });
+    const diffEl = h(doc, 'span', { className: 'kp-select-diff-value' });
     this.el.appendChild(
       h(
         doc,
@@ -191,6 +194,14 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
           'header',
           { className: 'kp-select-head' },
           h(doc, 'h2', { className: 'kp-panel-title', text: 'SELECT DAEMON' }),
+          h(
+            doc,
+            'span',
+            { className: 'kp-select-diff' },
+            h(doc, 'span', { className: 'kp-dim', text: 'DIFFICULTY ' }),
+            diffEl,
+            h(doc, 'span', { className: 'kp-dim kp-select-diff-hint', text: ' · change in SETTINGS' }),
+          ),
           h(doc, 'span', { className: 'kp-cores' }, coresEl, currencyEl),
         ),
         h(doc, 'div', { className: 'kp-slots' }, this.slots[0].el, this.slots[1].el),
@@ -215,6 +226,8 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     this.cores = new NumSlot(coresEl, formatShards);
     this.currency = new TextSlot(currencyEl);
     this.message = new TextSlot(msgEl);
+    this.difficulty = new TextSlot(diffEl);
+    this.difficultyClass = new ClassSwitch(diffEl);
   }
 
   render(vm: CharacterSelectVM): boolean {
@@ -232,6 +245,8 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     this.cores.set(vm.cores);
     this.currency.set(' ' + vm.metaCurrency);
     this.message.set(vm.message);
+    this.difficulty.set(vm.difficulty);
+    this.difficultyClass.set('diff-' + vm.difficulty.toLowerCase());
     return false;
   }
 }

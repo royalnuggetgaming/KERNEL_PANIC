@@ -67,6 +67,12 @@ function respawnPosition(w: WorldState, p: PlayerEntity): void {
   }
 }
 
+/** Wave already won (clear outro) or run resolved: the wave-end reboot revives Downed players for free. */
+function bleedPaused(w: WorldState): boolean {
+  const ph = w.run.phase;
+  return ph === 'clearOutro' || ph === 'done';
+}
+
 function stepDowned(w: WorldState, p: PlayerEntity, dt: number): void {
   const q = partnerOf(w, p);
   const reviveTime = p.stats.reviveTime > 0.05 ? p.stats.reviveTime : 0.05;
@@ -85,6 +91,7 @@ function stepDowned(w: WorldState, p: PlayerEntity, dt: number): void {
     p.reviveProgress -= COOP.REVIVE_DECAY_PER_S * dt;
     if (p.reviveProgress < 0) p.reviveProgress = 0;
   }
+  if (bleedPaused(w)) return;
   p.bleedLeft -= dt;
   if (p.bleedLeft > 0) return;
   p.bleedLeft = 0;
@@ -111,7 +118,7 @@ function stepGhost(w: WorldState, p: PlayerEntity): void {
 
 /** No living player: spend a kernel immediately on the player downed longest. */
 function noLivingPlayerRule(w: WorldState): void {
-  if (w.run.spareKernels <= 0 || livingPlayerCount(w) > 0) return;
+  if (w.run.spareKernels <= 0 || bleedPaused(w) || livingPlayerCount(w) > 0) return;
   let pick: PlayerEntity | null = null;
   for (let i = 0; i < 2; i++) {
     const p = w.players[i as PlayerIndex];

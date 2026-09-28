@@ -94,7 +94,9 @@ describe('ui/ShopScreen', () => {
     expect(pierce.first('kp-row-lock').getAttribute('data-item')).toBe('lock:pierce');
     expect(pierce.first('kp-row-lock').getAttribute('data-player')).toBe('0');
     expect(pierce.first('kp-row-buy').getAttribute('data-item')).toBe('pierce');
-    expect(p1.first('kp-shop-detail').textContent).toBe('pierce blurb');
+    // v2: every row carries its own description + next-level line (the single cursor "detail" line is gone).
+    expect(pierce.first('kp-row-blurb').textContent).toBe('pierce blurb');
+    expect(pierce.first('kp-row-next').textContent).toBe('pierce next');
     s.render(
       shopVM({ panels: [shopPanelVM(0, { cursor: { row: 10, col: 0 }, ready: true }), shopPanelVM(1)] }),
       0,
@@ -103,7 +105,6 @@ describe('ui/ShopScreen', () => {
     expect(ready.classList.contains('is-cursor')).toBe(true);
     expect(ready.classList.contains('is-ready')).toBe(true);
     expect(ready.getAttribute('data-kind')).toBe('ready');
-    expect(p1.first('kp-shop-detail').textContent).toBe('');
   });
 
   it('versus hides the team row, team strip and gift', () => {

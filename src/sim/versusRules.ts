@@ -61,7 +61,7 @@ export function beginVersusRound(w: WorldState, round: number): void {
   w.deathQueue.clear();
   resetPlayersForRound(w);
   const wave = versusWaveForRound(round);
-  const plan = generateWavePlan(wave, 2, 'versus');
+  const plan = generateWavePlan(wave, 2, 'versus', w.config.difficulty);
   run.round = round;
   run.wave = wave;
   run.sector = sectorOf(wave);

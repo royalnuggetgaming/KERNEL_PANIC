@@ -15,6 +15,7 @@ import type {
   VehicleId,
 } from './ids';
 import type { Intents } from './input';
+import type { DifficultyId } from './save';
 import type { FinalChoice, PurchaseResult, Rarity, ShopTx } from './upgrades';
 import type { WorldView } from './world';
 
@@ -29,6 +30,8 @@ export interface RunConfig {
   readonly autofire: readonly [boolean, boolean];
   readonly focusToggle: readonly [boolean, boolean];
   readonly themeId: ThemeId;
+  /** Difficulty snapshot taken at run start (like meta); never changes mid-run. Absent = 'normal'. */
+  readonly difficulty?: DifficultyId;
 }
 
 export interface RunFlags {
@@ -177,6 +180,15 @@ export interface ShopApi {
 
 // ---------------------------------------------------------------- run session
 
+/** A player's installed powerups (read-only; implementations may return copies). */
+export interface PlayerLoadout {
+  readonly rows: Readonly<Record<StatRowId, number>>;
+  /** Stack counts indexed by CardDef.bit. */
+  readonly cards: ArrayLike<number>;
+  /** Shared team item levels (Spare Kernel = kernels held); all zero in versus. */
+  readonly team: Readonly<Record<TeamItemId, number>>;
+}
+
 export interface RunSessionApi {
   readonly config: RunConfig;
   readonly world: WorldView;
@@ -194,6 +206,11 @@ export interface RunSessionApi {
   clearEvents(): void;
   setViewRect(minX: number, maxX: number, minZ: number, maxZ: number): void;
   summary(outcome: RunOutcome): RunSummary;
+  /**
+   * Installed powerups of a player, including purchases in the open shop visit (additive v2 read; optional so
+   * existing doubles still conform). Allocates: call on change, not per frame.
+   */
+  loadout?(p: PlayerIndex): PlayerLoadout;
   /** Returns pooled entities; the world must not be used afterwards. */
   dispose(): void;
 }

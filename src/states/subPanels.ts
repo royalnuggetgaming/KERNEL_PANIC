@@ -1,14 +1,15 @@
 /**
- * Settings / Controls / Credits sub-panels shared by MainMenu and Paused (not FSM states). While a panel is
+ * Settings / Controls / Credits / HOW TO PLAY (manual) sub-panels shared by MainMenu and Paused (not FSM states). While a panel is
  * open it owns every intent; a back intent closes it (unless the controls panel is capturing, offering a swap
  * or running the key test). Closing a panel flushes its debounced save writes (menus and Pause are never
  * Playing); a write failure seen while a panel is open or on close is toasted (plan 6 "Failure handling").
  */
 import type { SaveStatus } from '../contracts/save';
 import type { Services } from '../contracts/services';
-import type { ControlsPanelVM, SettingsPanelVM, SubPanel } from '../contracts/ui';
+import type { ControlsPanelVM, ManualPageVM, ManualVM, SettingsPanelVM, SubPanel } from '../contracts/ui';
 import { ControlsController } from './controlsPanel';
 import type { UiIntent } from './intents';
+import { buildManualPages } from './manualPages';
 import { SettingsController } from './settingsPanel';
 
 export const CREDITS: readonly string[] = [
@@ -19,6 +20,23 @@ export const CREDITS: readonly string[] = [
   'Built with Claude Code.',
 ];
 
+/** Pointer item id prefix of a manual table-of-contents entry ('manual:<page index>'). */
+export const MANUAL_PAGE_PREFIX = 'manual:';
+export const MANUAL_HINT = '↑ ↓ / ← → CHANGE PAGE   ·   CLICK A SECTION   ·   ESC BACK';
+
+/** Page index for a manual intent (clamped), or the current page when the intent does not navigate. */
+export function manualTarget(i: UiIntent, page: number, count: number): number {
+  const last = Math.max(0, count - 1);
+  if (i.pointer && i.itemId?.startsWith(MANUAL_PAGE_PREFIX) === true) {
+    const n = Number(i.itemId.slice(MANUAL_PAGE_PREFIX.length));
+    return Number.isInteger(n) ? Math.min(last, Math.max(0, n)) : page;
+  }
+  if (i.kind === 'up' || i.kind === 'left') return Math.max(0, page - 1);
+  if (i.kind === 'down' || i.kind === 'right' || (i.kind === 'confirm' && !i.pointer))
+    return Math.min(last, page + 1);
+  return page;
+}
+
 export class SubPanelController {
   panel: SubPanel = 'none';
   readonly settings: SettingsController;
@@ -27,6 +45,8 @@ export class SubPanelController {
   private readonly s: Services;
   /** Save status when the panel opened (or last checked): a change to memoryOnly means a write failed. */
   private seenStatus: SaveStatus;
+  private manualPages: readonly ManualPageVM[] = [];
+  private manualPage = 0;
 
   constructor(s: Services) {
     this.s = s;
@@ -48,6 +68,11 @@ export class SubPanelController {
     this.seenStatus = this.s.save.status;
     if (p === 'settings') this.settings.open();
     if (p === 'controls') this.controls.open();
+    if (p === 'manual') {
+      // Built on open: the Controls page shows the bindings in effect right now.
+      this.manualPages = buildManualPages(this.s.theme(), this.s.save.data.bindings);
+      this.manualPage = 0;
+    }
     this.dirty = true;
   }
 
@@ -67,12 +92,21 @@ export class SubPanelController {
     let changed = false;
     if (this.panel === 'settings') changed = this.settings.handle(i);
     else if (this.panel === 'controls') changed = this.controls.handle(i);
+    else if (this.panel === 'manual') changed = this.handleManual(i);
     const wantsBack = i.kind === 'back' && (!i.pointer || i.itemId === 'back');
     if (!changed && wantsBack && !(this.panel === 'controls' && this.controls.modal)) {
       this.close();
       changed = true;
     }
     if (changed) this.dirty = true;
+    return true;
+  }
+
+  private handleManual(i: UiIntent): boolean {
+    const next = manualTarget(i, this.manualPage, this.manualPages.length);
+    if (next === this.manualPage) return false;
+    this.manualPage = next;
+    this.s.audio.play('uiMove');
     return true;
   }
 
@@ -103,5 +137,10 @@ export class SubPanelController {
 
   controlsVM(): ControlsPanelVM | null {
     return this.panel === 'controls' ? this.controls.vm() : null;
+  }
+
+  manualVM(): ManualVM | null {
+    if (this.panel !== 'manual') return null;
+    return { pages: this.manualPages, page: this.manualPage, hint: MANUAL_HINT };
   }
 }

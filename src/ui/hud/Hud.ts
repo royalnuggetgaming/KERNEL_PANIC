@@ -93,6 +93,12 @@ export class Hud implements ScreenView<'hud'> {
     this.modeVersus = new Flag(this.el, 'is-versus');
   }
 
+  onShow(): void {
+    this.p1.resetLoadout();
+    this.p2.resetLoadout();
+    this.textVm = null;
+  }
+
   render(vm: HudVM, nowMs: number): boolean {
     const versus = vm.versus.visible;
     const textDue = nowMs - this.lastTextAt >= HUD_TEXT_INTERVAL_MS;

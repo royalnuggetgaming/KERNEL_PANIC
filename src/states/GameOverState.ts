@@ -16,7 +16,7 @@ import type { GameState, StatePayloads } from '../contracts/states';
 import type { GameOverVM } from '../contracts/ui';
 import { computeRunRewards, type RewardBreakdown } from '../upgrades/rewards';
 import { IntentReader, indexOfId, wrapIndex, type UiIntent } from './intents';
-import { GAME_OVER_ITEMS, buildGameOverVM } from './viewModels';
+import { GAME_OVER_ITEMS, buildGameOverVM, runWon } from './viewModels';
 
 /** Empty summary used when GameOver is entered without a run (defensive; never in normal flow). */
 function emptySummary(outcome: RunOutcome): RunSummary {
@@ -73,7 +73,10 @@ class GameOverStateImpl implements GameState<'GameOver'> {
     this.cursor = 0;
     this.leaving = false;
     if (run === null) s.log.error('GameOver entered without a run');
-    this.summary = run === null ? emptySummary(payload.outcome) : run.summary(payload.outcome);
+    // A co-op/solo run that beat the final boss is a win however OVERFLOW ended it (death or abandon).
+    const won = run !== null && run.config.mode !== 'versus' && run.world.run.victoryAchieved;
+    const outcome: RunOutcome = won ? 'victory' : payload.outcome;
+    this.summary = run === null ? emptySummary(outcome) : run.summary(outcome);
     this.rewards = computeRunRewards(this.summary);
     // Re-entering for a run already shown keeps its "new best" (the records now include it).
     if (!this.committed.has(this.summary.runId)) this.newBest = isNewBest(this.summary, s.save.data);
@@ -117,9 +120,7 @@ class GameOverStateImpl implements GameState<'GameOver'> {
   }
 
   private victoryMood(): boolean {
-    const sm = this.summary;
-    if (sm.mode === 'versus') return sm.winner !== null && sm.outcome !== 'abandoned';
-    return sm.outcome === 'victory';
+    return runWon(this.summary);
   }
 
   private commit(): void {

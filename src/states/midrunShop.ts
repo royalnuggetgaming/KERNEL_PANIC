@@ -7,7 +7,7 @@
  * on EXTRACT. Versus uses the same flow between rounds (team row and gift hidden by the snapshot).
  */
 import type { PlayerIndex } from '../contracts/ids';
-import type { ShopApi, ShopPlayerSnapshot, ShopVisitSnapshot } from '../contracts/run';
+import type { PlayerLoadout, ShopApi, ShopPlayerSnapshot, ShopVisitSnapshot } from '../contracts/run';
 import type { Services } from '../contracts/services';
 import type { ShopVM } from '../contracts/ui';
 import type { PurchaseFailure, PurchaseResult, ShopTx } from '../contracts/upgrades';
@@ -157,7 +157,15 @@ export class MidrunShopController {
       ],
       this.s.theme(),
       [this.toasts[0], this.toasts[1]],
+      this.loadouts(),
     );
+  }
+
+  /** Installed powerups incl. this visit's purchases (null when the session has no loadout reader). */
+  private loadouts(): readonly [PlayerLoadout | null, PlayerLoadout | null] {
+    const run = this.s.session.current;
+    if (run?.loadout === undefined) return [null, null];
+    return [run.loadout(0), run.loadout(1)];
   }
 
   private layout(snap: ShopVisitSnapshot, p: PlayerIndex): ShopLayout {

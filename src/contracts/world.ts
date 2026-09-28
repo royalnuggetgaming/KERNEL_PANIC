@@ -4,6 +4,7 @@
  */
 import type { EnemyKind, PlayerIndex, RunMode, VehicleId } from './ids';
 import type { Intents } from './input';
+import type { DifficultyId } from './save';
 import type {
   BossEntity,
   EnemyEntity,
@@ -143,6 +144,8 @@ export interface WorldConfig {
   readonly players: readonly [WorldPlayerInit, WorldPlayerInit | null];
   readonly startShards: number;
   readonly startKernels: number;
+  /** Difficulty of the run (config/difficulty.ts multipliers). Absent = 'normal'. */
+  readonly difficulty?: DifficultyId;
 }
 
 export interface WorldRngs {

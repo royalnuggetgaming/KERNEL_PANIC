@@ -13,6 +13,12 @@ export const LATE_TOLERANCE_S = 0.05;
 /** Delay between start() and the first downbeat, so the first notes are not late. */
 export const START_DELAY_S = 0.06;
 
+/**
+ * beatPhase while no music plays (stopped, or before the first downbeat): the tail of the bar, where the
+ * floor's exp(-uBeat * 7) pulse is at rest (~0.1%), instead of 0 which would hold it at full brightness.
+ */
+export const BEAT_PHASE_IDLE = 0.999;
+
 export interface Sequencer {
   start(): void;
   stop(): void;
@@ -106,6 +112,7 @@ class SequencerImpl implements SequencerApi {
   }
 
   get beatPhase(): number {
+    if (!this.running || this.now() <= this.startTime) return BEAT_PHASE_IDLE;
     const p = this.beatPosition;
     return p - Math.floor(p);
   }

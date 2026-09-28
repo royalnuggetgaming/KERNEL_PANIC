@@ -30,11 +30,12 @@ describe('beginWave + countdown', () => {
     expect(w.run.wave).toBe(7);
     expect(w.run.sector).toBe(2);
     expect(w.run.overflow).toBe(false);
-    expect(w.run.enemyHpMul).toBeCloseTo(Math.pow(1.07, 6) * 1.2, 12);
-    expect(w.run.threatMul).toBe(1.5);
+    // v2 rebalance: 5% HP growth (v1 7%) and a x1.45 2P budget (v1 x1.5).
+    expect(w.run.enemyHpMul).toBeCloseTo(Math.pow(1.05, 6) * 1.2, 12);
+    expect(w.run.threatMul).toBe(1.45);
     expect(w.run.phase).toBe('countdown');
     expect(w.run.waveDuration).toBe(58);
-    expect(w.director.budgetTotal).toBe(Math.round((30 + 98 + 1.8 * 49) * 1.5));
+    expect(w.director.budgetTotal).toBe(Math.round(Math.round(18 + 56 + 0.9 * 49) * 1.45));
     expect(w.players[0].invulnUntil).toBeCloseTo(3, 9);
     stepSystem(w, stepRules, secs(3) - 1);
     expect(w.run.phase).toBe('countdown');
@@ -162,9 +163,10 @@ describe('purge', () => {
     // Pickups were vacuumed into the wallets at outro start.
     const paid = w.run.wallets[0] + w.run.wallets[1] - 2_000;
     expect(paid).toBe(11 * purgePayout('warden', false) + purgePayout('warden', true));
-    expect(purgePayout('warden', false)).toBe(2);
-    expect(purgePayout('warden', true)).toBe(7);
-    expect(purgePayout('shard', false)).toBe(0);
+    // v2 rebalance doubled-ish drops (warden 8, was 5; shard 2, was 1): 50% of 8, of 8 x3, of 2.
+    expect(purgePayout('warden', false)).toBe(4);
+    expect(purgePayout('warden', true)).toBe(12);
+    expect(purgePayout('shard', false)).toBe(1);
   });
 });
 

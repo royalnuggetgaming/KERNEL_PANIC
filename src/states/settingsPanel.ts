@@ -1,16 +1,27 @@
 /**
  * Settings sub-panel controller (MainMenu and Paused). Every change is saved through save.commitDebounced and
  * applied live: volumes (audio), quality / shake / flashes / motion / colourblind / FPS (render.applySettings),
- * per-player autofire and focus mode (input.setFireModes). The theme applies on reload.
+ * per-player autofire and focus mode (input.setFireModes). The theme applies on reload. The difficulty is saved
+ * immediately but only read when a run starts (CharacterSelect snapshots it into RunConfig), so changing it from
+ * the pause menu affects the next run, never the current one.
  */
 import { THEME_IDS, type ThemeId } from '../contracts/ids';
-import { QUALITY_LEVELS, type FrameCap, type QualityLevel, type Settings } from '../contracts/save';
+import {
+  DIFFICULTY_IDS,
+  QUALITY_LEVELS,
+  type DifficultyId,
+  type FrameCap,
+  type QualityLevel,
+  type Settings,
+} from '../contracts/save';
 import type { Services } from '../contracts/services';
 import type { SettingKind, SettingRowVM, SettingsPanelVM } from '../contracts/ui';
+import { DEFAULT_DIFFICULTY } from '../config/difficulty';
 import { getTheme } from '../themes/registry';
 import { indexOfId, wrapIndex, type UiIntent } from './intents';
 
 export const SETTING_IDS = [
+  'difficulty',
   'master',
   'music',
   'sfx',
@@ -31,6 +42,13 @@ export type SettingId = (typeof SETTING_IDS)[number];
 
 const FRAME_CAPS: readonly FrameCap[] = ['auto', 60, 120, 'uncapped'];
 const SLIDER_STEP = 0.1;
+/** Shown after a difficulty change (the running game, if any, keeps its own difficulty). */
+export const DIFFICULTY_NOTE = 'Difficulty applies from the next run.';
+export const DIFFICULTY_LABELS: Readonly<Record<DifficultyId, string>> = {
+  casual: 'CASUAL',
+  normal: 'NORMAL',
+  hard: 'HARD',
+};
 
 interface RowDef {
   readonly id: SettingId;
@@ -39,6 +57,7 @@ interface RowDef {
 }
 
 const ROWS: readonly RowDef[] = [
+  { id: 'difficulty', label: 'DIFFICULTY', kind: 'choice' },
   { id: 'master', label: 'MASTER VOLUME', kind: 'slider' },
   { id: 'music', label: 'MUSIC VOLUME', kind: 'slider' },
   { id: 'sfx', label: 'SFX VOLUME', kind: 'slider' },
@@ -91,6 +110,8 @@ function pair(b: readonly [boolean, boolean], p: 0 | 1, v: boolean): readonly [b
 /** The patch that adjusting row `id` by `delta` (-1 left, +1 right/confirm) produces, or null for no change. */
 export function adjustSetting(s: Settings, id: SettingId, delta: number): Partial<Settings> | null {
   switch (id) {
+    case 'difficulty':
+      return { difficulty: cycle<DifficultyId>(DIFFICULTY_IDS, s.difficulty ?? DEFAULT_DIFFICULTY, delta) };
     case 'master':
     case 'music':
     case 'sfx':
@@ -126,6 +147,8 @@ export function adjustSetting(s: Settings, id: SettingId, delta: number): Partia
 
 function rowValue(s: Settings, id: SettingId): { value: string; fraction: number } {
   switch (id) {
+    case 'difficulty':
+      return { value: DIFFICULTY_LABELS[s.difficulty ?? DEFAULT_DIFFICULTY], fraction: 0 };
     case 'master':
     case 'music':
     case 'sfx':
@@ -219,7 +242,8 @@ export class SettingsController {
       return true;
     }
     this.settings = { ...this.settings, ...patch };
-    this.note = def.id === 'theme' ? 'The theme applies on reload.' : '';
+    this.note =
+      def.id === 'theme' ? 'The theme applies on reload.' : def.id === 'difficulty' ? DIFFICULTY_NOTE : '';
     this.s.save.commitDebounced({ settings: patch });
     applySettingsLive(this.s, this.settings);
     this.s.audio.play('uiConfirm');

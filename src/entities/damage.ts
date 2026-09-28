@@ -8,6 +8,7 @@ import type { BossEntity, EnemyEntity, PlayerEntity } from '../contracts/sim';
 import { SOURCE_LINK, type DamageSource } from '../contracts/simEvents';
 import type { WorldState } from '../contracts/world';
 import { DEG2RAD, TAU, inArc } from '../core/math';
+import { difficultyDef } from '../config/difficulty';
 import { CORRUPTED, ENEMY_DEFS } from '../config/enemies';
 import { COOP, OVERDRIVE } from '../config/tuning';
 import { VERSUS } from '../config/versus';
@@ -214,7 +215,7 @@ export function isInvulnerable(w: WorldState, p: Readonly<PlayerEntity>): boolea
 
 /**
  * Damage to a player: i-frames/invulnUntil, Nanoshield, armor (contact only), PvP multipliers when source is a
- * player (VERSUS.PVP_DAMAGE_MUL / PVP_SPECIAL_DAMAGE_MUL), combo halving, hurt event; hp <= 0 -> 'downed'
+ * player (VERSUS.PVP_DAMAGE_MUL / PVP_SPECIAL_DAMAGE_MUL) or the difficulty damage multiplier otherwise, combo halving, hurt event; hp <= 0 -> 'downed'
  * (co-op/solo bleed-out starts; versus: eliminated, 'eliminated' event). Returns damage taken.
  */
 export function damagePlayer(
@@ -232,6 +233,9 @@ export function damagePlayer(
     // No friendly fire outside versus, never self damage.
     if (w.mode !== 'versus' || source === p.index) return 0;
     dmg *= kind === 'pvpSpecial' ? VERSUS.PVP_SPECIAL_DAMAGE_MUL : VERSUS.PVP_DAMAGE_MUL;
+  } else {
+    // World damage (enemies, bosses, hazards) follows the run's difficulty.
+    dmg *= difficultyDef(w.config.difficulty).damage;
   }
   if (hasCard(p, CARD_BIT.nanoshield) && p.cards.nanoshieldReady) {
     p.cards.nanoshieldReady = false;

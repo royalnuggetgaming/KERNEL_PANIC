@@ -92,6 +92,9 @@ export class FakeElement {
   hidden = false;
   textWrites = 0;
   classWrites = 0;
+  scrollTop = 0;
+  /** scrollIntoView calls (the shop and hangar keep the cursor row visible). */
+  scrollIntoViewCalls = 0;
 
   constructor(doc: FakeDocument, tag: string) {
     this.ownerDocument = doc;
@@ -187,6 +190,10 @@ export class FakeElement {
 
   private fire(type: string, e: FakeEvent): void {
     for (const fn of [...(this.listeners.get(type) ?? [])]) fn(e);
+  }
+
+  scrollIntoView(): void {
+    this.scrollIntoViewCalls++;
   }
 
   /** Depth-first descendants (inclusive) matching a predicate. */

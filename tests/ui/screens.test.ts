@@ -100,6 +100,10 @@ describe('ui/CharacterSelectScreen', () => {
     );
     expect(mode.classList.contains('mode-coop')).toBe(true);
     expect(el.first('kp-select-countdown').hidden).toBe(true);
+    expect(el.first('kp-select-diff-value').textContent).toBe('NORMAL');
+    s.render(selectVM({ difficulty: 'HARD' }));
+    expect(el.first('kp-select-diff-value').textContent).toBe('HARD');
+    expect(el.first('kp-select-diff-value').classList.contains('diff-hard')).toBe(true);
   });
 });
 
@@ -150,6 +154,17 @@ describe('ui/GameOverScreen', () => {
     expect(el.findAll((e) => e.tagName === 'TH').map((e) => e.textContent)).toContain('ROUNDS');
     expect(el.first('kp-go-wave').hidden).toBe(true);
     expect(el.first('kp-cores-cap').hidden).toBe(false);
+  });
+
+  it('the player cell shows the tag and the craft, never the tag twice (critic v2 B6)', () => {
+    const s = new GameOverScreen(ctx());
+    const el = asFake(s.el);
+    s.render(gameOverVM({ players: [goPlayer(0, { name: 'P1' }), goPlayer(1, { name: 'P2' })] }));
+    const rows = el.byClass('kp-go-row');
+    expect(rows[0]!.first('kp-tag').textContent).toBe('P1');
+    expect(rows[0]!.first('kp-go-name').textContent).toBe('LANCER');
+    expect(rows[1]!.first('kp-go-name').textContent).toBe('TINKER');
+    expect(el.findAll((e) => e.tagName === 'TH').map((e) => e.textContent)).not.toContain('DAEMON');
   });
 
   it('matchResultText covers draw, abandon and non-versus', () => {

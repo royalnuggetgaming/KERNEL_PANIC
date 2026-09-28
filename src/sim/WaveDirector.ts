@@ -6,8 +6,10 @@
  */
 import { ENEMY_KINDS, type BossId, type EnemyKind, type RunMode } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
+import type { DifficultyId } from '../contracts/save';
 import type { SimSystem, WorldState } from '../contracts/world';
 import { BOSS_COMMON } from '../config/bosses';
+import { DEFAULT_DIFFICULTY, difficultyDef } from '../config/difficulty';
 import { ENEMY_DEFS, eliteChance } from '../config/enemies';
 import { ARENA } from '../config/tuning';
 import { VERSUS } from '../config/versus';
@@ -54,8 +56,17 @@ export function hpMulFor(wave: number, playerCount: 1 | 2): number {
   return waveHpMul(wave) * (playerCount === 2 ? WAVES.TWO_PLAYER_HP_MUL : 1);
 }
 
-/** Pure. mode 'versus' => THREAT_MUL and never a boss. */
-export function generateWavePlan(wave: number, playerCount: 1 | 2, mode: RunMode): WavePlan {
+/**
+ * Pure. mode 'versus' => THREAT_MUL and never a boss. The difficulty scales the budget (enemy count) and the
+ * enemy HP multiplier; threatMul stays the player-count/mode multiplier.
+ */
+export function generateWavePlan(
+  wave: number,
+  playerCount: 1 | 2,
+  mode: RunMode,
+  difficulty: DifficultyId = DEFAULT_DIFFICULTY,
+): WavePlan {
+  const diff = difficultyDef(difficulty);
   const threatMul = threatMulFor(playerCount, mode);
   const boss = mode === 'versus' ? null : bossForWave(wave);
   let duration = waveDuration(wave);
@@ -63,12 +74,12 @@ export function generateWavePlan(wave: number, playerCount: 1 | 2, mode: RunMode
   else if (boss !== null) duration = BOSS_COMMON.ENRAGE_AT;
   return {
     wave,
-    budget: Math.round(waveBudget(wave) * threatMul),
+    budget: Math.round(waveBudget(wave) * threatMul * diff.budget),
     duration,
     pulseInterval: pulseInterval(wave),
     unlocked: unlockedKinds(wave),
     boss,
-    hpMul: hpMulFor(wave, playerCount),
+    hpMul: hpMulFor(wave, playerCount) * diff.hp,
     threatMul,
   };
 }

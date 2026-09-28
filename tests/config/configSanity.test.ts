@@ -20,12 +20,15 @@ import {
   waveHpMul,
 } from '../../src/config/waves';
 import { DEFAULT_THEME_ID, getTheme, THEMES } from '../../src/themes/registry';
+import { DIFFICULTY_IDS } from '../../src/contracts/save';
+import { DIFFICULTY, difficultyDef } from '../../src/config/difficulty';
 
 describe('config sanity', () => {
   it('wave formulas match the plan', () => {
-    expect(waveBudget(1)).toBe(46);
-    // Plan text says 516 at w15, but its formula round(30 + 14w + 1.8w^2) gives 645; the formula wins (errata).
-    expect(waveBudget(15)).toBe(645);
+    // v2 rebalance (user feedback "too many enemies"): round(18 + 8w + 0.9w^2), was round(30 + 14w + 1.8w^2)
+    // (46 at w1, 645 at w15). HARD's budget multiplier (config/difficulty.ts) brings it back near v1.
+    expect(waveBudget(1)).toBe(27);
+    expect(waveBudget(15)).toBe(341);
     expect(waveDuration(1)).toBe(40);
     expect(waveDuration(15)).toBe(70);
     expect(sectorOf(5)).toBe(1);
@@ -43,11 +46,13 @@ describe('config sanity', () => {
     expect(bossForWave(25)).toBe('raceCondition');
     expect(bossForWave(7)).toBeNull();
     expect(waveHpMul(1)).toBe(1);
-    expect(waveHpMul(16)).toBeCloseTo(Math.pow(1.07, 14) * 1.12);
+    // v2 rebalance: 5% HP growth per wave (was 7%) so later waves do not drag.
+    expect(waveHpMul(16)).toBeCloseTo(Math.pow(1.05, 14) * 1.12);
     expect(clearBonus(3)).toBe(30);
     expect(eliteChance(1)).toBe(0);
-    expect(eliteChance(2)).toBeCloseTo(0.06);
-    expect(eliteChance(3)).toBeCloseTo(0.08);
+    // v2 rebalance: 5% base elite chance (was 6%), +2% per sector unchanged.
+    expect(eliteChance(2)).toBeCloseTo(0.05);
+    expect(eliteChance(3)).toBeCloseTo(0.07);
   });
 
   it('versus rounds use non-boss wave rows', () => {
@@ -90,5 +95,19 @@ describe('config sanity', () => {
     expect(getTheme('emberfall')).toBe(THEMES[DEFAULT_THEME_ID]);
     expect(getTheme(null).title).toBe('KERNEL PANIC');
     expect(getTheme('__proto__').id).toBe('kernelPanic');
+  });
+});
+
+describe('difficulty table', () => {
+  it('NORMAL is neutral, CASUAL is gentler and HARD harsher on every axis', () => {
+    const axes = ['speed', 'budget', 'damage', 'hp'] as const;
+    for (const a of axes) {
+      expect(DIFFICULTY.normal[a]).toBe(1);
+      expect(DIFFICULTY.casual[a]).toBeLessThan(1);
+      expect(DIFFICULTY.hard[a]).toBeGreaterThan(1);
+    }
+    for (const id of DIFFICULTY_IDS) expect(DIFFICULTY[id].id).toBe(id);
+    expect(difficultyDef(undefined)).toBe(DIFFICULTY.normal);
+    expect(difficultyDef('hard')).toBe(DIFFICULTY.hard);
   });
 });

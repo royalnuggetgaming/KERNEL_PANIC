@@ -82,8 +82,8 @@ mat2 kpRot2(float a) {
 
 float kpLuma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 
-// Beat envelope: 1 on the beat, decaying over the bar fraction.
-float kpBeatPulse() { return exp(-uBeat * 7.0); }
+// Beat envelope: 1 on the beat, decaying over the bar fraction. Reduce flashes keeps a gentle 30% pulse.
+float kpBeatPulse() { return exp(-uBeat * 7.0) * mix(1.0, 0.3, uReduceFlashes); }
 
 // Tint slots (shaders/tints.ts TINT). Per-material uniforms uPickupColor/uLinkColor come from the theme.
 uniform vec3 uPickupColor;

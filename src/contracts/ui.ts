@@ -65,7 +65,52 @@ export interface ControlsPanelVM {
   readonly message: string;
 }
 
-export type SubPanel = 'none' | 'settings' | 'controls' | 'credits';
+export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual';
+
+// ---------------------------------------------------------------- manual (HOW TO PLAY) and installed powerups
+
+/** 'h' sub-heading, 'p' paragraph, 'item' a term with its explanation (table row in MANUAL.md). */
+export interface ManualBlockVM {
+  readonly kind: 'h' | 'p' | 'item';
+  readonly term: string;
+  readonly text: string;
+}
+
+export interface ManualPageVM {
+  readonly id: string;
+  readonly title: string;
+  readonly blocks: readonly ManualBlockVM[];
+}
+
+export interface ManualVM {
+  readonly pages: readonly ManualPageVM[];
+  /** Index of the open page. */
+  readonly page: number;
+  /** Navigation help line. */
+  readonly hint: string;
+}
+
+/** One installed powerup (stat row level, patch card stacks or team item level). */
+export interface InstalledItemVM {
+  /** 'row:<id>', 'card:<id>' or 'team:<id>'. */
+  readonly id: string;
+  readonly kind: 'stat' | 'card' | 'team';
+  /** Display name ("Thrusters"). */
+  readonly label: string;
+  /** Compact HUD chip name ("THR"). */
+  readonly short: string;
+  /** Level or stack count as shown ("2", "×2"). */
+  readonly count: string;
+  /** What it currently does ("+14% move speed"). */
+  readonly desc: string;
+}
+
+export interface PauseLoadoutVM {
+  readonly player: PlayerIndex;
+  readonly present: boolean;
+  readonly name: string;
+  readonly items: readonly InstalledItemVM[];
+}
 
 // ---------------------------------------------------------------- screens
 
@@ -86,6 +131,8 @@ export interface MainMenuVM {
   readonly settings: SettingsPanelVM | null;
   readonly controls: ControlsPanelVM | null;
   readonly credits: readonly string[];
+  /** HOW TO PLAY pages while the manual panel is open, else null. */
+  readonly manual: ManualVM | null;
   readonly metaCurrency: string;
   readonly cores: number;
   readonly version: string;
@@ -126,6 +173,8 @@ export interface CharacterSelectVM {
   readonly cores: number;
   readonly metaCurrency: string;
   readonly message: string;
+  /** v2: the difficulty the run will start with (from settings), e.g. 'CASUAL'. */
+  readonly difficulty: string;
 }
 
 export interface HudPlayerVM {
@@ -149,6 +198,10 @@ export interface HudPlayerVM {
   readonly reviveFrac: number;
   /** Versus round wins (pips). */
   readonly roundWins: number;
+  /** Installed powerups (compact HUD strip). */
+  readonly loadout: readonly InstalledItemVM[];
+  /** Changes whenever `loadout` changes (the HUD rebuilds the strip only then). */
+  readonly loadoutKey: number;
 }
 
 export interface HudVM {
@@ -175,7 +228,10 @@ export interface HudVM {
 export interface ShopRowVM {
   readonly id: string;
   readonly label: string;
+  /** Plain-language description shown under the name. */
   readonly blurb: string;
+  /** Current vs next level ("Lv 1: +7% -> Lv 2: +14%"), owned stacks, or "" when not applicable. */
+  readonly next: string;
   readonly level: number;
   readonly maxLevel: number;
   readonly price: number | null;
@@ -208,6 +264,8 @@ export interface ShopPanelVM {
   readonly canUndo: boolean;
   readonly lastResult: PurchaseResult | null;
   readonly toast: string | null;
+  /** This player's installed powerups (including purchases made in this visit). */
+  readonly installed: readonly InstalledItemVM[];
 }
 
 export interface ShopVM {
@@ -251,6 +309,10 @@ export interface PauseVM {
   readonly settings: SettingsPanelVM | null;
   readonly controls: ControlsPanelVM | null;
   readonly reason: string;
+  /** HOW TO PLAY pages while the manual panel is open, else null. */
+  readonly manual: ManualVM | null;
+  /** Each player's installed powerups with descriptions. */
+  readonly loadouts: readonly PauseLoadoutVM[];
 }
 
 export interface GameOverPlayerVM {

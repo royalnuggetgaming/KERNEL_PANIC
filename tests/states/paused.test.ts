@@ -21,7 +21,14 @@ describe('PausedState', () => {
     expect(set.input.rec.count('releaseAll')).toBe(1);
     expect(set.input.context).toBe('menu');
     expect(set.ui.vm('pause')?.reason).toContain('focus');
-    expect(set.ui.vm('pause')?.items.map((i) => i.id)).toEqual(['resume', 'settings', 'controls', 'abandon']);
+    // v2: HOW TO PLAY ('manual') sits right under RESUME.
+    expect(set.ui.vm('pause')?.items.map((i) => i.id)).toEqual([
+      'resume',
+      'manual',
+      'settings',
+      'controls',
+      'abandon',
+    ]);
   });
 
   it('resume (confirm or back) pops', () => {
@@ -73,7 +80,7 @@ describe('PausedState', () => {
     };
     click();
     expect(set.fsm.requests).toHaveLength(0);
-    expect(set.ui.vm('pause')?.items[3]?.hint).toBe('Click again to abandon');
+    expect(set.ui.vm('pause')?.items[4]?.hint).toBe('Click again to abandon'); // v2: index 4 (HOW TO PLAY added)
     set.clock.advance(ABANDON_CLICK_WINDOW_MS + 100);
     frame();
     expect(set.ui.vm('pause')?.abandonHold).toBe(0);

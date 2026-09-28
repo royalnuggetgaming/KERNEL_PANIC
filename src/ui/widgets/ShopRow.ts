@@ -1,6 +1,7 @@
 /**
  * One shop line (stat row, repair, patch card, team item, reroll, gift, hangar item): label, level, price or
- * status tag, cursor highlight, and for cards a separate Lock column. Price colouring comes from the status
+ * status tag, a second line with the plain-language description and the current -> next level text, cursor
+ * highlight, and for cards a separate Lock column. Price colouring comes from the status
  * class (st-unaffordable is red, st-maxed/capped/soldOut dim).
  */
 import type { PlayerIndex } from '../../contracts/ids';
@@ -47,6 +48,9 @@ export class ShopRowView {
   private readonly level: TextSlot;
   private readonly levelShown: Shown;
   private readonly price: TextSlot;
+  private readonly blurb: TextSlot;
+  private readonly next: TextSlot;
+  private readonly nextShown: Shown;
   private readonly status: ClassSwitch;
   private readonly rarity: ClassSwitch;
   private readonly cursor: Flag;
@@ -59,6 +63,8 @@ export class ShopRowView {
     const labelEl = h(doc, 'span', { className: 'kp-row-label' });
     const levelEl = h(doc, 'span', { className: 'kp-row-level' });
     const priceEl = h(doc, 'span', { className: 'kp-row-price' });
+    const blurbEl = h(doc, 'span', { className: 'kp-row-blurb' });
+    const nextEl = h(doc, 'span', { className: 'kp-row-next' });
     const buy = h(
       doc,
       'button',
@@ -67,6 +73,7 @@ export class ShopRowView {
       labelEl,
       levelEl,
       priceEl,
+      h(doc, 'span', { className: 'kp-row-desc' }, blurbEl, nextEl),
     );
     markClick(buy, 'confirm', player, null);
     this.el = h(doc, 'div', { className: `kp-row kp-row-${kind}` }, buy);
@@ -89,6 +96,9 @@ export class ShopRowView {
     this.level = new TextSlot(levelEl);
     this.levelShown = new Shown(levelEl, kind !== 'plain');
     this.price = new TextSlot(priceEl);
+    this.blurb = new TextSlot(blurbEl);
+    this.next = new TextSlot(nextEl);
+    this.nextShown = new Shown(nextEl, false);
     this.status = new ClassSwitch(this.el);
     this.rarity = new ClassSwitch(this.el);
     this.cursor = new Flag(this.el, 'is-cursor');
@@ -98,6 +108,9 @@ export class ShopRowView {
 
   set(vm: ShopRowVM, cursor: boolean, col: 0 | 1): void {
     this.label.set(vm.label);
+    this.blurb.set(vm.blurb);
+    this.nextShown.set(vm.next !== '');
+    this.next.set(vm.next);
     this.buyItem.set(vm.id);
     const tag = shopStatusLabel(vm.status);
     this.price.set(tag === '' ? formatPrice(vm.price) : tag);

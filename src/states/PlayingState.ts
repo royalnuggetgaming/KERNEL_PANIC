@@ -106,7 +106,7 @@ class PlayingStateImpl implements GameState<'Playing'> {
     s.audio.duck(false);
     run.beginNextWave();
     this.syncMusic(run.world);
-    this.hud = new HudVmWriter(s.theme());
+    this.hud = new HudVmWriter(s.theme(), run);
     s.ui.show('hud', this.hud.write(run.world, null));
     this.setTimeScale(1);
     s.loop.resetAccumulator();
@@ -203,7 +203,11 @@ class PlayingStateImpl implements GameState<'Playing'> {
     }
     // rules.ts already applies the tie-break (a wave clear beats a wipe on the same tick).
     if (f.waveClearReady) this.requested = s.fsm.request('UpgradesShop', { mode: 'midrun' });
-    else if (f.defeat) this.requested = s.fsm.request('GameOver', { outcome: 'defeat' });
+    else if (f.defeat) {
+      // Dying in OVERFLOW after beating the final boss still ends a won run.
+      const outcome = run.world.run.victoryAchieved ? 'victory' : 'defeat';
+      this.requested = s.fsm.request('GameOver', { outcome });
+    }
   }
 
   private setTimeScale(x: number): void {

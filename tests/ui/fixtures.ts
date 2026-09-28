@@ -8,7 +8,9 @@ import type {
   HangarVM,
   HudPlayerVM,
   HudVM,
+  InstalledItemVM,
   MainMenuVM,
+  ManualVM,
   PauseVM,
   SelectSlotVM,
   ShopCardVM,
@@ -43,6 +45,7 @@ export function mainMenuVM(patch: Partial<MainMenuVM> = {}): MainMenuVM {
     settings: null,
     controls: null,
     credits: ['Made with three.js'],
+    manual: null,
     metaCurrency: 'Cores',
     cores: 1234,
     version: 'v0.1.0',
@@ -70,6 +73,8 @@ export function hudPlayerVM(patch: Partial<HudPlayerVM> = {}): HudPlayerVM {
     bleedFrac: 0,
     reviveFrac: 0,
     roundWins: 0,
+    loadout: [],
+    loadoutKey: 0,
     ...patch,
   };
 }
@@ -96,6 +101,7 @@ export function row(id: string, patch: Partial<ShopRowVM> = {}): ShopRowVM {
     id,
     label: id.toUpperCase(),
     blurb: `${id} blurb`,
+    next: `${id} next`,
     level: 1,
     maxLevel: 5,
     price: 40,
@@ -127,6 +133,7 @@ export function shopPanelVM(player: PlayerIndex, patch: Partial<ShopPanelVM> = {
     canUndo: false,
     lastResult: null,
     toast: null,
+    installed: [],
     ...patch,
   };
 }
@@ -176,6 +183,8 @@ export function pauseVM(patch: Partial<PauseVM> = {}): PauseVM {
     settings: null,
     controls: null,
     reason: 'Paused',
+    manual: null,
+    loadouts: [],
     ...patch,
   };
 }
@@ -211,6 +220,7 @@ export function selectVM(patch: Partial<CharacterSelectVM> = {}): CharacterSelec
     cores: 90,
     metaCurrency: 'Cores',
     message: '',
+    difficulty: 'NORMAL',
     ...patch,
   };
 }
@@ -256,6 +266,37 @@ export function gameOverVM(patch: Partial<GameOverVM> = {}): GameOverVM {
       { id: 'menu', label: 'MENU', enabled: true, hint: '' },
     ],
     cursor: 0,
+    ...patch,
+  };
+}
+
+export function installedItem(id: string, patch: Partial<InstalledItemVM> = {}): InstalledItemVM {
+  return {
+    id,
+    kind: 'stat',
+    label: id,
+    short: id.slice(0, 3).toUpperCase(),
+    count: '1',
+    desc: `${id} desc`,
+    ...patch,
+  };
+}
+
+export function manualVM(patch: Partial<ManualVM> = {}): ManualVM {
+  return {
+    pages: [
+      {
+        id: 'goal',
+        title: 'Goal',
+        blocks: [
+          { kind: 'p', term: '', text: 'Survive.' },
+          { kind: 'item', term: 'Move', text: 'W A S D' },
+        ],
+      },
+      { id: 'tips', title: 'Tips', blocks: [{ kind: 'h', term: '', text: 'Dash' }] },
+    ],
+    page: 0,
+    hint: 'hint',
     ...patch,
   };
 }

@@ -4,12 +4,17 @@
  * when the value they show changes. The UI throttles text to 10 Hz on its side.
  */
 import type { PlayerIndex } from '../contracts/ids';
+import type { RunSessionApi } from '../contracts/run';
 import type { PlayerEntity } from '../contracts/sim';
 import type { SimEvents } from '../contracts/simEvents';
 import type { ThemeDef } from '../contracts/theme';
-import type { HudPlayerVM, HudVM } from '../contracts/ui';
+import type { HudPlayerVM, HudVM, InstalledItemVM } from '../contracts/ui';
 import type { WorldView } from '../contracts/world';
 import { COMBO, COOP, OVERDRIVE } from '../config/tuning';
+import { NO_ITEMS, installedItems, loadoutSignature } from './loadoutViewModel';
+
+/** Where the HUD reads installed powerups (RunSessionApi.loadout). */
+export type LoadoutReader = Pick<RunSessionApi, 'loadout'>;
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
@@ -60,6 +65,8 @@ function blankPlayer(): Mutable<HudPlayerVM> {
     bleedFrac: 0,
     reviveFrac: 0,
     roundWins: 0,
+    loadout: NO_ITEMS,
+    loadoutKey: 0,
   };
 }
 
@@ -110,10 +117,21 @@ export class HudVmWriter {
   private transientKind = B_NONE;
   private transientPlayer: PlayerIndex | -1 = -1;
   private bannerValue = 0;
+  private readonly loadouts: LoadoutReader | null;
+  /** Wave/round the installed lists were last read for (loadouts only change in the shop between waves). */
+  private loadoutUnit = -1;
+  private readonly loadoutSig: [number, number] = [0, 0];
+  private readonly loadoutItems: [readonly InstalledItemVM[], readonly InstalledItemVM[]] = [
+    NO_ITEMS,
+    NO_ITEMS,
+  ];
+  private readonly loadoutKeys: [number, number] = [0, 0];
 
-  constructor(theme: ThemeDef) {
+  /** `loadouts` (the run session) feeds the installed-powerup strip; null shows none. */
+  constructor(theme: ThemeDef, loadouts: LoadoutReader | null = null) {
     this.theme = theme;
     this.buffers = [blankHud(theme), blankHud(theme)];
+    this.loadouts = loadouts;
   }
 
   /** Notes transient banners (sync kills) from this frame's events. Call before clearEvents(). */
@@ -136,6 +154,7 @@ export class HudVmWriter {
     const run = w.run;
     const versus = w.mode === 'versus';
     vm.mode = w.mode;
+    this.refreshLoadouts(w, versus);
     this.writePlayer(vm.players[0], w, 0, versus);
     this.writePlayer(vm.players[1], w, 1, versus);
     this.updateWaveLabel(w);
@@ -183,6 +202,30 @@ export class HudVmWriter {
     o.bleedFrac = p.life === 'downed' && !versus ? frac(p.bleedLeft / bleedTotal(p)) : 0;
     o.reviveFrac = p.life === 'downed' ? frac(p.reviveProgress) : 0;
     o.roundWins = w.run.roundWins[i];
+    o.loadout = this.loadoutItems[i];
+    o.loadoutKey = this.loadoutKeys[i];
+  }
+
+  /**
+   * Re-reads the installed powerups when the wave/round changes (purchases are applied between waves, right
+   * before the next one begins), so the strip costs nothing on ordinary frames.
+   */
+  private refreshLoadouts(w: WorldView, versus: boolean): void {
+    const src = this.loadouts;
+    if (src?.loadout === undefined) return;
+    const unit = versus ? w.run.round : w.run.wave;
+    if (unit === this.loadoutUnit) return;
+    this.loadoutUnit = unit;
+    for (let i = 0; i < 2; i++) {
+      const p: PlayerIndex = i === 0 ? 0 : 1;
+      const l = src.loadout(p);
+      const sig = loadoutSignature(l);
+      if (sig === this.loadoutSig[p] && this.loadoutKeys[p] > 0) continue;
+      this.loadoutSig[p] = sig;
+      this.loadoutItems[p] =
+        w.players[p].life === 'absent' ? NO_ITEMS : installedItems(l, this.theme, !versus);
+      this.loadoutKeys[p]++;
+    }
   }
 
   private updateWaveLabel(w: WorldView): void {
@@ -203,10 +246,13 @@ export class HudVmWriter {
     let first = -1;
     for (let i = 0; i < w.bosses.length; i++) {
       const b = w.bosses[i]!;
-      if (!b.alive) continue;
-      if (first < 0) first = i;
-      hp += b.hp > 0 ? b.hp : 0;
-      max += b.maxHp;
+      // Dead parts of the current boss (deathTime set, maxHp kept) stay in the denominator at 0 HP, so killing
+      // one Fork Bomb part or one Race Condition twin never makes the bar jump back up.
+      if (b.alive) {
+        if (first < 0) first = i;
+        hp += b.hp > 0 ? b.hp : 0;
+        max += b.maxHp;
+      } else if (b.maxHp > 0 && b.deathTime >= 0) max += b.maxHp;
     }
     vm.boss.visible = first >= 0;
     if (first >= 0) {

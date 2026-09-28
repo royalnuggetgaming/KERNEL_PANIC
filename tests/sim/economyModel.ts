@@ -66,24 +66,27 @@ function waveTeamIncome(wave: number, mode: RunMode, playerCount: 1 | 2, rng: Rn
  * Realised pickup multiplier per sector [min, max] on top of the kill/collect model: combo tier bonuses (+10..40%)
  * grow with kill density (sector 3 waves of 250+ kills keep chains at tiers 3-4), and sector 1 play collects
  * less than the flat kill/collect ranges assume. Calibrated against real runs (economyFidelity.test.ts).
+ * v2 rebalance: waves hold ~45% fewer (and slower) enemies, so combo chains break more often and more drops
+ * are left for the wave-end vacuum; real income sat at 0.67-0.79x the v1 ranges, hence the lower ranges.
  */
 export const REALISED_MUL: Readonly<Record<1 | 2 | 3, readonly [number, number]>> = {
-  1: [0.85, 1.05],
-  2: [0.95, 1.2],
-  3: [1.0, 1.3],
+  1: [0.55, 0.7],
+  2: [0.6, 0.8],
+  3: [0.7, 0.95],
 };
 
-/**
- * Sync kills per player in a co-op wave: a fraction of the most the cooldown allows over the wave's combat time
- * (boss waves have few regular kills). Calibrated against real runs (~50-70% of the cap).
- */
 /**
  * Co-op pickup income per player relative to the even split of the team's drops: two craft leave more drops
  * uncollected before the wave-end vacuum (calibrated against real runs).
  */
 export const COOP_COLLECT_MUL = 0.9;
 
-export const SYNC_CAP_FRACTION: readonly [number, number] = [0.45, 0.8];
+/**
+ * Sync kills per player in a co-op wave: a fraction of the most the cooldown allows over the wave's combat time
+ * (boss waves have few regular kills). Calibrated against real runs: ~25-45% of the cap since the v2 rebalance
+ * (fewer enemies; v1 ran at ~50-70%).
+ */
+export const SYNC_CAP_FRACTION: readonly [number, number] = [0.25, 0.45];
 
 export function syncKills(wave: number, rng: Rng): number {
   if (bossForWave(wave) !== null) return rng.int(0, 1);
