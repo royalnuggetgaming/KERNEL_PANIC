@@ -1,5 +1,6 @@
 /**
- * Paused overlay (over Playing or the mid-run shop): Resume, Settings, Controls / Key Test, Abandon.
+ * Paused overlay (over Playing or the mid-run shop): Resume, How to Play, Settings, Controls / Key Test, Abandon,
+ * plus each player's installed powerups.
  * enter releases every key (input.releaseAll). Resume pops; Abandon replaces with GameOver{abandoned}.
  * Auto-pause (blur, hidden, fullscreen exit, context loss) never auto-resumes.
  *
@@ -11,16 +12,17 @@ import type { PlayerIndex } from '../contracts/ids';
 import type { KeyCode } from '../contracts/input';
 import type { Services } from '../contracts/services';
 import type { GameState, PauseReason, StatePayloads } from '../contracts/states';
-import type { MenuItemVM, PauseVM } from '../contracts/ui';
+import type { MenuItemVM, PauseLoadoutVM, PauseVM } from '../contracts/ui';
 import { MENU_KEYS } from '../config/keys';
 import { IntentReader, indexOfId, wrapIndex, type UiIntent } from './intents';
+import { buildPauseLoadouts } from './loadoutViewModel';
 import { SubPanelController } from './subPanels';
 
 export const ABANDON_HOLD_MS = 600;
 export const ABANDON_CLICK_WINDOW_MS = 2000;
 
-const ITEM_IDS = ['resume', 'settings', 'controls', 'abandon'] as const;
-const ABANDON_INDEX = 3;
+const ITEM_IDS = ['resume', 'manual', 'settings', 'controls', 'abandon'] as const;
+const ABANDON_INDEX = 4;
 
 const REASONS: Readonly<Record<PauseReason, string>> = {
   user: '',
@@ -33,6 +35,7 @@ const REASONS: Readonly<Record<PauseReason, string>> = {
 function items(armed: boolean): readonly MenuItemVM[] {
   return [
     { id: 'resume', label: 'RESUME', enabled: true, hint: '' },
+    { id: 'manual', label: 'HOW TO PLAY', enabled: true, hint: 'Controls, rules, powerups, enemies, bosses' },
     { id: 'settings', label: 'SETTINGS', enabled: true, hint: 'Audio, graphics, autofire' },
     { id: 'controls', label: 'CONTROLS', enabled: true, hint: 'Rebind keys, key test' },
     {
@@ -59,6 +62,8 @@ class PausedStateImpl implements GameState<'Paused'> {
   private armedUntil = -1;
   private dirty = true;
   private leaving = false;
+  /** Installed powerups, read once on enter (nothing can be bought while paused). */
+  private loadouts: readonly PauseLoadoutVM[] = [];
 
   constructor(s: Services) {
     this.s = s;
@@ -73,6 +78,7 @@ class PausedStateImpl implements GameState<'Paused'> {
     this.armedUntil = -1;
     this.leaving = false;
     this.panels.close();
+    this.loadouts = buildPauseLoadouts(s.session.current, s.theme());
     s.input.releaseAll();
     s.input.setContext('menu');
     this.intents.open(s.ui, 'pause');
@@ -144,6 +150,7 @@ class PausedStateImpl implements GameState<'Paused'> {
       case 'resume':
         this.resume();
         return;
+      case 'manual':
       case 'settings':
       case 'controls':
         this.s.audio.play('uiConfirm');
@@ -221,6 +228,8 @@ class PausedStateImpl implements GameState<'Paused'> {
       settings: this.panels.settingsVM(),
       controls: this.panels.controlsVM(),
       reason: REASONS[this.reason],
+      manual: this.panels.manualVM(),
+      loadouts: this.loadouts,
     };
   }
 }

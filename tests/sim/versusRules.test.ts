@@ -61,11 +61,12 @@ describe('beginVersusRound', () => {
     expect(w.run.round).toBe(2);
     expect(w.run.wave).toBe(4);
     expect(w.run.threatMul).toBe(VERSUS.THREAT_MUL);
-    expect(w.run.enemyHpMul).toBeCloseTo(Math.pow(1.07, 3) * 1.2, 12);
+    // v2 rebalance: 5% HP growth per wave row (v1: 7%).
+    expect(w.run.enemyHpMul).toBeCloseTo(Math.pow(1.05, 3) * 1.2, 12);
     expect(w.run.waveTimer).toBe(VERSUS.ROUND_TIME);
     expect(w.run.phase).toBe('countdown');
     expect(w.run.spareKernels).toBe(0);
-    expect(w.director.budgetTotal).toBe(Math.round((30 + 56 + 1.8 * 16) * 0.6));
+    expect(w.director.budgetTotal).toBe(Math.round(Math.round(18 + 32 + 0.9 * 16) * 0.6));
     expect(waveEvent(w, 'roundStart')?.value).toBe(2);
     const rows = [1, 2, 3, 4, 5].map((r) => {
       beginVersusRound(w, r);

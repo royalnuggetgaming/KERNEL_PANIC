@@ -11,6 +11,7 @@
  * - character select: 'join' (confirm), 'vehicle' (left/right), 'mode' (left/right), 'ready' (ready)
  * - controls panel rows: the Action (confirm, per player); 'keyTest' (confirm)
  * - back buttons: kind 'back' itemId 'back'; boot screen: kind 'confirm' itemId 'boot'
+ * - HOW TO PLAY: table-of-contents entries 'manual:<page index>' (confirm); PREV / NEXT kind 'left' / 'right'
  */
 import type { PlayerIndex } from '../contracts/ids';
 import type { MenuIntentKind } from '../contracts/input';

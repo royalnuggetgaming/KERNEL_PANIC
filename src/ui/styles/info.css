@@ -1,0 +1,262 @@
+/*
+ * HOW TO PLAY manual sub-panel (MainMenu, Pause) and the installed-powerup lists (Patch Bay INSTALLED, HUD strip,
+ * Pause INSTALLED). Imported by screens.css.
+ */
+
+/* ------------------------------------------------------------------ installed powerups */
+
+/* Installed powerups: wrapped chips under the list. */
+.kp-installed-names .kp-inst-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 0.35em;
+}
+
+.kp-shop-installed {
+  max-height: 4.6em;
+  overflow-y: auto;
+  font-size: 0.72em;
+}
+
+.kp-inst-names {
+  padding: 0.05em 0.45em;
+  border: 1px solid rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.45);
+  color: var(--kp-text);
+  white-space: nowrap;
+}
+
+.kp-inst-names .kp-inst-count,
+.kp-inst-chips .kp-inst-count {
+  margin-left: 0.3em;
+  color: #ffd166;
+}
+
+.kp-inst-names.inst-team,
+.kp-inst-chips.inst-team {
+  border-style: dashed;
+}
+
+.kp-inst-empty {
+  color: var(--kp-dim);
+}
+
+/* Installed-powerup strip: compact chips, rebuilt only when the loadout changes (between waves). */
+.kp-pp-loadout {
+  margin-top: 0.35em;
+  font-size: 0.62em;
+  letter-spacing: 0.04em;
+}
+
+.kp-pp-loadout .kp-inst-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 0.3em;
+}
+
+.kp-pp.kp-p2 .kp-pp-loadout .kp-inst-list {
+  justify-content: flex-end;
+}
+
+.kp-inst-chips {
+  padding: 0 0.35em;
+  border: 1px solid rgba(var(--kp-pc-rgb), 0.45);
+  background: rgba(var(--kp-bg-rgb), 0.55);
+  color: var(--kp-text);
+  white-space: nowrap;
+}
+
+.kp-inst-chips.inst-card {
+  border-color: rgba(255, 209, 102, 0.55);
+}
+
+.kp-pp-loadout .kp-inst-empty {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ pause: installed */
+
+.kp-pause-layout {
+  display: flex;
+  gap: 1.2em;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 96vw;
+  max-height: 92vh;
+}
+
+.kp-pause-installed {
+  width: min(44em, 62vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: rgba(var(--kp-panel-rgb), 0.97);
+  scrollbar-width: thin;
+}
+
+.kp-pause-lo-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16em, 1fr));
+  gap: 1.2em;
+}
+
+.kp-pause-lo-head {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin-bottom: 0.4em;
+}
+
+.kp-pause-lo-name {
+  color: var(--kp-pc);
+  font-weight: 700;
+}
+
+.kp-installed-rows .kp-inst-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kp-inst-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.4em;
+  padding: 0.2em 0;
+  border-bottom: 1px solid rgba(var(--kp-pc-rgb, var(--kp-accent-rgb)), 0.12);
+  font-size: 0.82em;
+}
+
+.kp-inst-row .kp-inst-name {
+  color: var(--kp-text);
+  font-weight: 700;
+}
+
+.kp-inst-row .kp-inst-count {
+  color: #ffd166;
+}
+
+.kp-inst-row .kp-inst-desc {
+  grid-column: 1 / -1;
+  color: #8b9bb8;
+  font-size: 0.9em;
+}
+
+.kp-installed-rows .kp-inst-empty {
+  font-size: 0.82em;
+}
+
+/* ------------------------------------------------------------------ manual */
+
+.kp-manual {
+  display: flex;
+  flex-direction: column;
+  width: min(68em, 96vw);
+  height: min(44em, 94vh);
+  /* Opaque: the voxel title and the attract backdrop must not read through the text. */
+  background: rgb(var(--kp-panel-rgb));
+}
+
+.kp-manual-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kp-manual-head .kp-panel-title {
+  margin-bottom: 0.5em;
+}
+
+.kp-manual-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 15em 1fr;
+  gap: 1.2em;
+  min-height: 0;
+}
+
+.kp-manual-toc {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--kp-line);
+  scrollbar-width: thin;
+}
+
+.kp-manual-toc-item {
+  padding: 0.12em 0.5em;
+  border-left: 2px solid transparent;
+  color: #8b9bb8;
+  font-size: 0.74em;
+  text-align: left;
+  letter-spacing: 0.04em;
+}
+
+.kp-manual-toc-item:hover,
+.kp-manual-toc-item.is-cursor {
+  border-left-color: var(--kp-accent);
+  background: linear-gradient(90deg, rgba(var(--kp-accent-rgb), 0.16), transparent);
+  color: var(--kp-text);
+}
+
+.kp-manual-page {
+  min-height: 0;
+  padding-right: 0.5em;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.kp-manual-title {
+  margin: 0 0 0.5em;
+  color: var(--kp-accent);
+  font-size: 1.05em;
+  letter-spacing: 0.1em;
+}
+
+.kp-mb {
+  font-size: 0.8em;
+  line-height: 1.4;
+}
+
+.kp-mb-p {
+  margin: 0.2em 0 0.45em;
+  color: var(--kp-text);
+}
+
+.kp-mb-h {
+  margin: 0.6em 0 0.2em;
+  color: #ffd166;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.kp-mb-item {
+  display: grid;
+  grid-template-columns: 13em 1fr;
+  gap: 0.8em;
+  padding: 0.18em 0;
+  border-bottom: 1px solid rgba(var(--kp-accent-rgb), 0.08);
+}
+
+.kp-mb-term {
+  color: var(--kp-accent);
+  font-weight: 700;
+}
+
+.kp-mb-text {
+  color: #c9d4e6;
+}
+
+.kp-manual-foot {
+  display: flex;
+  gap: 0.8em;
+  align-items: center;
+  margin-top: 0.6em;
+}
+
+.kp-manual-hint {
+  flex: 1;
+  margin: 0;
+  font-size: 0.72em;
+  text-align: center;
+}

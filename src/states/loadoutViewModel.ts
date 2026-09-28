@@ -63,7 +63,7 @@ export function installedItems(l: PlayerLoadout, theme: ThemeDef, includeTeam: b
   const out: InstalledItemVM[] = [];
   const currency = theme.names.runCurrency;
   for (const id of STAT_ROW_IDS) {
-    const level = l.rows[id] ?? 0;
+    const level = l.rows[id];
     if (level <= 0) continue;
     out.push({
       id: 'row:' + id,
@@ -90,7 +90,7 @@ export function installedItems(l: PlayerLoadout, theme: ThemeDef, includeTeam: b
   }
   if (includeTeam) {
     for (const id of INSTALLED_TEAM_ITEMS) {
-      const level = l.team[id] ?? 0;
+      const level = l.team[id];
       if (level <= 0) continue;
       const name = theme.names.teamItems[id];
       out.push({
@@ -109,9 +109,9 @@ export function installedItems(l: PlayerLoadout, theme: ThemeDef, includeTeam: b
 /** Cheap change signature of a loadout (no allocation). */
 export function loadoutSignature(l: PlayerLoadout): number {
   let h = 17;
-  for (const id of STAT_ROW_IDS) h = (h * 31 + (l.rows[id] ?? 0)) | 0;
+  for (const id of STAT_ROW_IDS) h = (h * 31 + l.rows[id]) | 0;
   for (let i = 0; i < l.cards.length; i++) h = (h * 31 + (l.cards[i] ?? 0)) | 0;
-  for (const id of INSTALLED_TEAM_ITEMS) h = (h * 31 + (l.team[id] ?? 0)) | 0;
+  for (const id of INSTALLED_TEAM_ITEMS) h = (h * 31 + l.team[id]) | 0;
   return h;
 }
 

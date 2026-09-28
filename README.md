@@ -9,6 +9,9 @@ You can also play **versus**, a best-of-five duel with arena hazards.
 Everything is procedural. There are no image, model or audio files: geometry, shaders, music and sound effects are
 all generated in code. The game is built with Vite, Three.js 0.186 and strict TypeScript.
 
+**How to play:** see [MANUAL.md](MANUAL.md) for the goal, controls, every powerup, enemies, bosses and modes. The
+same manual is in the game under **HOW TO PLAY** (main menu and pause menu).
+
 ## Requirements
 
 - Node.js **>= 22.13** (**24 LTS recommended**; `.nvmrc` pins 24.21.0)

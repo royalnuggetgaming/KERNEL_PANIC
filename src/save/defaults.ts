@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   focusToggle: Object.freeze([false, false] as const),
   showFps: false,
   themeId: 'kernelPanic',
+  difficulty: 'normal',
 });
 
 /** A fresh, independent default profile (safe to spread and modify). */

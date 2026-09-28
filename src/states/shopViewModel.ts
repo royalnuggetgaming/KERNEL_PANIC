@@ -89,7 +89,11 @@ function cardVM(p: ShopPlayerSnapshot, i: number, l: PlayerLoadout | null, curre
     label: def === null ? 'SOLD' : def.label.toUpperCase(),
     blurb: c.id === null ? 'Bought this visit.' : cardDesc(c.id, currency),
     next:
-      c.id === null ? '' : c.locked ? `${cardOwnedText(c.id, owned)} · LOCKED for next visit` : cardOwnedText(c.id, owned),
+      c.id === null
+        ? ''
+        : c.locked
+          ? `${cardOwnedText(c.id, owned)} · LOCKED for next visit`
+          : cardOwnedText(c.id, owned),
     level: 0,
     maxLevel: 0,
     price: c.id === null ? null : c.price,
@@ -142,7 +146,7 @@ function panelVM(
       id: 'repair',
       label: 'REPAIR',
       blurb: repairDesc(),
-      next: `Bought ${p.repair.boughtThisVisit}/${REPAIR.maxPerVisit} this visit · HP ${Math.max(0, Math.ceil(p.hp))}/${Math.ceil(p.maxHp)}`,
+      next: `HP ${Math.max(0, Math.ceil(p.hp))}/${Math.ceil(p.maxHp)} · ${p.repair.boughtThisVisit}/${REPAIR.maxPerVisit} bought`,
       level: 0,
       maxLevel: 0,
       price: p.repair.price,

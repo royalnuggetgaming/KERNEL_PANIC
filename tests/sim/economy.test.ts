@@ -6,6 +6,7 @@
  * - solo vs 2P per-player purchase power (Shards spent over the run) within +-25%.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
+import { ENEMY_DEFS } from '../../src/config/enemies';
 import { WAVES } from '../../src/config/waves';
 import { dropPerThreat, median, simulateRun, type RunStats } from './economyModel';
 
@@ -74,7 +75,9 @@ describe('economy Monte Carlo (2,000 seeded runs)', () => {
   });
 
   it('the income model follows the config (drop per threat point grows with unlocks and elites)', () => {
-    expect(dropPerThreat(1)).toBeCloseTo(1, 9);
+    // v2 rebalance: Shards drop 2 per threat point (v1: 1) so fewer enemies still fund the shop.
+    expect(dropPerThreat(1)).toBeCloseTo(ENEMY_DEFS.shard.drop / ENEMY_DEFS.shard.cost, 9);
+    expect(dropPerThreat(1)).toBeCloseTo(2, 9);
     expect(dropPerThreat(6)).toBeGreaterThan(dropPerThreat(5) * 0.9);
     expect(dropPerThreat(11)).toBeGreaterThan(dropPerThreat(10));
   });

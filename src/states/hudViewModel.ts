@@ -121,7 +121,10 @@ export class HudVmWriter {
   /** Wave/round the installed lists were last read for (loadouts only change in the shop between waves). */
   private loadoutUnit = -1;
   private readonly loadoutSig: [number, number] = [0, 0];
-  private readonly loadoutItems: [readonly InstalledItemVM[], readonly InstalledItemVM[]] = [NO_ITEMS, NO_ITEMS];
+  private readonly loadoutItems: [readonly InstalledItemVM[], readonly InstalledItemVM[]] = [
+    NO_ITEMS,
+    NO_ITEMS,
+  ];
   private readonly loadoutKeys: [number, number] = [0, 0];
 
   /** `loadouts` (the run session) feeds the installed-powerup strip; null shows none. */
@@ -219,7 +222,8 @@ export class HudVmWriter {
       const sig = loadoutSignature(l);
       if (sig === this.loadoutSig[p] && this.loadoutKeys[p] > 0) continue;
       this.loadoutSig[p] = sig;
-      this.loadoutItems[p] = w.players[p].life === 'absent' ? NO_ITEMS : installedItems(l, this.theme, !versus);
+      this.loadoutItems[p] =
+        w.players[p].life === 'absent' ? NO_ITEMS : installedItems(l, this.theme, !versus);
       this.loadoutKeys[p]++;
     }
   }
@@ -242,10 +246,13 @@ export class HudVmWriter {
     let first = -1;
     for (let i = 0; i < w.bosses.length; i++) {
       const b = w.bosses[i]!;
-      if (!b.alive) continue;
-      if (first < 0) first = i;
-      hp += b.hp > 0 ? b.hp : 0;
-      max += b.maxHp;
+      // Dead parts of the current boss (deathTime set, maxHp kept) stay in the denominator at 0 HP, so killing
+      // one Fork Bomb part or one Race Condition twin never makes the bar jump back up.
+      if (b.alive) {
+        if (first < 0) first = i;
+        hp += b.hp > 0 ? b.hp : 0;
+        max += b.maxHp;
+      } else if (b.maxHp > 0 && b.deathTime >= 0) max += b.maxHp;
     }
     vm.boss.visible = first >= 0;
     if (first >= 0) {

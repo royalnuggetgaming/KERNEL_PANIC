@@ -1,7 +1,7 @@
 /**
  * Settings sub-panel (MainMenu and Pause): volumes, quality, frame cap, shake, reduce flashes/motion, colourblind,
- * per-player autofire and focus mode, theme (applies on reload), FPS. Sliders get clickable left/right arrows;
- * other rows are confirm targets.
+ * per-player autofire and focus mode, theme (applies on reload), FPS, difficulty (applies from the next run).
+ * Sliders get clickable left/right arrows; other rows are confirm targets.
  */
 import type { SettingKind, SettingRowVM, SettingsPanelVM } from '../../contracts/ui';
 import { AttrSlot, ClassSwitch, Flag, Shown, TextSlot, ViewPool, button, h, markClick } from '../dom';

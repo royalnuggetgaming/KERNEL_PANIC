@@ -246,8 +246,6 @@ export function damagePlayer(
   }
   if (kind === 'contact') dmg *= 1 - p.stats.armor;
   if (dmg <= 0) return 0;
-  const g = globalThis as unknown as Record<string, Record<string, number>>;
-  if (g.__DMG) g.__DMG[w.run.wave + kind] = (g.__DMG[w.run.wave + kind] ?? 0) + (dmg < p.hp ? dmg : p.hp);
   const taken = dmg < p.hp ? dmg : p.hp;
   p.hp -= dmg;
   p.damageTaken += taken;

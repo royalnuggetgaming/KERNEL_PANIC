@@ -23,7 +23,7 @@ export interface DifficultyDef {
 export const DIFFICULTY = {
   casual: { id: 'casual', speed: 0.8, budget: 0.7, damage: 0.6, hp: 0.8 },
   normal: { id: 'normal', speed: 1, budget: 1, damage: 1, hp: 1 },
-  hard: { id: 'hard', speed: 1.3, budget: 1.7, damage: 1.6, hp: 1.2 },
+  hard: { id: 'hard', speed: 1.35, budget: 1.75, damage: 1.75, hp: 1.25 },
 } as const satisfies Readonly<Record<DifficultyId, DifficultyDef>>;
 
 export const DEFAULT_DIFFICULTY: DifficultyId = 'normal';

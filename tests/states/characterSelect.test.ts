@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RunConfig } from '../../src/contracts/run';
+import type { DifficultyId } from '../../src/contracts/save';
 import { createCharacterSelectState } from '../../src/states/CharacterSelectState';
 import {
   applyPlayerIntent,
@@ -10,9 +11,18 @@ import {
 import { FakeSaveStore, createTestSaveData } from '../helpers/fakeSave';
 import { createFakeServices } from '../helpers/fakeServices';
 
-function rig(o: { cores?: number; seedOverride?: number | null; unlocks?: ('specter' | 'tinker')[] } = {}) {
+function rig(
+  o: {
+    cores?: number;
+    seedOverride?: number | null;
+    unlocks?: ('specter' | 'tinker')[];
+    difficulty?: DifficultyId;
+  } = {},
+) {
+  const base = createTestSaveData({});
   const save = new FakeSaveStore(
     createTestSaveData({
+      settings: o.difficulty === undefined ? base.settings : { ...base.settings, difficulty: o.difficulty },
       cores: o.cores ?? 0,
       meta: { hullFw: 2 },
       unlocks: ['lancer', 'bulwark', ...(o.unlocks ?? [])],
@@ -69,12 +79,23 @@ describe('CharacterSelectState', () => {
       autofire: [true, true],
       focusToggle: [false, false],
       themeId: 'kernelPanic',
+      // v2: the difficulty is snapshotted at launch; saves without the setting launch NORMAL.
+      difficulty: 'normal',
     });
     expect(set.fsm.requests).toHaveLength(1);
     state.exit('Playing');
     const delta = set.save.rec.last('commitDebounced')?.args[0];
     expect(delta).toEqual({ lastLoadout: [{ player: 0, vehicle: 'bulwark' }], lastMode: 'solo' });
     expect(set.render.rec.last('showVehiclePreviews')?.args[0]).toEqual([null, null]);
+  });
+
+  it('snapshots the saved difficulty into the RunConfig', () => {
+    const { set, state, frame } = rig({ difficulty: 'hard' });
+    state.enter({ prefill: null, mode: null }, 'MainMenu');
+    set.input.queueMenu({ player: 0, kind: 'confirm' });
+    for (let i = 0; i < 41; i++) frame();
+    const config = (set.fsm.lastRequest()?.payload as { config: RunConfig }).config;
+    expect(config.difficulty).toBe('hard');
   });
 
   it('un-readying cancels the countdown; P2 joins by click and leaves with dash', () => {

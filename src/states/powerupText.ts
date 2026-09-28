@@ -58,24 +58,26 @@ function pct(x: number): string {
   return `${trimNum(Math.abs(x) * 100)}%`;
 }
 
-/** The effect of one modifier applied `times` times ("+14% move speed", "-15% damage", "+2 dash charges"). */
-export function modifierText(m: StatModifier, times = 1): string {
+/** Signed amount of one modifier applied `times` times ("+14%", "-15%", "+2", "-0.8 s") and its noun. */
+function modifierParts(m: StatModifier, times: number): { readonly amount: string; readonly noun: string } {
   const ph = STAT_PHRASE[m.stat];
   if (m.op === 'mul') {
     const total = Math.pow(m.value, times) - 1;
-    return `${signed(total, pct(total))} ${ph.noun}`;
-  }
-  if (m.op === 'add') {
-    const total = m.value * times;
-    return `${signed(total, pct(total))} ${ph.noun}`;
+    return { amount: signed(total, pct(total)), noun: ph.noun };
   }
   const total = m.value * times;
   const mag = Math.abs(total);
-  if (ph.flat === 'pp') return `${signed(total, pct(total))} ${ph.noun}`;
-  if (ph.flat === 's') return `${signed(total, trimNum(mag) + ' s')} ${ph.noun}`;
-  if (ph.flat === 'u') return `${signed(total, trimNum(mag) + ' u')} ${ph.noun}`;
+  if (m.op === 'add' || ph.flat === 'pp') return { amount: signed(total, pct(total)), noun: ph.noun };
+  if (ph.flat === 's') return { amount: signed(total, trimNum(mag) + ' s'), noun: ph.noun };
+  if (ph.flat === 'u') return { amount: signed(total, trimNum(mag) + ' u'), noun: ph.noun };
   const noun = mag === 1 || ph.plural === undefined ? ph.noun : ph.plural;
-  return `${signed(total, trimNum(mag))} ${noun}`;
+  return { amount: signed(total, trimNum(mag)), noun };
+}
+
+/** The effect of one modifier applied `times` times ("+14% move speed", "-15% damage", "+2 dash charges"). */
+export function modifierText(m: StatModifier, times = 1): string {
+  const p = modifierParts(m, times);
+  return `${p.amount} ${p.noun}`;
 }
 
 /** Joined modifier effects ("+35% damage, -20% max HP"). */
@@ -86,7 +88,7 @@ export function modifiersText(mods: readonly StatModifier[], times = 1): string 
 }
 
 function tierText(): string {
-  return `special tier +1: +${pct(SPECIAL_TIER_BONUS)} special radius, duration and damage`;
+  return `+${pct(SPECIAL_TIER_BONUS)} special radius, duration and damage`;
 }
 
 // ---------------------------------------------------------------- stat rows
@@ -94,7 +96,7 @@ function tierText(): string {
 /** One level's effect, e.g. "+7% move speed per level". */
 export function statRowDesc(id: StatRowId): string {
   const def = statRowDef(id);
-  if (id === 'specialTuning') return `Each level: ${tierText()} (max tier ${def.maxLevel + 1})`;
+  if (id === 'specialTuning') return `${tierText()} per level`;
   const extra = id === 'plating' ? ' (heals you by the same amount)' : '';
   return `${modifiersText(def.perLevel)} per level${extra}`;
 }
@@ -107,15 +109,25 @@ export function statRowTotal(id: StatRowId, level: number): string {
   return modifiersText(def.perLevel, level);
 }
 
-/** Current vs next level ("Lv 2: +14% move speed -> Lv 3: +21% move speed", "MAX: ..."). */
+/** Current vs next level ("now +14% → next +21%", "next: +7%", "MAX: +42%"). */
 export function levelStep(total: (level: number) => string, level: number, maxLevel: number): string {
-  const now = level > 0 ? `Lv ${level}: ${total(level)}` : 'Not installed';
-  if (level >= maxLevel) return `MAX · ${now}`;
-  return `${now} → Lv ${level + 1}: ${total(level + 1)}`;
+  if (level >= maxLevel) return `MAX: ${total(level)}`;
+  if (level <= 0) return `next: ${total(1)}`;
+  return `now ${total(level)} → next ${total(level + 1)}`;
 }
 
+/** Signed amounts only ("+14%") for a single modifier; the full phrase for several. */
+export function amountsText(mods: readonly StatModifier[], times: number): string {
+  const only = mods.length === 1 ? mods[0] : undefined;
+  return only === undefined ? modifiersText(mods, times) : modifierParts(only, times).amount;
+}
+
+/** Compact current vs next level for a shop row ("now +14% → next +21%"). */
 export function statRowNext(id: StatRowId, level: number): string {
-  return levelStep((l) => statRowTotal(id, l), level, statRowDef(id).maxLevel);
+  const def = statRowDef(id);
+  const total = (l: number): string =>
+    id === 'specialTuning' ? `tier ${l + 1}` : amountsText(def.perLevel, l);
+  return levelStep(total, level, def.maxLevel);
 }
 
 // ---------------------------------------------------------------- patch cards
@@ -154,7 +166,7 @@ function cardEffect(id: CardId, runCurrency: string): string {
     case 'forkCall':
       return `Every ${CARD_PARAMS.forkCall.every}th volley fires twice`;
     case 'sudo':
-      return `Your special fires ${CARD_PARAMS.sudo.casts === 2 ? 'twice' : `${CARD_PARAMS.sudo.casts} times`} per use`;
+      return `Your special fires ${CARD_PARAMS.sudo.casts} times per use`;
     case 'rootAccess':
       return `Combo tier +${CARD_PARAMS.rootAccess.tierBonus} permanently (more score and ${runCurrency})`;
     case 'shardCache':
@@ -200,7 +212,7 @@ export function teamDesc(id: TeamItemId): string {
   const def = teamItemDef(id);
   switch (id) {
     case 'spareKernel':
-      return `Team extra life: a downed player with no partner left reboots instead of the run ending (hold ${def.holdCap ?? 0})`;
+      return `Extra team life, spent automatically to reboot a lost player (hold up to ${def.holdCap ?? 0})`;
     case 'linkAmp':
       return `${modifiersText(def.modifiers)} per level for both players`;
     case 'linkRange':
@@ -225,8 +237,10 @@ export function teamTotal(id: TeamItemId, level: number): string {
 
 export function teamNext(id: TeamItemId, level: number): string {
   const def = teamItemDef(id);
-  if (id === 'spareKernel') return `Holding ${level} of ${def.holdCap ?? 0} · shared by the team`;
-  return levelStep((l) => teamTotal(id, l), level, def.maxLevel);
+  if (id === 'spareKernel') return `team holds ${level} of ${def.holdCap ?? 0}`;
+  const total = (l: number): string =>
+    id === 'linkRange' ? teamTotal(id, l).replace('max link length ', '') : amountsText(def.modifiers, l);
+  return levelStep(total, level, def.maxLevel);
 }
 
 // ---------------------------------------------------------------- firmware (Hangar)
@@ -238,7 +252,7 @@ export function metaDesc(id: MetaUpgradeId, runCurrency = 'Bits'): string {
     case 'bootCache':
       return `Start every run with +${META_EFFECTS.bootCacheShards} ${runCurrency}${per}`;
     case 'rerollCache':
-      return `+${META_EFFECTS.rerollCachePerLevel} free Patch Bay reroll every visit${per}`;
+      return `Each level: +${META_EFFECTS.rerollCachePerLevel} free Patch Bay reroll per visit`;
     case 'preCharge':
       return `Your special starts every run ${META_EFFECTS.preChargeOverdrive}% charged`;
     case 'secondBoot':
@@ -274,17 +288,20 @@ export function metaTotal(id: MetaUpgradeId, level: number, runCurrency = 'Bits'
 }
 
 export function metaNext(id: MetaUpgradeId, level: number, runCurrency = 'Bits'): string {
-  return levelStep((l) => metaTotal(id, l, runCurrency), level, metaDef(id).prices.length);
+  const def = metaDef(id);
+  const total = (l: number): string =>
+    def.modifiers.length > 0 ? amountsText(def.modifiers, l) : metaTotal(id, l, runCurrency);
+  return levelStep(total, level, def.prices.length);
 }
 
 // ---------------------------------------------------------------- utilities
 
 export function repairDesc(): string {
-  return `Heal ${pct(REPAIR.healFrac)} of your max HP (up to ${REPAIR.maxPerVisit} per visit; price rises each time)`;
+  return `Heal ${pct(REPAIR.healFrac)} of your max HP (up to ${REPAIR.maxPerVisit} per visit)`;
 }
 
 export function rerollDesc(): string {
-  return 'Replace your 3 patch cards with new ones (a locked card stays); price rises each reroll';
+  return 'Draw 3 new patch cards (a locked card stays); the price rises each time';
 }
 
 export function giftDesc(runCurrency = 'Bits'): string {

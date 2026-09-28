@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { RunMode } from '../../src/contracts/ids';
+import type { DifficultyId } from '../../src/contracts/save';
 import type { EntityPoolApi, PooledRecord } from '../../src/contracts/sim';
 import type { WorldState } from '../../src/contracts/world';
 import { ECONOMY } from '../../src/config/tuning';
@@ -17,14 +18,16 @@ const TICKS = 72_000;
 
 /**
  * Final stateHash per (mode, seed) after TICKS ticks. Update deliberately when the sim changes.
- * Last update: exact Shard crediting through the fractional pickup carry (ECON-1, also hashed) and the co-op
- * sync-kill cooldown (ECON-3) change wallets, shop purchases and so the whole trajectory.
+ * Last update: the v2 balance pass (slower, fewer, weaker enemies and bosses on NORMAL) and the difficulty
+ * (hashed, and scaling budget / HP / speed / damage) change every trajectory. casual/hard rows added.
  */
 const GOLDEN: Readonly<Record<string, number>> = {
-  'coop:1': 2465465107,
-  'solo:2': 2680459033,
-  'versus:3': 2504984236,
-  'coop-god:4': 784688408,
+  'coop:1': 649527971,
+  'solo:2': 3192251004,
+  'versus:3': 317669827,
+  'coop-god:4': 4235647592,
+  'coop-casual:5': 178468313,
+  'coop-hard:6': 423065953,
 };
 
 function finite(...xs: number[]): boolean {
@@ -71,7 +74,7 @@ interface SoakResult {
   failure: string | null;
 }
 
-function soak(mode: RunMode, seed: number, god = false): SoakResult {
+function soak(mode: RunMode, seed: number, god = false, difficulty: DifficultyId = 'normal'): SoakResult {
   const res: SoakResult = {
     hash: 0,
     runs: 0,
@@ -84,7 +87,7 @@ function soak(mode: RunMode, seed: number, god = false): SoakResult {
   let left = TICKS;
   let runSeed = seed;
   while (left > 0) {
-    const s = newSession(mode, runSeed);
+    const s = newSession(mode, runSeed, { difficulty });
     const ap = new Autopilot();
     s.beginNextWave();
     res.runs++;
@@ -129,6 +132,18 @@ describe('soak', () => {
       }
       expect(r.visits).toBeGreaterThan(0);
       expect(r.hash).toBe(GOLDEN[`${mode}:${seed}`]);
+    }, 60_000);
+  }
+
+  for (const [difficulty, seed] of [
+    ['casual', 5],
+    ['hard', 6],
+  ] as const) {
+    it(`${difficulty} co-op seed ${seed}: ${TICKS} ticks stay finite, bounded and deterministic`, () => {
+      const r = soak('coop', seed, false, difficulty);
+      expect(r.failure).toBeNull();
+      expect(r.wavesCleared).toBeGreaterThanOrEqual(8);
+      expect(r.hash).toBe(GOLDEN[`coop-${difficulty}:${seed}`]);
     }, 60_000);
   }
 

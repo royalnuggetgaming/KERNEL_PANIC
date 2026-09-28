@@ -1,10 +1,13 @@
 /**
- * One player's Patch Bay column: header (wallet, HP), stat rows, repair, patch cards with Buy/Lock columns, the
- * team row (hidden in versus), reroll, gift (hidden in solo/versus), READY and UNDO. The cursor is a flat row
- * index over [rows, repair, cards, team, reroll, gift, ready]. A purchase flashes the panel, a failure shakes it.
+ * One player's Patch Bay column: header (wallet, HP); a scrolling list of stat rows, repair, patch cards with
+ * Buy/Lock columns, the team row (hidden in versus), reroll and gift (hidden in solo/versus), every row with its
+ * description line; a fixed footer with the INSTALLED powerups, READY and UNDO. The cursor is a flat row index
+ * over [rows, repair, cards, team, reroll, gift, ready]; a cursor move scrolls its row into view (READY lives in
+ * the footer and is always visible). A purchase flashes the panel, a failure shakes it.
  */
 import type { PlayerIndex } from '../../contracts/ids';
 import type { ShopPanelVM, ShopRowVM } from '../../contracts/ui';
+import { InstalledList } from './InstalledList';
 import type { PurchaseResult } from '../../contracts/upgrades';
 import type { UiContext } from '../view';
 import { ClassSwitch, Flag, NumSlot, Shown, TextSlot, ViewPool, button, h } from '../dom';
@@ -69,7 +72,7 @@ export class ShopPanel {
   private readonly readyCursor: Flag;
   private readonly readyOn: Flag;
   private readonly undoShown: Shown;
-  private readonly detail: TextSlot;
+  private readonly installed: InstalledList;
   private readonly toast: TextSlot;
   private readonly body: Shown;
   private readonly absent: Shown;
@@ -77,6 +80,7 @@ export class ShopPanel {
   private lastResult: PurchaseResult | null = null;
   private fxUntil = 0;
   private primed = false;
+  private lastCursor = -1;
 
   constructor(ctx: UiContext, player: PlayerIndex) {
     const doc = ctx.doc;
@@ -132,25 +136,31 @@ export class ShopPanel {
     this.readyCursor = new Flag(readyBtn, 'is-cursor');
     this.readyOn = new Flag(readyBtn, 'is-ready');
     this.undoShown = new Shown(undoBtn, false);
-    const detailEl = h(doc, 'p', { className: 'kp-shop-detail' });
     const toastEl = h(doc, 'p', { className: 'kp-shop-toast' });
-    this.detail = new TextSlot(detailEl);
     this.toast = new TextSlot(toastEl);
+    this.installed = new InstalledList(doc, 'kp-shop-installed', 'Nothing installed yet');
 
-    const bodyEl = h(
+    const scrollEl = h(
       doc,
       'div',
-      { className: 'kp-shop-body' },
+      { className: 'kp-shop-scroll' },
       h(doc, 'h3', { className: 'kp-shop-sub', text: 'SYSTEMS' }),
       rowsEl,
       h(doc, 'h3', { className: 'kp-shop-sub', text: 'PATCH CARDS' }),
       cardsEl,
       teamEl,
       utilEl,
+    );
+    const footEl = h(
+      doc,
+      'div',
+      { className: 'kp-shop-foot' },
+      h(doc, 'h3', { className: 'kp-shop-sub', text: 'INSTALLED' }),
+      this.installed.el,
       h(doc, 'div', { className: 'kp-shop-actions' }, readyBtn, undoBtn),
-      detailEl,
       toastEl,
     );
+    const bodyEl = h(doc, 'div', { className: 'kp-shop-body' }, scrollEl, footEl);
     const absentEl = h(doc, 'p', { className: 'kp-shop-absent', text: `${tag} NOT CONNECTED` });
     this.body = new Shown(bodyEl);
     this.absent = new Shown(absentEl, false);
@@ -169,6 +179,26 @@ export class ShopPanel {
   reset(): void {
     this.primed = false;
     this.fxUntil = 0;
+    this.lastCursor = -1;
+  }
+
+  /** The row element under a cursor index (null on READY, which sits in the always-visible footer). */
+  private rowEl(cur: number, l: ShopLayout): HTMLElement | null {
+    if (cur < l.repair) return cur < this.rows.count ? this.rows.get(cur).el : null;
+    if (cur === l.repair) return this.repair.el;
+    if (cur < l.teamStart)
+      return cur - l.cardsStart < this.cards.count ? this.cards.get(cur - l.cardsStart).el : null;
+    if (cur < l.reroll)
+      return cur - l.teamStart < this.team.count ? this.team.get(cur - l.teamStart).el : null;
+    if (cur === l.reroll) return this.reroll.el;
+    if (cur === l.gift) return this.gift.el;
+    return null;
+  }
+
+  /** Keeps the cursor row visible inside the scrolling list (only on cursor moves, never per frame). */
+  private scrollToCursor(cur: number, l: ShopLayout): void {
+    const el = this.rowEl(cur, l);
+    if (el !== null && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest' });
   }
 
   /** Returns true while a buy flash / deny shake is running (the screen re-renders to end it). */
@@ -204,11 +234,16 @@ export class ShopPanel {
     this.readyBtnText.set(vm.ready ? 'READY ✓' : 'READY');
     this.undoShown.set(vm.canUndo);
 
-    const row = rowAtCursor(vm, cur);
-    this.detail.set(row === null ? '' : row.blurb);
+    this.installed.render(vm.installed);
     this.toast.set(vm.toast ?? '');
+    // A purchase can make the cursor row's text wrap onto another line: re-check visibility then too.
+    const bought = vm.lastResult !== this.lastResult;
+    if (cur !== this.lastCursor || bought) {
+      this.lastCursor = cur;
+      this.scrollToCursor(cur, l);
+    }
 
-    if (vm.lastResult !== this.lastResult) {
+    if (bought) {
       this.lastResult = vm.lastResult;
       if (vm.lastResult !== null && this.primed) {
         this.fx.set(vm.lastResult.ok ? 'fx-buy' : 'fx-deny');

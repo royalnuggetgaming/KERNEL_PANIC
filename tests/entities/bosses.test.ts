@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldState } from '../../src/contracts/world';
 import { BOSS_COMMON, BOSS_DEFS } from '../../src/config/bosses';
+import { DIFFICULTY } from '../../src/config/difficulty';
 import { COOP, ECONOMY, SIM } from '../../src/config/tuning';
 import {
   bossAlive,
@@ -10,7 +11,10 @@ import {
   spawnBoss,
   stepBoss,
 } from '../../src/entities/bosses';
-import { createTestWorld, placePlayer, stepSystem } from '../helpers/worldFixture';
+import { createWorld } from '../../src/sim/createWorld';
+import { createTestWorld, placePlayer, stepSystem, testWorldConfig } from '../helpers/worldFixture';
+
+const FORK_HP = BOSS_DEFS.forkBomb.hp;
 
 function bossWorld(mode: 'coop' | 'solo' = 'coop', wave = 5): WorldState {
   const w = createTestWorld({ mode });
@@ -37,12 +41,13 @@ describe('spawnBoss', () => {
   it('uses the def HP with the 2P x1.6 multiplier and an intro with invulnerable players', () => {
     const solo = bossWorld('solo');
     spawnBoss(solo, 'forkBomb');
-    expect(solo.bosses[0]!.hp).toBe(2400);
+    // v2 rebalance: HP is read from BOSS_DEFS (Fork Bomb 1600, was 2400 in v1).
+    expect(solo.bosses[0]!.hp).toBe(FORK_HP);
     const w = bossWorld('coop');
     spawnBoss(w, 'forkBomb');
     const b = w.bosses[0]!;
     expect(b.alive).toBe(true);
-    expect(b.maxHp).toBeCloseTo(2400 * 1.6, 9);
+    expect(b.maxHp).toBeCloseTo(FORK_HP * 1.6, 9);
     expect(b.introTimer).toBe(BOSS_COMMON.INTRO_TIME);
     expect(w.players[0].invulnUntil).toBeCloseTo(w.time + BOSS_COMMON.INTRO_TIME, 9);
     expect(bossAlive(w)).toBe(true);
@@ -50,14 +55,26 @@ describe('spawnBoss', () => {
     expect(w.events.wave.get(0).what).toBe('bossSpawn');
   });
 
-  it('spawns Race Condition as 2 twins of 2600 HP each', () => {
+  it('spawns Race Condition as 2 twins of the def HP each', () => {
     const w = bossWorld('solo', 10);
     spawnBoss(w, 'raceCondition');
     expect(aliveParts(w)).toBe(2);
-    expect(w.bosses[0]!.hp).toBe(2600);
-    expect(w.bosses[1]!.hp).toBe(2600);
+    expect(w.bosses[0]!.hp).toBe(BOSS_DEFS.raceCondition.hp);
+    expect(w.bosses[1]!.hp).toBe(BOSS_DEFS.raceCondition.hp);
     expect(w.bosses[0]!.x).toBeLessThan(0);
     expect(w.bosses[1]!.x).toBeGreaterThan(0);
+  });
+
+  it('scales boss HP by the run difficulty', () => {
+    for (const [id, mul] of [
+      ['casual', DIFFICULTY.casual.hp],
+      ['hard', DIFFICULTY.hard.hp],
+    ] as const) {
+      const w = createWorld({ ...testWorldConfig({ mode: 'solo' }), difficulty: id });
+      w.run.wave = 5;
+      spawnBoss(w, 'forkBomb');
+      expect(w.bosses[0]!.hp).toBeCloseTo(FORK_HP * mul, 9);
+    }
   });
 
   it('scales OVERFLOW bosses by the +12%/wave growth', () => {
@@ -116,15 +133,15 @@ describe('Fork Bomb', () => {
     b.hp = b.maxHp * 0.6;
     stepSystem(w, stepBoss, 1);
     expect(aliveParts(w)).toBe(2);
-    expect(w.bosses[1]!.hp).toBeCloseTo(720, 6);
-    expect(w.bosses[0]!.hp).toBeCloseTo(720, 6);
-    expect(w.bosses[1]!.maxHp).toBeCloseTo(1200, 6);
+    expect(w.bosses[1]!.hp).toBeCloseTo(FORK_HP * 0.3, 6);
+    expect(w.bosses[0]!.hp).toBeCloseTo(FORK_HP * 0.3, 6);
+    expect(w.bosses[1]!.maxHp).toBeCloseTo(FORK_HP * 0.5, 6);
     for (const p of w.bosses) if (p.alive) p.hp = p.maxHp * 0.3;
     stepSystem(w, stepBoss, 1);
     expect(aliveParts(w)).toBe(4);
     let total = 0;
     for (const p of w.bosses) total += p.hp;
-    expect(total).toBeCloseTo(2400 * 0.3, 6);
+    expect(total).toBeCloseTo(FORK_HP * 0.3, 6);
     for (const p of w.bosses) expect(p.phase).toBe(2);
   });
 
