@@ -296,8 +296,11 @@ export function metaTotal(id: MetaUpgradeId, level: number, runCurrency = 'Bits'
 
 export function metaNext(id: MetaUpgradeId, level: number, runCurrency = 'Bits'): string {
   const def = metaDef(id);
+  if (def.prices.length === 1 && level <= 0) return 'one-time purchase';
   const total = (l: number): string =>
-    def.modifiers.length > 0 && id !== 'bootCache' ? amountsText(def.modifiers, l) : metaTotal(id, l, runCurrency);
+    def.modifiers.length > 0 && id !== 'bootCache'
+      ? amountsText(def.modifiers, l)
+      : metaTotal(id, l, runCurrency);
   return levelStep(total, level, def.prices.length);
 }
 

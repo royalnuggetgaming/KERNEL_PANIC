@@ -13,7 +13,13 @@ import { metaBuy, metaRespec, metaUnlock, type MetaFailure, type MetaResult } fr
 import { indexOfId, wrapIndex, type UiIntent } from './intents';
 import { cheatDef } from '../config/cheats';
 import { cheatIdOf, cheatToggleDelta, cheatsOf } from './cheatState';
-import { CHEAT_ITEM_PREFIX, META_ITEM_PREFIX, RESPEC_ITEM, UNLOCK_ITEM_PREFIX, buildHangarVM } from './viewModels';
+import {
+  CHEAT_ITEM_PREFIX,
+  META_ITEM_PREFIX,
+  RESPEC_ITEM,
+  UNLOCK_ITEM_PREFIX,
+  buildHangarVM,
+} from './viewModels';
 
 function metaIdOf(itemId: string): MetaUpgradeId | null {
   if (!itemId.startsWith(META_ITEM_PREFIX)) return null;

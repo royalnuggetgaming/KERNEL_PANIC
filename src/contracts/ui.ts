@@ -6,6 +6,9 @@ import type { PlayerIndex, RunMode, RunOutcome, VehicleId } from './ids';
 import type { Action, KeyCode, MenuIntent } from './input';
 import type { ShopItemStatus } from './run';
 import type { PurchaseResult } from './upgrades';
+import type { TerminalVM } from './terminal';
+
+export type { TerminalCheatVM, TerminalVM } from './terminal';
 
 export type ScreenId =
   'boot' | 'mainMenu' | 'characterSelect' | 'hud' | 'shop' | 'hangar' | 'pause' | 'gameOver';
@@ -66,32 +69,6 @@ export interface ControlsPanelVM {
 }
 
 export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual' | 'terminal';
-
-/** One cheat line in the TERMINAL (only unlocked cheats are listed). */
-export interface TerminalCheatVM {
-  /** 'cheat:<id>' (pointer item id; clicking toggles it). */
-  readonly id: string;
-  readonly code: string;
-  readonly label: string;
-  readonly desc: string;
-  readonly enabled: boolean;
-}
-
-/** TERMINAL sub-panel (main menu): a typed command line plus the unlocked cheats with ON/OFF toggles. */
-export interface TerminalVM {
-  /** Scrollback, oldest first (short lines). */
-  readonly lines: readonly string[];
-  /** What is typed so far. */
-  readonly input: string;
-  readonly cheats: readonly TerminalCheatVM[];
-  /** Highlighted cheat row (-1 = the prompt). */
-  readonly cursor: number;
-  /** 'granted' / 'denied' flash of the last command, '' otherwise. */
-  readonly flash: 'granted' | 'denied' | '';
-  readonly hint: string;
-  /** Always-visible warning: cheat runs pay no Cores and do not count for records. */
-  readonly warning: string;
-}
 
 // ---------------------------------------------------------------- manual (HOW TO PLAY) and installed powerups
 
@@ -162,8 +139,7 @@ export interface MainMenuVM {
   readonly metaCurrency: string;
   readonly cores: number;
   readonly version: string;
-  /** TERMINAL panel while open, else null (absent in old fixtures). */
-  readonly terminal?: TerminalVM | null;
+  readonly terminal?: TerminalVM | null; // TERMINAL panel while open (absent in old fixtures)
 }
 
 export interface StatBarVM {
@@ -203,8 +179,7 @@ export interface CharacterSelectVM {
   readonly message: string;
   /** v2: the difficulty the run will start with (from settings), e.g. 'CASUAL'. */
   readonly difficulty: string;
-  /** "CHEATS ON: ..." when TERMINAL cheats will apply to the run, else '' (absent in old fixtures). */
-  readonly cheats?: string;
+  readonly cheats?: string; // "CHEATS ON: ..." when TERMINAL cheats apply to the run, else ''
 }
 
 export interface HudPlayerVM {
@@ -323,8 +298,7 @@ export interface ShopVM {
 
 export interface HangarItemVM extends ShopRowVM {
   readonly kind: 'meta' | 'unlock' | 'respec' | 'cheat';
-  /** Section heading shown above the first row of each group ('SURVIVAL', 'CRAFT', ...). */
-  readonly group?: string;
+  readonly group?: string; // section heading above the first row of a group ('SURVIVAL', ...)
 }
 
 export interface HangarVM {
@@ -336,8 +310,7 @@ export interface HangarVM {
   readonly respecRefund: number;
   readonly message: string;
   readonly readOnly: boolean;
-  /** Plain explanation of Cores and Firmware shown under the title. */
-  readonly intro?: string;
+  readonly intro?: string; // plain explanation of Cores and Firmware under the title
 }
 
 export interface PauseVM {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_IDS, NO_HANDLE } from '../../src/contracts/ids';
 import type { RunConfig } from '../../src/contracts/run';
-import { PROJECTILE_KINDS } from '../../src/contracts/sim';
+import { PROJECTILE_KINDS, type ProjectileSpec } from '../../src/contracts/sim';
 import { SOURCE_WORLD } from '../../src/contracts/simEvents';
 import { CARD_PARAMS, cardDef } from '../../src/config/cards';
 import { CHEATS, cheatByCode, cheatRunMods } from '../../src/config/cheats';
@@ -45,10 +45,9 @@ describe('cheat definitions', () => {
 describe('cheats in a run', () => {
   it('GLASSCANNON + BITRAIN + FULLCHARGE change the run-start numbers; versus ignores cheats', () => {
     const plain = createRunSession(solo({}), { log: NullLogger });
-    const run = createRunSession(
-      solo({ cheats: ['glassCannon', 'bitRain', 'fullCharge'] }),
-      { log: NullLogger },
-    );
+    const run = createRunSession(solo({ cheats: ['glassCannon', 'bitRain', 'fullCharge'] }), {
+      log: NullLogger,
+    });
     const p = run.world.players[0];
     expect(p.stats.maxHp).toBe(STAT_CAPS.maxHpMin);
     expect(p.hp).toBe(1);
@@ -73,7 +72,9 @@ describe('cheats in a run', () => {
   });
 
   it('SUDORMRF starts with the Mythic card owned in the world and the economy (stats included)', () => {
-    const run = createRunSession(testRunConfig({ mode: 'coop', cheats: ['mythicStart'] }), { log: NullLogger });
+    const run = createRunSession(testRunConfig({ mode: 'coop', cheats: ['mythicStart'] }), {
+      log: NullLogger,
+    });
     for (const i of [0, 1] as const) {
       expect(run.world.players[i].cardStacks[MYTHIC_BIT]).toBe(1);
       expect(run.loadout(i).cards[MYTHIC_BIT]).toBe(1);
@@ -96,8 +97,8 @@ describe('MYTHIC ROOT OF ALL EVIL', () => {
     const w = run.state;
     const p = w.players[0];
     const r = CARD_PARAMS.rootOfAllEvil.purgeRadius;
-    const spec = {
-      side: 'enemy' as const,
+    const spec: ProjectileSpec = {
+      side: 'enemy',
       owner: SOURCE_WORLD,
       kind: PROJECTILE_KINDS.enemyOrb,
       x: p.x + r * 0.5,

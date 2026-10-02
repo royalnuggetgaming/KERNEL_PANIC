@@ -26,14 +26,15 @@ function spentOf(v: unknown): number {
 /** v1 -> v2: refund and drop the retired Firmware lines, add `cheats`. */
 export function migrateV1toV2(data: unknown): unknown {
   if (!isRecord(data)) return data;
-  const meta: Loose = isRecord(data.meta) ? { ...data.meta } : {};
-  const spent: Loose = isRecord(data.firmwareSpent) ? { ...data.firmwareSpent } : {};
+  const keep = (v: unknown): Loose =>
+    isRecord(v)
+      ? Object.fromEntries(Object.entries(v).filter(([k]) => !RETIRED_FIRMWARE_V2.includes(k)))
+      : {};
+  const spentIn: Loose = isRecord(data.firmwareSpent) ? data.firmwareSpent : {};
   let refund = 0;
-  for (const id of RETIRED_FIRMWARE_V2) {
-    refund += spentOf(spent[id]);
-    delete spent[id];
-    delete meta[id];
-  }
+  for (const id of RETIRED_FIRMWARE_V2) refund += spentOf(spentIn[id]);
+  const meta = keep(data.meta);
+  const spent = keep(data.firmwareSpent);
   const cores = spentOf(data.cores);
   return {
     ...data,

@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CARD_IDS } from '../../src/contracts/ids';
 import { MYTHIC } from '../../src/config/cards';
 import { createRng } from '../../src/core/rng';
-import { drawOffers, mythicChance, setMythicChanceOverride, type OfferContext } from '../../src/upgrades/offers';
+import {
+  drawOffers,
+  mythicChance,
+  setMythicChanceOverride,
+  type OfferContext,
+} from '../../src/upgrades/offers';
 
 function ctx(patch: Partial<OfferContext> = {}): OfferContext {
   return {
@@ -47,7 +52,8 @@ describe('MYTHIC offers', () => {
     expect(offers[0].price).toBeGreaterThan(250);
     const owned = new Uint8Array(CARD_IDS.length);
     owned[CARD_IDS.indexOf('rootOfAllEvil')] = 1;
-    for (const o of drawOffers(createRng(1), ctx({ owned }), createRng(2))) expect(o.id).not.toBe('rootOfAllEvil');
+    for (const o of drawOffers(createRng(1), ctx({ owned }), createRng(2)))
+      expect(o.id).not.toBe('rootOfAllEvil');
   });
 
   it('a separate stream: without a hit the regular offers equal the no-Mythic draw', () => {

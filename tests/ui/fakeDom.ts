@@ -33,6 +33,8 @@ class FakeClassList {
   }
 
   add(...cls: string[]): void {
+    // Like the real DOMTokenList: an empty token throws (a ClassSwitch fed '' crashed the v3 TERMINAL).
+    for (const c of cls) if (c === '') throw new SyntaxError('DOMTokenList.add: the token must not be empty');
     for (const c of cls) this.set.add(c);
     this.owner.classWrites++;
   }

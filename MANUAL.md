@@ -367,7 +367,7 @@ The difficulty in effect when a run starts stays for the whole run. Cores reward
 <details>
 <summary>Click to reveal the codes (spoilers!)</summary>
 
-Open **TERMINAL** on the main menu and type a code, then Enter (case does not matter; Escape closes). A right code unlocks the cheat for good and switches it on for your next runs; switch cheats on/off in the terminal (Up/Down + Enter, or click) or in the Cores Hangar. Type `OFF` to switch all off. **Cheat runs pay no Cores and never count for records or the leaderboard.** Cheats never apply in VERSUS.
+Open **TERMINAL** on the main menu and type a code, then Enter (case does not matter; Escape closes). A right code unlocks the cheat for good and switches it on for your next runs; switch cheats on/off in the terminal (Up/Down + Enter, or click) or in the FIRMWARE hangar. Type `OFF` to switch all off. **Cheat runs pay no Cores and never count for records or the leaderboard.** Cheats never apply in VERSUS.
 
 | Code          | Cheat        | Effect                                           |
 | ------------- | ------------ | ------------------------------------------------ |

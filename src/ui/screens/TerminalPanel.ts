@@ -4,7 +4,18 @@
  * element, so typing never reaches the page or the game).
  */
 import type { TerminalCheatVM, TerminalVM } from '../../contracts/ui';
-import { ATTR_ITEM, AttrSlot, ClassSwitch, Flag, Shown, TextSlot, ViewPool, button, h, markClick } from '../dom';
+import {
+  ATTR_ITEM,
+  AttrSlot,
+  ClassSwitch,
+  Flag,
+  Shown,
+  TextSlot,
+  ViewPool,
+  button,
+  h,
+  markClick,
+} from '../dom';
 
 class LineView {
   readonly el: HTMLParagraphElement;
@@ -26,7 +37,7 @@ class LineView {
           ? 'is-denied'
           : line.startsWith('> ')
             ? 'is-echo'
-            : '',
+            : null,
     );
   }
 }
@@ -130,7 +141,7 @@ export class TerminalPanel {
     this.cheatsShown.set(vm.cheats.length > 0);
     this.hint.set(vm.hint);
     this.warning.set(vm.warning);
-    this.flash.set(vm.flash === '' ? '' : `flash-${vm.flash}`);
+    this.flash.set(vm.flash === '' ? null : `flash-${vm.flash}`);
     this.promptCursor.set(vm.cursor < 0);
   }
 }

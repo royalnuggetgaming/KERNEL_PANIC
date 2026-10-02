@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { KeyCode } from '../../src/contracts/input';
 import { createGameOverState } from '../../src/states/GameOverState';
 import { cheatsBanner, runCheatIds } from '../../src/states/cheatState';
 import { SubPanelController } from '../../src/states/subPanels';
@@ -10,7 +9,7 @@ import { createFakeServices } from '../helpers/fakeServices';
 
 function typeText(set: ReturnType<typeof createFakeServices>, text: string): void {
   for (const ch of text) {
-    const code = (ch === ' ' ? 'Space' : /[0-9]/.test(ch) ? `Digit${ch}` : `Key${ch.toUpperCase()}`) as KeyCode;
+    const code = ch === ' ' ? 'Space' : /[0-9]/.test(ch) ? `Digit${ch}` : `Key${ch.toUpperCase()}`;
     set.input.capture(code);
   }
 }
@@ -111,6 +110,6 @@ describe('cheat runs', () => {
     expect(set.save.data.lastCommittedRunId).toBe('cheat-1');
     expect(set.ui.vm('gameOver')?.coresTotal).toBe(0);
     expect(set.ui.vm('gameOver')?.newBest).toBe(false);
-    expect(set.ui.toasts.some((t) => /no Cores/.test(t.msg))).toBe(true);
+    expect(set.ui.toasts.some((t) => t.msg.includes('no Cores'))).toBe(true);
   });
 });

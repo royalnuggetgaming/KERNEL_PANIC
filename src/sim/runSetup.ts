@@ -77,7 +77,7 @@ export function startCards(cheats: CheatRunMods): Uint8Array {
 
 /** Run-start stats: vehicle base + Firmware snapshot (+ cheats and their starting cards), no rows or team items. */
 export function startStats(vehicle: VehicleId, meta: MetaLevels, cheats?: CheatRunMods): DerivedStats {
-  if (cheats === undefined || !cheats.any)
+  if (!cheats?.any)
     return computeStats(vehicle, meta, emptyRowLevels(), new Uint8Array(CARD_IDS.length), emptyTeamLevels());
   return computeStats(
     vehicle,

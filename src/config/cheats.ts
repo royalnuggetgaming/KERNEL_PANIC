@@ -6,7 +6,7 @@
  */
 import { CHEAT_IDS, type CardId, type CheatId } from '../contracts/ids';
 import type { StatModifier } from '../contracts/upgrades';
-import { STAT_CAPS } from './tuning';
+import type { STAT_CAPS } from './tuning';
 
 /** Hard-cap names (same keys as upgrades/stats.ts StatCaps). */
 type StatCaps = { readonly [K in keyof typeof STAT_CAPS]: number };
@@ -167,7 +167,7 @@ export function cheatRunMods(ids: readonly CheatId[] | undefined): CheatRunMods 
   return {
     any: true,
     modifiers,
-    caps: Object.keys(caps).length > 0 ? (caps as Partial<StatCaps>) : undefined,
+    caps: Object.keys(caps).length > 0 ? caps : undefined,
     startShards,
     startOverdrive,
     startCards,

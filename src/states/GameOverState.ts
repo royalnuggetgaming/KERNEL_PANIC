@@ -87,7 +87,8 @@ class GameOverStateImpl implements GameState<'GameOver'> {
     if (!this.committed.has(this.summary.runId))
       this.newBest = !this.cheated && isNewBest(this.summary, s.save.data);
     this.commit();
-    if (this.cheated) s.ui.toast(`Cheats were on: no ${s.theme().names.metaCurrency} and no records this run.`, 'warn');
+    if (this.cheated)
+      s.ui.toast(`Cheats were on: no ${s.theme().names.metaCurrency} and no records this run.`, 'warn');
     s.input.setContext('menu');
     s.render.setCameraMode('gameover');
     s.audio.duck(false);

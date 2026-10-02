@@ -80,7 +80,7 @@ export class TerminalController {
     this.s.input.captureNextKey((code) => {
       if (token !== this.token || !this.open) return;
       this.key(code);
-      if (this.open && !this.wantsClose) this.arm();
+      if (!this.wantsClose) this.arm();
       this.onChange();
     });
   }
@@ -92,7 +92,8 @@ export class TerminalController {
     }
     const ch = keyChar(code);
     if (ch !== null) {
-      if (this.input.length < TERMINAL_MAX_INPUT && !(ch === ' ' && this.input.length === 0)) this.input += ch;
+      if (this.input.length < TERMINAL_MAX_INPUT && !(ch === ' ' && this.input.length === 0))
+        this.input += ch;
       this.cursor = -1;
       this.flash = '';
       return;

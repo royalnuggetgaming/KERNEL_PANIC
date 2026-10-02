@@ -96,7 +96,7 @@ function passiveItems(l: PlayerLoadout, theme: ThemeDef, compact: boolean, out: 
       out.push({
         id: 'fw:' + id,
         kind: 'firmware',
-        label: `${def.label}`,
+        label: def.label,
         short: META_SHORT[id],
         count: def.prices.length > 1 ? String(level) : '',
         desc: `${n.meta.toUpperCase()} (permanent): ${total}`,

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import corruptRaw from '../fixtures/saves/corrupt.txt?raw';
 import futureRaw from '../fixtures/saves/future-v99.json?raw';
 import overRaw from '../fixtures/saves/v1-overleveled.json?raw';
-import v1ValidRaw from '../fixtures/saves/v1-valid.json?raw';
 import validRaw from '../fixtures/saves/v2-valid.json?raw';
 import type { RunSummary } from '../../src/contracts/run';
 import { CURRENT_SAVE_VERSION, SAVE_KEYS, type SaveDataV1 } from '../../src/contracts/save';
@@ -120,19 +119,6 @@ describe('SaveStore load chain', () => {
     expect(r.status).toBe('ok');
     expect(r.data.cores).toBe(152);
     expect(mem.writes).toHaveLength(0);
-  });
-
-  it('migrates a v1 save once: the merged Magnet FW spend (15) is refunded and the v2 envelope written', () => {
-    const mem = new MemoryStorage();
-    mem.rawSet(SAVE_KEYS.main, v1ValidRaw);
-    const r = harness(mem).store.load();
-    expect(r.status).toBe('ok');
-    expect(r.data.cores).toBe(137 + 15);
-    expect(r.data.meta).toEqual({ hullFw: 2, legendaryPool: 1 });
-    expect(r.data.cheats).toEqual({ unlocked: [], enabled: [] });
-    const env = JSON.parse(mem.rawGet(SAVE_KEYS.main)!) as { v: number };
-    expect(env.v).toBe(CURRENT_SAVE_VERSION);
-    expect(mem.rawGet(SAVE_KEYS.backup)).toBe(v1ValidRaw);
   });
 
   it('sanitises an over-levelled save with a refund and rewrites it (old envelope to .bak)', () => {

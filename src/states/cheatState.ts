@@ -14,7 +14,7 @@ export function cheatsOf(save: SaveDataV1): CheatSave {
 
 /** Parses 'cheat:<id>' pointer/item ids. */
 export function cheatIdOf(itemId: string | null, prefix: string): CheatId | null {
-  if (itemId === null || !itemId.startsWith(prefix)) return null;
+  if (itemId?.startsWith(prefix) !== true) return null;
   const rest = itemId.slice(prefix.length);
   for (const id of CHEAT_IDS) if (id === rest) return id;
   return null;
