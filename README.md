@@ -2,7 +2,7 @@
 
 A neon 3D arena shooter for one or two players on one keyboard. You and a friend are two daemons
 inside a failing kernel. Corrupted processes pour out of the portals, and you purge them wave after wave. Between
-waves you spend Shards on upgrades. Every run pays out Cores, which buy permanent Firmware in the Hangar. You can
+waves you spend Bits on upgrades. Every run pays out Cores, which buy permanent Firmware upgrades. You can
 play solo or **co-op**, where a Link Beam between the players deals damage and downed partners can be revived.
 You can also play **versus**, a best-of-five duel with arena hazards.
 
@@ -12,19 +12,61 @@ all generated in code. The game is built with Vite, Three.js 0.186 and strict Ty
 **How to play:** see [MANUAL.md](MANUAL.md) for the goal, controls, every powerup, enemies, bosses and modes. The
 same manual is in the game under **HOW TO PLAY** (main menu and pause menu).
 
-## Requirements
+## Play it
 
-- Node.js **>= 22.13** (**24 LTS recommended**; `.nvmrc` pins 24.21.0)
-- A browser with WebGL2 (recent Chrome, Edge, Firefox or Safari)
+### In your browser (no install)
 
-## Getting started
+**https://royalnuggetgaming.github.io/KERNEL_PANIC/** (desktop Chrome, Edge, Firefox or Safari with a keyboard).
 
-```sh
-npm ci
-npm run dev        # http://localhost:5173
-```
+Saves (Cores, Firmware, settings, unlocked cheats) are stored in that browser on that computer.
 
-On the boot screen, press any key to start the audio and open the main menu.
+### On your own computer
+
+You need **Node.js** (free) and about 200 MB of disk space.
+
+1. Install Node.js **24 LTS** from <https://nodejs.org> (the "LTS" button). Any version **22.13 or newer** works.
+2. Get the game, either:
+   - **Download:** on <https://github.com/royalnuggetgaming/KERNEL_PANIC> click **Code → Download ZIP**, then
+     unzip it; or
+   - **Git:** `git clone https://github.com/royalnuggetgaming/KERNEL_PANIC.git`
+3. Open a terminal in the game folder (macOS: Terminal app, then `cd` into the folder; Windows: right-click the
+   folder → "Open in Terminal") and run:
+
+   ```sh
+   npm ci         # first time only: installs the build tools
+   npm run dev    # starts the game
+   ```
+
+4. Open **http://localhost:5173** in your browser. On the boot screen press any key (this starts the audio).
+   To stop the game, press `Ctrl+C` in the terminal.
+
+To get a later version: download the ZIP again, or run `git pull` and then `npm ci` in the folder.
+
+### Make your own copy to host
+
+`npm run build` writes a self-contained static site to `dist/` (one HTML file plus a `assets/` folder; relative
+paths, so it works from any sub-folder). Check it with `npm run preview`, then put `dist/` on any static host:
+
+- **GitHub Pages:** push the contents of `dist/` to a `gh-pages` branch, then in the repo on GitHub open
+  **Settings → Pages → Build and deployment → Deploy from a branch → `gh-pages` / `(root)` → Save**.
+- **itch.io:** zip the _contents_ of `dist/` (so `index.html` is at the top of the zip), create a new project,
+  set **Kind of project: HTML**, upload the zip and tick **This file will be played in the browser**.
+- **Netlify Drop:** drag the `dist/` folder onto <https://app.netlify.com/drop>.
+
+### Playing together on different computers
+
+KERNEL PANIC is a couch game: both players share one keyboard. It has no built-in online play. To play with a
+friend somewhere else, one person runs the game and shares it with a remote-play tool, so the friend's keyboard
+controls Player 2 over the internet:
+
+- **Parsec** (<https://parsec.app>, free): the host shares their screen, the friend connects and uses the P2 keys
+  (arrows, `.`, `/`, `,`).
+- **Chrome Remote Desktop** (<https://remotedesktop.google.com>, free) also works, with a little more input lag.
+
+### Requirements (summary)
+
+- Node.js **>= 22.13** (**24 LTS recommended**; `.nvmrc` pins 24.21.0), only to run or build it yourself
+- A desktop browser with WebGL2 (recent Chrome, Edge, Firefox or Safari) and a keyboard
 
 ## Controls
 
