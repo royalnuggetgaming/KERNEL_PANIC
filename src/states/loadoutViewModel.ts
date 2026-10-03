@@ -119,7 +119,7 @@ function passiveItems(l: PlayerLoadout, theme: ThemeDef, compact: boolean, out: 
       id: 'cheat:' + id,
       kind: 'cheat',
       label: `CHEAT ${c.label}`,
-      short: 'CHEAT',
+      short: c.short,
       count: '',
       desc: `${c.desc} (cheat run: no ${n.metaCurrency}, no records)`,
     });

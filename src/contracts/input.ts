@@ -89,4 +89,6 @@ export interface InputPort {
   readonly heldCodes: ReadonlySet<KeyCode>;
   /** Rebind flow: the next non-modifier keydown (or null on Escape/cancel) is delivered once. */
   captureNextKey(cb: (code: KeyCode | null) => void): void;
+  /** Text pasted from the clipboard (Ctrl/Cmd+V) while subscribed (TERMINAL). Returns unsubscribe. v3, optional. */
+  onPaste?(cb: (text: string) => void): () => void;
 }

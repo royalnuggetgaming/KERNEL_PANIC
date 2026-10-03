@@ -129,6 +129,11 @@ class BootStateImpl implements GameState<'Boot'> {
       const loaded = s.save.load();
       const toast = SAVE_TOASTS[loaded.status];
       if (toast !== null) s.ui.toast(toast.msg, toast.kind);
+      if (loaded.migratedFrom !== undefined && loaded.migratedFrom < 2)
+        s.ui.toast(
+          `${s.theme().names.meta} was simplified: ${s.theme().names.metaCurrency} spent on removed lines were refunded.`,
+          'info',
+        );
       applySettingsLive(s, loaded.data.settings);
       s.input.setBindings(loaded.data.bindings);
       this.progress = P_SAVE;

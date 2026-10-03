@@ -16,6 +16,8 @@ export interface CheatDef {
   /** What to type (letters/digits, matched case-insensitively). */
   readonly code: string;
   readonly label: string;
+  /** HUD / INSTALLED chip text (<= 6 chars). */
+  readonly short: string;
   readonly desc: string;
   readonly modifiers: readonly StatModifier[];
   /** Hard caps raised while this cheat is on (merged over STAT_CAPS; the larger limit wins). */
@@ -31,13 +33,15 @@ function cheat(
   id: CheatId,
   code: string,
   label: string,
+  short: string,
   desc: string,
-  extra: Partial<Omit<CheatDef, 'id' | 'code' | 'label' | 'desc'>>,
+  extra: Partial<Omit<CheatDef, 'id' | 'code' | 'label' | 'short' | 'desc'>>,
 ): CheatDef {
   return {
     id,
     code,
     label,
+    short,
     desc,
     modifiers: extra.modifiers ?? [],
     caps: extra.caps ?? {},
@@ -50,19 +54,19 @@ function cheat(
 
 /** Order follows CHEAT_IDS. */
 export const CHEATS: readonly CheatDef[] = [
-  cheat('god', 'IDDQD', 'GOD MODE', 'Enemies, bullets and bosses cannot hurt you', { god: true }),
-  cheat('glassCannon', 'GLASSCANNON', 'GLASS CANNON', '1 max HP, x5 damage', {
+  cheat('god', 'IDDQD', 'GOD MODE', 'GOD', 'Enemies, bullets and bosses cannot hurt you', { god: true }),
+  cheat('glassCannon', 'GLASSCANNON', 'GLASS CANNON', 'GLASS', '1 max HP, x5 damage', {
     modifiers: [
       { stat: 'maxHp', op: 'mul', value: 0.001 },
       { stat: 'damageMul', op: 'mul', value: 5 },
     ],
     caps: { damageMulMax: 20 },
   }),
-  cheat('bitRain', 'BITRAIN', 'BIT RAIN', '+500 starting Bits, x2.5 Bit pickups', {
+  cheat('bitRain', 'BITRAIN', 'BIT RAIN', 'BITS', '+500 starting Bits, x2.5 Bit pickups', {
     modifiers: [{ stat: 'shardGain', op: 'add', value: 1.5 }],
     startShards: 500,
   }),
-  cheat('turbo', 'TURBO', 'TURBO', 'x2 move speed, fire rate and bullet speed', {
+  cheat('turbo', 'TURBO', 'TURBO', 'TURBO', 'x2 move speed, fire rate and bullet speed', {
     modifiers: [
       { stat: 'moveSpeed', op: 'mul', value: 2 },
       { stat: 'fireRate', op: 'mul', value: 2 },
@@ -70,27 +74,34 @@ export const CHEATS: readonly CheatDef[] = [
     ],
     caps: { moveSpeedMulMax: 3.2, fireRateMax: 40 },
   }),
-  cheat('bulletStorm', 'BULLETSTORM', 'BULLET STORM', '+4 bullets per shot in a wide fan', {
+  cheat('bulletStorm', 'BULLETSTORM', 'BULLET STORM', 'STORM', '+4 bullets per shot in a wide fan', {
     modifiers: [
       { stat: 'projectiles', op: 'flat', value: 4 },
       { stat: 'spreadDeg', op: 'flat', value: 16 },
     ],
     caps: { projectilesMax: 9 },
   }),
-  cheat('blinkBlink', 'BLINKBLINK', 'BLINK BLINK', '+3 dash charges, dash cooldown -60%', {
+  cheat('blinkBlink', 'BLINKBLINK', 'BLINK BLINK', 'BLINK', '+3 dash charges, dash cooldown -60%', {
     modifiers: [
       { stat: 'dashCharges', op: 'flat', value: 3 },
       { stat: 'dashCooldown', op: 'mul', value: 0.4 },
     ],
     caps: { dashChargesMax: 6, dashCooldownMin: 0.25 },
   }),
-  cheat('fullCharge', 'FULLCHARGE', 'FULL CHARGE', 'Special starts full and charges x3 faster', {
+  cheat('fullCharge', 'FULLCHARGE', 'FULL CHARGE', 'CHARGE', 'Special starts full and charges x3 faster', {
     modifiers: [{ stat: 'specialChargeMul', op: 'add', value: 2 }],
     startOverdrive: 100,
   }),
-  cheat('mythicStart', 'SUDORMRF', 'SUDO RM -RF', 'Start every run with the Mythic ROOT OF ALL EVIL', {
-    startCard: 'rootOfAllEvil',
-  }),
+  cheat(
+    'mythicStart',
+    'SUDORMRF',
+    'SUDO RM -RF',
+    'RM-RF',
+    'Start every run with the Mythic ROOT OF ALL EVIL',
+    {
+      startCard: 'rootOfAllEvil',
+    },
+  ),
 ];
 
 export function cheatDef(id: CheatId): CheatDef {
@@ -102,9 +113,9 @@ export function cheatDef(id: CheatId): CheatDef {
 /** Longest code the TERMINAL accepts (letters and digits). */
 export const TERMINAL_MAX_INPUT = 16;
 
-/** The cheat whose code matches `typed` (case and spaces ignored), else null. */
+/** The cheat whose code matches `typed` (case, spaces and punctuation ignored), else null. */
 export function cheatByCode(typed: string): CheatDef | null {
-  const t = typed.replace(/\s+/g, '').toUpperCase();
+  const t = typed.replace(/[^0-9a-z]+/gi, '').toUpperCase();
   if (t.length === 0) return null;
   for (const c of CHEATS) if (c.code === t) return c;
   return null;

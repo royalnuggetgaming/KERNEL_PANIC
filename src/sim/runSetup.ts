@@ -127,6 +127,7 @@ export function buildWorldConfig(config: RunConfig): WorldConfig {
     startKernels: startKernels(config.meta),
     difficulty: config.difficulty ?? DEFAULT_DIFFICULTY,
     ...(cheats.god ? { god: true } : {}),
+    ...(cheats.caps !== undefined ? { caps: cheats.caps } : {}),
   };
 }
 

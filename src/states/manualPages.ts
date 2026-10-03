@@ -243,7 +243,7 @@ function revivePage(t: ThemeDef): ManualPageVM {
       `Bled out with no ${n.lives} left? You become an OFFLINE ghost: you still fly around, collect ${n.runCurrency} at ${pctText(COOP.OFFLINE_COLLECT_MUL)} and touching enemies MARKS them (+${pctText(COOP.MARK_BONUS)} damage taken for ${COOP.MARK_DURATION} s).`,
     ),
     item(
-      'Wave-end reboot',
+      `${n.wave}-end reboot`,
       `When the ${n.wave.toLowerCase()} is cleared, downed players return at ${pctText(COOP.REBOOT_DOWNED_HP)} HP and offline players at ${pctText(COOP.REBOOT_OFFLINE_HP)} HP.`,
     ),
     item('Game over', `The run ends only when nobody is left standing and no ${n.lives} remain.`),
@@ -324,7 +324,7 @@ function tipsPage(t: ThemeDef): ManualPageVM {
     item('Use the beam', `In ${n.coop} the Link Beam shreds crowds; keep your partner at medium range.`),
     item(
       'Buy early damage',
-      'Payload, Overclock and a good card in the first visits make every later wave easier.',
+      `Payload, Overclock and a good card in the first visits make every later ${n.wave.toLowerCase()} easier.`,
     ),
     item('Save a revive', `Keep a ${n.lives.replace(/s$/, '')} for the boss ${n.wave.toLowerCase()}s.`),
     item(

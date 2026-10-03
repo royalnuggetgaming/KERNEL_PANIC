@@ -148,6 +148,16 @@ export interface WorldConfig {
   readonly difficulty?: DifficultyId;
   /** IDDQD cheat: world damage to players is ignored. Absent = false. */
   readonly god?: boolean;
+  /** Hard caps raised by TERMINAL cheats, honoured by the sim's own clamps. Absent keys = config STAT_CAPS. */
+  readonly caps?: WorldCapOverrides;
+}
+
+/** Sim-side hard caps a cheat run may raise (v3, additive). */
+export interface WorldCapOverrides {
+  readonly fireRateMax?: number;
+  readonly damageMulMax?: number;
+  readonly projectilesMax?: number;
+  readonly dashChargesMax?: number;
 }
 
 export interface WorldRngs {

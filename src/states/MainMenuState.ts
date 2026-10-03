@@ -63,7 +63,8 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
   enter(): void {
     const s = this.s;
     this.items = menuItems(s);
-    this.cursor = 0;
+    // Coming back (from FIRMWARE, a run, ...) keeps the cursor on the item that was used last.
+    this.cursor = Math.min(this.cursor, this.items.length - 1);
     this.leaving = false;
     this.panels.close();
     s.input.setContext('menu');

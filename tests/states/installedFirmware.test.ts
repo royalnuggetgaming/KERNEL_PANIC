@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CHEATS } from '../../src/config/cheats';
 import { CARD_IDS, STAT_ROW_IDS, TEAM_ITEM_IDS } from '../../src/contracts/ids';
 import type { PlayerLoadout } from '../../src/contracts/run';
 import { installedItems, loadoutSignature } from '../../src/states/loadoutViewModel';
@@ -24,8 +25,11 @@ describe('INSTALLED lists include Firmware and cheats', () => {
     const items = installedItems(l, KERNEL_PANIC, true, true);
     expect(items.map((i) => [i.short, i.count])).toEqual([
       ['FW', '2'],
-      ['CHEAT', ''],
+      ['GOD', ''], // each cheat chip names its cheat (it used to read CHEAT for all of them)
     ]);
+    const shorts = CHEATS.map((c) => c.short);
+    expect(new Set(shorts).size).toBe(shorts.length);
+    for (const sh of shorts) expect(sh.length).toBeLessThanOrEqual(6);
     expect(items[0]!.desc).toContain('Overclock FW 3');
     expect(items[1]!.desc).toMatch(/no Cores, no records/);
   });

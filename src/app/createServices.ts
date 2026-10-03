@@ -203,6 +203,7 @@ export function createServices(platform: BrowserPlatform): AppServices {
   uiRoot.applySettings(settings);
   const inputService = createInputService({ target: win, bindings: DEFAULT_BINDINGS });
   const input = new TappedInput(inputService);
+  input.pasteTarget = win;
   const audio = createAudioEngine({
     theme,
     createContext: () => new AudioContext({ latencyHint: 'interactive' }),

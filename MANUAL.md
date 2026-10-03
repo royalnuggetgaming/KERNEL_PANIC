@@ -148,7 +148,7 @@ The next pages list every powerup.
 
 ## Powerups: Systems (Patch Bay)
 
-Stat rows are always on sale. Each level adds the listed amount; prices rise with level and wave.
+Stat rows are always on sale. Each level adds the listed amount; prices rise with level and cycle.
 
 |                    |                                                                |
 | ------------------ | -------------------------------------------------------------- |
@@ -238,14 +238,14 @@ Team items are shared: either player can pay from their own wallet and both bene
 
 ## Downed, Revive & Spare Kernels
 
-|                     |                                                                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Downed**          | At 0 HP you are DOWNED: you can crawl slowly and a bleed-out timer starts (12 s, shorter each time you go down in the same cycle).                                       |
-| **Revive**          | Your partner revives you by staying within 2.5 u of you for 2 s. You come back with 40% HP and brief invulnerability. Progress slowly decays if they step away.          |
-| **Spare Kernels**   | If you bleed out, or everyone is down, a Spare Kernel is spent automatically to reboot a player. The team starts with 1 and can hold 3; buy more in the team row.        |
-| **Offline ghost**   | Bled out with no Spare Kernels left? You become an OFFLINE ghost: you still fly around, collect Bits at 50% and touching enemies MARKS them (+20% damage taken for 4 s). |
-| **Wave-end reboot** | When the cycle is cleared, downed players return at 40% HP and offline players at 30% HP.                                                                                |
-| **Game over**       | The run ends only when nobody is left standing and no Spare Kernels remain.                                                                                              |
+|                      |                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Downed**           | At 0 HP you are DOWNED: you can crawl slowly and a bleed-out timer starts (12 s, shorter each time you go down in the same cycle).                                       |
+| **Revive**           | Your partner revives you by staying within 2.5 u of you for 2 s. You come back with 40% HP and brief invulnerability. Progress slowly decays if they step away.          |
+| **Spare Kernels**    | If you bleed out, or everyone is down, a Spare Kernel is spent automatically to reboot a player. The team starts with 1 and can hold 3; buy more in the team row.        |
+| **Offline ghost**    | Bled out with no Spare Kernels left? You become an OFFLINE ghost: you still fly around, collect Bits at 50% and touching enemies MARKS them (+20% damage taken for 4 s). |
+| **Cycle-end reboot** | When the cycle is cleared, downed players return at 40% HP and offline players at 30% HP.                                                                                |
+| **Game over**        | The run ends only when nobody is left standing and no Spare Kernels remain.                                                                                              |
 
 ## Enemies
 
@@ -349,18 +349,18 @@ The difficulty in effect when a run starts stays for the whole run. Cores reward
 
 ## Tips
 
-|                             |                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| **Keep moving**             | Most damage comes from standing still. Circle the arena and leave yourself an exit.  |
-| **Dash through, not away**  | Dashing through a bullet wall or a Dart lunge is safer than running from it.         |
-| **Watch the rings**         | Every spawn shows a warning ring at a portal about a second ahead.                   |
-| **Flank Wardens**           | Their front shield blocks shots: get behind or beside them.                          |
-| **Pop Forks away from you** | They split into small, fast Shards.                                                  |
-| **Use the beam**            | In CO-OP the Link Beam shreds crowds; keep your partner at medium range.             |
-| **Buy early damage**        | Payload, Overclock and a good card in the first visits make every later wave easier. |
-| **Save a revive**           | Keep a Spare Kernel for the boss cycles.                                             |
-| **Laptop keyboards**        | If a key drops out when both players hold keys, run CONTROLS > KEY TEST and rebind.  |
-| **Stuck?**                  | Spend Cores on Firmware between runs; every run pays out.                            |
+|                             |                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| **Keep moving**             | Most damage comes from standing still. Circle the arena and leave yourself an exit.   |
+| **Dash through, not away**  | Dashing through a bullet wall or a Dart lunge is safer than running from it.          |
+| **Watch the rings**         | Every spawn shows a warning ring at a portal about a second ahead.                    |
+| **Flank Wardens**           | Their front shield blocks shots: get behind or beside them.                           |
+| **Pop Forks away from you** | They split into small, fast Shards.                                                   |
+| **Use the beam**            | In CO-OP the Link Beam shreds crowds; keep your partner at medium range.              |
+| **Buy early damage**        | Payload, Overclock and a good card in the first visits make every later cycle easier. |
+| **Save a revive**           | Keep a Spare Kernel for the boss cycles.                                              |
+| **Laptop keyboards**        | If a key drops out when both players hold keys, run CONTROLS > KEY TEST and rebind.   |
+| **Stuck?**                  | Spend Cores on Firmware between runs; every run pays out.                             |
 
 ## SPOILERS: Terminal cheat codes
 

@@ -66,13 +66,16 @@ export function projectileKindFor(kind: WeaponKind): ProjectileKind {
 /** Runtime cadence: returns the effective fire rate and writes the overflow damage factor into RATE.mul. */
 export const RATE = { rate: 0, mul: 1 };
 
-export function effectiveFireRate(p: Readonly<PlayerEntity>): void {
+export function effectiveFireRate(
+  p: Readonly<PlayerEntity>,
+  fireRateMax: number = STAT_CAPS.fireRateMax,
+): void {
   let rate = p.stats.fireRate;
   if (p.cards.overheatActive) rate *= 1 + CARD_PARAMS.overheat.fireRateBonus;
   RATE.mul = 1;
-  if (rate > STAT_CAPS.fireRateMax) {
-    RATE.mul = rate / STAT_CAPS.fireRateMax;
-    rate = STAT_CAPS.fireRateMax;
+  if (rate > fireRateMax) {
+    RATE.mul = rate / fireRateMax;
+    rate = fireRateMax;
   }
   RATE.rate = rate;
 }
@@ -121,9 +124,10 @@ function fireOne(w: WorldState, p: PlayerEntity): void {
 function fireVolley(w: WorldState, p: PlayerEntity, focus: boolean): void {
   const weapon = VEHICLES[p.vehicle].weapon;
   const baseYaw = Math.atan2(p.aimX, p.aimZ);
-  const n = intStat(p.stats.projectiles, 1, STAT_CAPS.projectilesMax);
+  const maxShots = w.config.caps?.projectilesMax ?? STAT_CAPS.projectilesMax;
+  const n = intStat(p.stats.projectiles, 1, maxShots);
   let sidePairs = cardStacks(p, CARD_BIT.splitShot);
-  const room = Math.floor((STAT_CAPS.projectilesMax - n) / 2);
+  const room = Math.floor((maxShots - n) / 2);
   if (sidePairs > room) sidePairs = room;
   const spreadDeg = p.stats.spreadDeg * (focus ? MOVEMENT.FOCUS_SPREAD_MUL : 1);
   SPEC.owner = p.index;
@@ -176,7 +180,9 @@ export const stepWeapons: SimSystem = (w: WorldState, intents: Intents, dt: numb
       p.fireAcc = 0;
       continue;
     }
-    effectiveFireRate(p);
+    // Cheat runs (TURBO, GLASS CANNON) raise these caps; computeStats applied the same ones.
+    const caps = w.config.caps;
+    effectiveFireRate(p, caps?.fireRateMax ?? STAT_CAPS.fireRateMax);
     const rate = RATE.rate;
     const it = intents[i as PlayerIndex];
     if (locked || !it.fireHeld || rate <= 0) {
@@ -188,7 +194,8 @@ export const stepWeapons: SimSystem = (w: WorldState, intents: Intents, dt: numb
     p.fireAcc += rate * dt;
     // The fire-rate overflow (Overheat above the 20/s cap) converts to damage, still within the 4.0 hard cap.
     const dmgMul = p.stats.damageMul * RATE.mul;
-    VOLLEY[V_DMG_MUL] = dmgMul < STAT_CAPS.damageMulMax ? dmgMul : STAT_CAPS.damageMulMax;
+    const dmgMax = caps?.damageMulMax ?? STAT_CAPS.damageMulMax;
+    VOLLEY[V_DMG_MUL] = dmgMul < dmgMax ? dmgMul : dmgMax;
     while (p.fireAcc >= 1 - ACC_EPS) {
       p.fireAcc -= 1;
       VOLLEY[V_LEAD] = p.fireAcc > 0 ? p.fireAcc / rate : 0;

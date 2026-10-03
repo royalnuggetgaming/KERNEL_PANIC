@@ -40,7 +40,9 @@ function levels(n: number): string {
 
 function systemsPage(t: ThemeDef): ManualPageVM {
   const blocks: ManualBlockVM[] = [
-    para('Stat rows are always on sale. Each level adds the listed amount; prices rise with level and wave.'),
+    para(
+      `Stat rows are always on sale. Each level adds the listed amount; prices rise with level and ${t.names.wave.toLowerCase()}.`,
+    ),
   ];
   for (const r of STAT_ROWS) blocks.push(item(r.label, `${statRowDesc(r.id)} (${levels(r.maxLevel)})`));
   blocks.push(item('Repair', repairDesc()));

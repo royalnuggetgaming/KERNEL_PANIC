@@ -97,6 +97,16 @@ describe('BootState', () => {
     expect(set.ui.toasts[0]?.kind).toBe('warn');
   });
 
+  it('explains a v1 -> v2 save upgrade (Firmware simplified, Cores refunded) once', async () => {
+    const { set, boot } = rig();
+    set.save.migratedFrom = 1;
+    boot.enter(undefined, null);
+    await settle();
+    expect(set.ui.toasts.map((t) => t.msg).join(' ')).toMatch(
+      /simplified: Cores spent on removed lines were refunded/,
+    );
+  });
+
   it('an audio unlock failure does not block the game', async () => {
     const { set, boot } = rig();
     set.audio.unlock = () => Promise.reject(new Error('no audio'));

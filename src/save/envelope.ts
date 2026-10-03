@@ -15,6 +15,8 @@ export type Decoded =
       readonly rev: number;
       /** Migrated or sanitised: the stored copy should be rewritten. */
       readonly dirty: boolean;
+      /** Version the stored copy was written with (< CURRENT_SAVE_VERSION = migrated now). */
+      readonly from: number;
     }
   | { readonly kind: 'future'; readonly v: number }
   | { readonly kind: 'corrupt'; readonly reason: string };
@@ -49,5 +51,5 @@ export function decodeEnvelope(
   }
   const s = sanitizeSave(migrated);
   const rev = typeof env.rev === 'number' && Number.isSafeInteger(env.rev) && env.rev >= 0 ? env.rev : 0;
-  return { kind: 'ok', data: s.data, rev, dirty: s.changed || v !== target };
+  return { kind: 'ok', data: s.data, rev, dirty: s.changed || v !== target, from: v };
 }

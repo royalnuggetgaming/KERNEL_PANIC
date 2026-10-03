@@ -76,6 +76,23 @@ describe('TERMINAL', () => {
     expect(set.input.context).toBe('menu');
   });
 
+  it('pastes (one line, filtered, capped at 16) and types "-" so SUDO RM -RF works as written', () => {
+    const { set, panels } = rig();
+    expect(keyChar('Minus')).toBe('-');
+    set.input.paste('sudo rm -rf\nsecond line');
+    expect(panels.terminalVM()?.input).toBe('SUDO RM -RF');
+    set.input.capture('Enter');
+    expect(set.save.data.cheats?.enabled).toEqual(['mythicStart']);
+    set.input.paste('  bullet_storm!!!   and a very long tail');
+    expect(panels.terminalVM()?.input).toBe('BULLETSTORM   AN');
+    for (let i = 0; i < 20; i++) set.input.capture('Backspace');
+    expect(panels.terminalVM()?.input).toBe('');
+    set.input.capture(null);
+    panels.tick();
+    set.input.paste('iddqd'); // closed: unsubscribed, nothing happens
+    expect(set.save.data.cheats?.enabled).toEqual(['mythicStart']);
+  });
+
   it('clicking a cheat row toggles it', () => {
     const { set, panels } = rig();
     typeText(set, 'bitrain');

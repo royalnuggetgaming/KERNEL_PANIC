@@ -146,7 +146,8 @@ export interface StorageLike {
 }
 
 export interface SaveStorePort {
-  load(): { readonly data: SaveDataV1; readonly status: SaveStatus };
+  /** `migratedFrom`: the older save version the profile was just upgraded from (v3, additive; absent = none). */
+  load(): { readonly data: SaveDataV1; readonly status: SaveStatus; readonly migratedFrom?: number };
   readonly data: SaveDataV1;
   readonly status: SaveStatus;
   commit(d: SaveDelta): Result<SaveDataV1, SaveError>;

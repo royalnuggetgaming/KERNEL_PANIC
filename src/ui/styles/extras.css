@@ -112,10 +112,21 @@
 
 .kp-terminal {
   width: min(46em, 94vw);
-  max-height: 74vh;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
   gap: 0.45em;
+  overflow: hidden;
+}
+
+/* Only the cheat list scrolls: the prompt, the warning and CLOSE always stay on screen (1280x720). */
+.kp-terminal > * {
+  flex: 0 0 auto;
+}
+
+.kp-terminal > .kp-term-cheatbox {
+  flex: 0 1 auto;
+  min-height: 4.5em;
   overflow-y: auto;
 }
 

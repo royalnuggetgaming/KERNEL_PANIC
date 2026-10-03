@@ -83,6 +83,8 @@ function playerSnapshot(s: ShopState, p: PlayerIndex): ShopPlayerSnapshot {
   }
   const team: ShopTeamSnapshot[] = [];
   for (const id of TEAM_ITEM_IDS) {
+    // Solo has no link beam and no partner to revive: only the Spare Kernel is worth offering.
+    if (s.mode === 'solo' && id !== 'spareKernel') continue;
     const def = teamItemDef(id);
     team.push({
       id,

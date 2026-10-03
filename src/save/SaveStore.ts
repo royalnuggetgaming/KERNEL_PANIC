@@ -13,6 +13,7 @@
  */
 import type { Logger, Result } from '../contracts/ids';
 import {
+  CURRENT_SAVE_VERSION,
   SAVE_KEYS,
   type KeyValueStorage,
   type Migration,
@@ -132,7 +133,11 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     data = d;
   };
 
-  const load = (): { readonly data: SaveDataV1; readonly status: SaveStatus } => {
+  const load = (): {
+    readonly data: SaveDataV1;
+    readonly status: SaveStatus;
+    readonly migratedFrom?: number;
+  } => {
     readOnly = false;
     pending = null;
     externalDirty = false;
@@ -157,7 +162,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
         const w = write(data, rawMain, rev);
         if (!w.ok) log.warn('save: could not rewrite the migrated save', w.error);
       }
-      return { data, status };
+      return main.from < CURRENT_SAVE_VERSION ? { data, status, migratedFrom: main.from } : { data, status };
     }
     if (main?.kind === 'future') {
       enterReadOnly();

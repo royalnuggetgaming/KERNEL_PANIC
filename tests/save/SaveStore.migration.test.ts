@@ -32,5 +32,11 @@ describe('SaveStore v1 -> v2 load', () => {
     const env = JSON.parse(mem.rawGet(SAVE_KEYS.main)!) as { v: number };
     expect(env.v).toBe(CURRENT_SAVE_VERSION);
     expect(mem.rawGet(SAVE_KEYS.backup)).toBe(v1ValidRaw);
+    // Boot uses this to tell the player why Firmware changed and where the Cores came from.
+    expect(r.migratedFrom).toBe(1);
+    // The rewritten v2 save loads plainly on the next boot (no second notice).
+    const again = harness(mem).store.load();
+    expect(again.migratedFrom).toBeUndefined();
+    expect(again.data.cores).toBe(137 + 15);
   });
 });

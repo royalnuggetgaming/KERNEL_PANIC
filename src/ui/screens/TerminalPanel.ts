@@ -138,6 +138,9 @@ export class TerminalPanel {
     this.input.set(vm.input);
     this.cheats.ensure(vm.cheats.length);
     for (let i = 0; i < vm.cheats.length; i++) this.cheats.get(i).set(vm.cheats[i]!, i === vm.cursor);
+    // Keyboard toggling: keep the highlighted cheat visible inside the (scrolling) list.
+    const row = vm.cursor >= 0 && vm.cursor < vm.cheats.length ? this.cheats.get(vm.cursor).el : null;
+    if (row !== null && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
     this.cheatsShown.set(vm.cheats.length > 0);
     this.hint.set(vm.hint);
     this.warning.set(vm.warning);

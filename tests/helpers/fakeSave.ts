@@ -73,9 +73,13 @@ export class FakeSaveStore implements SaveStorePort {
     this.data = initial;
   }
 
-  load(): { readonly data: SaveDataV1; readonly status: SaveStatus } {
+  /** Set to simulate a profile that load() just upgraded from an older save version. */
+  migratedFrom: number | undefined = undefined;
+
+  load(): { readonly data: SaveDataV1; readonly status: SaveStatus; readonly migratedFrom?: number } {
     this.rec.record('load');
-    return { data: this.data, status: this.status };
+    const base = { data: this.data, status: this.status };
+    return this.migratedFrom === undefined ? base : { ...base, migratedFrom: this.migratedFrom };
   }
 
   commit(d: SaveDelta): Result<SaveDataV1, SaveError> {

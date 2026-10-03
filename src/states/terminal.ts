@@ -16,13 +16,22 @@ export const TERMINAL_CHEAT_PREFIX = 'cheat:';
 const MAX_LINES = 9;
 export const TERMINAL_HINT = 'TYPE A CODE + ENTER   ·   ↑ ↓ + ENTER TOGGLE   ·   HELP   ·   ESC CLOSE';
 
-/** The character a key types, or null (letters, digits and space only). */
+/** The character a key types, or null (letters, digits, space and '-' only). */
 export function keyChar(code: KeyCode): string | null {
   if (/^Key[A-Z]$/.test(code)) return code.slice(3);
   if (/^Digit[0-9]$/.test(code)) return code.slice(5);
   if (/^Numpad[0-9]$/.test(code)) return code.slice(6);
   if (code === 'Space') return ' ';
+  if (code === 'Minus' || code === 'NumpadSubtract') return '-';
   return null;
+}
+
+/** Pasted text as terminal input: upper case, only what keyChar can type, one line. */
+export function pasteText(text: string): string {
+  return text
+    .split(/[\r\n]/)[0]!
+    .toUpperCase()
+    .replace(/[^A-Z0-9 -]/g, '');
 }
 
 export class TerminalController {
@@ -33,6 +42,7 @@ export class TerminalController {
   private flash: TerminalVM['flash'] = '';
   private token = 0;
   private open = false;
+  private unsubPaste: (() => void) | null = null;
   /** Set when Escape / EXIT asked to close; the owner closes the panel on its next handle/tick. */
   wantsClose = false;
   onChange: () => void = () => undefined;
@@ -54,10 +64,19 @@ export class TerminalController {
       `WARNING: cheat runs pay no ${n.metaCurrency} and do not count for records or the leaderboard.`,
     ];
     this.arm();
+    this.unsubPaste?.();
+    this.unsubPaste =
+      this.s.input.onPaste?.((text) => {
+        if (!this.open) return;
+        this.type(pasteText(text));
+        this.onChange();
+      }) ?? null;
   }
 
   stop(): void {
     this.token++;
+    this.unsubPaste?.();
+    this.unsubPaste = null;
     if (this.open) {
       this.open = false;
       this.s.input.setContext('menu');
@@ -92,10 +111,7 @@ export class TerminalController {
     }
     const ch = keyChar(code);
     if (ch !== null) {
-      if (this.input.length < TERMINAL_MAX_INPUT && !(ch === ' ' && this.input.length === 0))
-        this.input += ch;
-      this.cursor = -1;
-      this.flash = '';
+      this.type(ch);
       return;
     }
     const unlocked = cheatsOf(this.s.save.data).unlocked;
@@ -118,6 +134,17 @@ export class TerminalController {
       default:
         return;
     }
+  }
+
+  /** Appends typed (or pasted) characters up to TERMINAL_MAX_INPUT; no leading spaces. */
+  private type(text: string): void {
+    for (const ch of text) {
+      if (this.input.length >= TERMINAL_MAX_INPUT) break;
+      if (ch === ' ' && this.input.length === 0) continue;
+      this.input += ch;
+    }
+    this.cursor = -1;
+    this.flash = '';
   }
 
   private print(...lines: string[]): void {
