@@ -11,7 +11,7 @@
  * - commitRun idempotency via lastCommittedRunId; 500 ms debounce driven by tick(nowMs), deferred while a run
  *   is live (plan: never write while Playing; flush() on pagehide/hidden still writes); storage-event sync.
  */
-import type { Logger, Result } from '../contracts/ids';
+import type { Logger, Result, ThemeId } from '../contracts/ids';
 import {
   CURRENT_SAVE_VERSION,
   SAVE_KEYS,
@@ -47,6 +47,11 @@ export interface SaveStoreDeps {
 export interface SaveStore extends SaveStorePort {
   /** Wire to window 'storage' events (Wave 3). */
   handleStorageEvent(key: string | null): void;
+  /**
+   * The saved theme id read without loading (no writes, no state change), so app/createServices can build the
+   * theme's shaders before Boot. Main save, then backup, then the default theme.
+   */
+  peekThemeId(): ThemeId;
 }
 
 type WriteResult = Result<true, 'quota' | 'unavailable'>;
@@ -268,8 +273,18 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     adopt(raw, dec.data, dec.rev);
   };
 
+  const peekThemeId = (): ThemeId => {
+    for (const key of [SAVE_KEYS.main, SAVE_KEYS.backup]) {
+      const dec = decode(kv.get(key));
+      if (dec.kind === 'ok') return dec.data.settings.themeId;
+      if (dec.kind === 'future') break;
+    }
+    return createDefaultSave().settings.themeId;
+  };
+
   return {
     load,
+    peekThemeId,
     get data(): SaveDataV1 {
       return data;
     },

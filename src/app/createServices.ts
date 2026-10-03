@@ -11,7 +11,7 @@ import type { ClockPort, FrameScheduler, Services, SessionStore } from '../contr
 import { createConsoleLogger } from '../core/logger';
 import { DEFAULT_BINDINGS } from '../config/keys';
 import { QUALITY_PRESETS } from '../config/quality';
-import { DEFAULT_THEME_ID, getTheme } from '../themes/registry';
+import { getTheme } from '../themes/registry';
 import { createAssetLibrary } from '../assets/AssetLibrary';
 import { type AudioEngine, createAudioEngine } from '../audio/AudioEngine';
 import { type FramePacer, createFramePacer } from '../engine/FramePacer';
@@ -183,8 +183,10 @@ export function createServices(platform: BrowserPlatform): AppServices {
     inRun: () => session.current !== null,
   });
 
-  // Settings and bindings start at their defaults; Boot loads the save and applies them live.
-  const theme = getTheme(DEFAULT_THEME_ID);
+  // Settings and bindings start at their defaults; Boot loads the save and applies them live. The theme is the
+  // one exception: its shader modes are compile-time defines, so the saved theme is peeked before anything is built
+  // (a theme change applies on reload).
+  const theme = getTheme(save.peekThemeId());
   const settings = DEFAULT_SETTINGS;
   const library = createAssetLibrary({
     theme,
@@ -255,6 +257,10 @@ export function createServices(platform: BrowserPlatform): AppServices {
     env,
     newSeed: () => cryptoSeed(win),
     newRunId: () => cryptoRunId(win),
+    reloadApp: () => {
+      save.flush();
+      win.location.reload();
+    },
   };
 
   return {

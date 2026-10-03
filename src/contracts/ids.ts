@@ -20,7 +20,7 @@ export const BOSS_IDS = ['forkBomb', 'raceCondition', 'kernel'] as const;
 export type BossId = (typeof BOSS_IDS)[number];
 
 /** KERNEL PANIC only for v1. More themes are added later as data (see ARCHITECTURE.md "Adding a theme"). */
-export const THEME_IDS = ['kernelPanic'] as const;
+export const THEME_IDS = ['kernelPanic', 'abyssalLight', 'emberfall'] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 export const SPECIAL_KINDS = ['railburst', 'firewall', 'blinkSwarm', 'patchDrone'] as const;

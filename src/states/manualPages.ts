@@ -11,6 +11,7 @@ import { MENU_KEYS, keyLabel } from '../config/keys';
 import { SPECIALS, SPECIAL_TIER_BONUS } from '../config/specials';
 import { COMBO, COOP, DASH, MOVEMENT, OVERDRIVE, PICKUPS } from '../config/tuning';
 import { VEHICLES } from '../config/vehicles';
+import { THEMES } from '../themes/registry';
 import { VERSUS } from '../config/versus';
 import { WAVES } from '../config/waves';
 import { referencePages } from './manualReference';
@@ -64,7 +65,9 @@ function goalPage(t: ThemeDef): ManualPageVM {
       `The run ends when every player is down and no ${n.lives} are left. You still earn ${n.metaCurrency} for your progress.`,
     ),
     item('Modes', `SOLO, ${n.coop} (two players, one keyboard) and ${n.versus} (a best-of-five duel).`),
-    para('Every run pays Cores for permanent Firmware upgrades, so each attempt makes the next one easier.'),
+    para(
+      `Every run pays ${n.metaCurrency} for permanent ${n.meta} upgrades, so each attempt makes the next one easier.`,
+    ),
   ]);
 }
 
@@ -290,7 +293,7 @@ function difficultyLine(d: DifficultyDef): string {
   return `Enemy speed ${signedPct(d.speed)}, enemy count ${signedPct(d.budget)}, damage to you ${signedPct(d.damage)}, enemy HP ${signedPct(d.hp)}.`;
 }
 
-function difficultyPage(): ManualPageVM {
+function difficultyPage(t: ThemeDef): ManualPageVM {
   return page('difficulty', 'Difficulty', [
     para(
       'Pick a difficulty in SETTINGS before a run (character select shows the current one). It changes how hard the arena hits, never the rules.',
@@ -302,9 +305,29 @@ function difficultyPage(): ManualPageVM {
       `${difficultyLine(DIFFICULTY.hard)} Close to the original release; for players who know every pattern.`,
     ),
     para(
-      'The difficulty in effect when a run starts stays for the whole run. Cores rewards are the same on every difficulty.',
+      `The difficulty in effect when a run starts stays for the whole run. ${t.names.metaCurrency} rewards are the same on every difficulty.`,
     ),
   ]);
+}
+
+const THEME_LOOKS: Readonly<Record<ThemeDef['id'], string>> = {
+  kernelPanic: 'Neon circuit grid inside a crashing server; dark synthwave.',
+  abyssalLight:
+    'Caustic-lit seabed in a lightless trench, dense dark water; slow, tense drones and sonar pings.',
+  emberfall: 'Cracked lava crust under a dying red giant, heat shimmer; hard industrial percussion.',
+};
+
+function themesPage(): ManualPageVM {
+  const blocks: ManualBlockVM[] = [
+    para(
+      'Three themes change the look, music and names, never the rules: every craft, enemy, card and number is the same. Pick one in SETTINGS > THEME, then choose RESTART TO APPLY (the game reloads; progress is kept).',
+    ),
+  ];
+  for (const t of Object.values(THEMES)) {
+    const n = t.names;
+    blocks.push(item(t.title, `${THEME_LOOKS[t.id]} Currencies: ${n.runCurrency} and ${n.metaCurrency}.`));
+  }
+  return page('themes', 'Themes', blocks);
 }
 
 function tipsPage(t: ThemeDef): ManualPageVM {
@@ -331,7 +354,7 @@ function tipsPage(t: ThemeDef): ManualPageVM {
       'Laptop keyboards',
       'If a key drops out when both players hold keys, run CONTROLS > KEY TEST and rebind.',
     ),
-    item('Stuck?', `Spend ${n.metaCurrency} on Firmware between runs; every run pays out.`),
+    item('Stuck?', `Spend ${n.metaCurrency} on ${n.meta} between runs; every run pays out.`),
   ]);
 }
 
@@ -349,7 +372,8 @@ export function buildManualPages(theme: ThemeDef, bindings: Bindings): readonly 
     revivePage(theme),
     ...ref.world,
     versusPage(theme),
-    difficultyPage(),
+    difficultyPage(theme),
+    themesPage(),
     tipsPage(theme),
   ];
 }

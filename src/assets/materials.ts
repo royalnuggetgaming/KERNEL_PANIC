@@ -159,16 +159,14 @@ function emissiveDefine(theme: ThemeDef): number {
   return theme.geometry.emissiveMask === 'edges' ? 1 : 0;
 }
 
-function floorDefines(theme: ThemeDef): ShaderDefines {
-  const mode = theme.shading.floorMode;
-  if (mode !== 'GRID') throw new Error(`floor mode '${mode}' is reserved for a future theme`);
-  return { FLOOR_MODE_GRID: 1 };
+/** Exactly one FLOOR_MODE_<mode> define, fixed at Boot (the program never changes at runtime). */
+export function floorDefines(theme: ThemeDef): ShaderDefines {
+  return { [`FLOOR_MODE_${theme.shading.floorMode}`]: 1 };
 }
 
-function skyDefines(theme: ThemeDef): ShaderDefines {
-  const mode = theme.shading.skyMode;
-  if (mode !== 'NEBULA_GLYPHS') throw new Error(`sky mode '${mode}' is reserved for a future theme`);
-  return { SKY_MODE_NEBULA_GLYPHS: 1 };
+/** Exactly one SKY_MODE_<mode> define, fixed at Boot. */
+export function skyDefines(theme: ThemeDef): ShaderDefines {
+  return { [`SKY_MODE_${theme.shading.skyMode}`]: 1 };
 }
 
 function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {

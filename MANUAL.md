@@ -23,7 +23,8 @@ the in-game manual shows your own bindings.
 15. [Firmware & Cores](#firmware-cores)
 16. [VERSUS Mode](#versus-mode)
 17. [Difficulty](#difficulty)
-18. [Tips](#tips)
+18. [Themes](#themes)
+19. [Tips](#tips)
 
 ## Goal
 
@@ -346,6 +347,16 @@ Pick a difficulty in SETTINGS before a run (character select shows the current o
 | **HARD**   | Enemy speed +35%, enemy count +75%, damage to you +75%, enemy HP +25%. Close to the original release; for players who know every pattern. |
 
 The difficulty in effect when a run starts stays for the whole run. Cores rewards are the same on every difficulty.
+
+## Themes
+
+Three themes change the look, music and names, never the rules: every craft, enemy, card and number is the same. Pick one in SETTINGS > THEME, then choose RESTART TO APPLY (the game reloads; progress is kept).
+
+|                   |                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **KERNEL PANIC**  | Neon circuit grid inside a crashing server; dark synthwave. Currencies: Bits and Cores.                                       |
+| **ABYSSAL LIGHT** | Caustic-lit seabed in a lightless trench, dense dark water; slow, tense drones and sonar pings. Currencies: Lumen and Pearls. |
+| **EMBERFALL**     | Cracked lava crust under a dying red giant, heat shimmer; hard industrial percussion. Currencies: Scrap and Alloy.            |
 
 ## Tips
 

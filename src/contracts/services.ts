@@ -83,4 +83,9 @@ export interface Services {
   readonly env: AppEnv;
   readonly newSeed: () => number;
   readonly newRunId: () => string;
+  /**
+   * v4 (additive): flushes the save and reloads the page, so a new theme's compile-time shader modes apply
+   * (Settings > THEME > RESTART). Only app/createServices touches the browser to do it.
+   */
+  readonly reloadApp: () => void;
 }

@@ -57,7 +57,7 @@ function cardsPage(t: ThemeDef, id: string, title: string, rarities: readonly Ra
       if (c.rarity === r) blocks.push(item(c.label, cardDesc(c.id, t.names.runCurrency)));
   }
   if (rarities.includes('L')) {
-    blocks.push(para('Legendary cards appear only after you buy the Legendary Pool Firmware.'));
+    blocks.push(para(`Legendary cards appear only after you buy the Legendary Pool ${t.names.meta}.`));
     blocks.push(
       para(
         `MYTHIC: from sector ${MYTHIC.fromSector} on, every fresh card slot has a ${trimNum(MYTHIC.offerChance * 100)}% chance to hold the one Mythic card instead (no Firmware needed). It glows gold in the ${t.names.shop}; grab it if you can afford it.`,

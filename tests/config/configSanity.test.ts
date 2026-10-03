@@ -92,7 +92,9 @@ describe('config sanity', () => {
 
   it('theme registry falls back to the default', () => {
     expect(getTheme('kernelPanic')).toBe(THEMES.kernelPanic);
-    expect(getTheme('emberfall')).toBe(THEMES[DEFAULT_THEME_ID]);
+    // v4: 'emberfall' is a shipped theme now (it used to be the unknown-id example).
+    expect(getTheme('emberfall')).toBe(THEMES.emberfall);
+    expect(getTheme('neonVoid')).toBe(THEMES[DEFAULT_THEME_ID]);
     expect(getTheme(null).title).toBe('KERNEL PANIC');
     expect(getTheme('__proto__').id).toBe('kernelPanic');
   });

@@ -22,7 +22,15 @@ export interface TimbrePreset {
   readonly fmIndex: number;
   /** Master pitch offset for SFX, in semitones. */
   readonly sfxTranspose: number;
+  /** Drum kit voicing: 808-style electro, soft muffled (abyssal), metallic noise (industrial). */
+  readonly kit: DrumKit;
+  /** Wave of the bass pulse layer over the sine sub. */
+  readonly bassWave: OscillatorType;
+  /** 0..1 waveshaper drive on the regular bass bus (0 = clean, no shaper). */
+  readonly bassDrive: number;
 }
+
+export type DrumKit = 'electro' | 'soft' | 'metal';
 
 export type TimbreName = ThemeAudio['timbre'];
 
@@ -41,6 +49,9 @@ export const TIMBRES: Readonly<Record<TimbreName, TimbrePreset>> = {
     fmRatio: 2,
     fmIndex: 2.4,
     sfxTranspose: 0,
+    kit: 'electro',
+    bassWave: 'square',
+    bassDrive: 0,
   },
   abyssal: {
     laserWave: 'sine',
@@ -56,6 +67,9 @@ export const TIMBRES: Readonly<Record<TimbreName, TimbrePreset>> = {
     fmRatio: 1.5,
     fmIndex: 1.6,
     sfxTranspose: -5,
+    kit: 'soft',
+    bassWave: 'sine',
+    bassDrive: 0,
   },
   industrial: {
     laserWave: 'sawtooth',
@@ -71,5 +85,8 @@ export const TIMBRES: Readonly<Record<TimbreName, TimbrePreset>> = {
     fmRatio: 3,
     fmIndex: 3.2,
     sfxTranspose: -2,
+    kit: 'metal',
+    bassWave: 'sawtooth',
+    bassDrive: 0.6,
   },
 };

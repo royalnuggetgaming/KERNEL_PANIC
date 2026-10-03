@@ -9,7 +9,7 @@ import { createAssetLibrary } from '../../src/assets/AssetLibrary';
 import { POST_MATERIAL_KEYS, SCENE_MATERIAL_KEYS } from '../../src/assets/materials';
 import { QUALITY_PRESETS } from '../../src/config/quality';
 import { NullLogger } from '../../src/core/logger';
-import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
+import { THEMES } from '../../src/themes/registry';
 
 /** Structural subset of node:child_process (the app tsconfig has no node types). */
 interface SpawnResult {
@@ -94,23 +94,27 @@ function fragmentSource(m: ShaderMaterial): string {
 }
 
 describe.skipIf(!HAS_GLSLANG)('glslangValidator (GLSL ES 3.00 compile)', () => {
-  it('compiles both stages of every material', async () => {
-    const lib = createAssetLibrary({
-      theme: KERNEL_PANIC,
-      quality: QUALITY_PRESETS.high,
-      log: NullLogger,
-      seed: 7,
-    });
-    await lib.build(() => undefined);
-    const failures: string[] = [];
-    for (const key of [...SCENE_MATERIAL_KEYS, ...POST_MATERIAL_KEYS]) {
-      const m = lib.getMaterial(key);
-      const v = compile('vert', vertexSource(m));
-      const f = compile('frag', fragmentSource(m));
-      if (v !== '') failures.push(`${key} (vertex):\n${v}`);
-      if (f !== '') failures.push(`${key} (fragment):\n${f}`);
-    }
-    lib.dispose();
-    expect(failures.join('\n')).toBe('');
-  }, 120_000);
+  it.each(Object.values(THEMES))(
+    'compiles both stages of every material ($id)',
+    async (theme) => {
+      const lib = createAssetLibrary({
+        theme,
+        quality: QUALITY_PRESETS.high,
+        log: NullLogger,
+        seed: 7,
+      });
+      await lib.build(() => undefined);
+      const failures: string[] = [];
+      for (const key of [...SCENE_MATERIAL_KEYS, ...POST_MATERIAL_KEYS]) {
+        const m = lib.getMaterial(key);
+        const v = compile('vert', vertexSource(m));
+        const f = compile('frag', fragmentSource(m));
+        if (v !== '') failures.push(`${key} (vertex):\n${v}`);
+        if (f !== '') failures.push(`${key} (fragment):\n${f}`);
+      }
+      lib.dispose();
+      expect(failures.join('\n')).toBe('');
+    },
+    120_000,
+  );
 });

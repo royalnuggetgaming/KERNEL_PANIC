@@ -1,7 +1,9 @@
 /**
  * Settings sub-panel controller (MainMenu and Paused). Every change is saved through save.commitDebounced and
  * applied live: volumes (audio), quality / shake / flashes / motion / colourblind / FPS (render.applySettings),
- * per-player autofire and focus mode (input.setFireModes). The theme applies on reload. The difficulty is saved
+ * per-player autofire and focus mode (input.setFireModes). The theme's shader modes are compile-time defines fixed
+ * at Boot, so a theme change is saved and a RESTART TO APPLY row appears (outside a run it reloads the page through
+ * services.reloadApp; inside a run it only explains, since a reload would end the run). The difficulty is saved
  * immediately but only read when a run starts (CharacterSelect snapshots it into RunConfig), so changing it from
  * the pause menu affects the next run, never the current one.
  */
@@ -50,8 +52,17 @@ export const DIFFICULTY_LABELS: Readonly<Record<DifficultyId, string>> = {
   hard: 'HARD',
 };
 
+/** Shown when the saved theme differs from the running one. */
+export const THEME_RESTART_NOTE = 'Restart to apply the theme: choose RESTART TO APPLY below.';
+export const THEME_RESTART_IN_RUN = 'Finish or quit this run first: restarting now would end it.';
+export const THEME_RESTARTING = 'Restarting...';
+
+/** The action row that only exists while a theme change is waiting for a restart. */
+export const APPLY_THEME_ROW = 'applyTheme';
+type RowId = SettingId | typeof APPLY_THEME_ROW;
+
 interface RowDef {
-  readonly id: SettingId;
+  readonly id: RowId;
   readonly label: string;
   readonly kind: SettingKind;
 }
@@ -74,6 +85,17 @@ const ROWS: readonly RowDef[] = [
   { id: 'showFps', label: 'SHOW FPS', kind: 'toggle' },
   { id: 'theme', label: 'THEME', kind: 'choice' },
 ];
+const ROWS_WITH_APPLY: readonly RowDef[] = [
+  ...ROWS,
+  { id: APPLY_THEME_ROW, label: 'RESTART TO APPLY', kind: 'action' },
+];
+
+/** Visible rows: the restart row is appended while the saved theme differs from the running theme. */
+function rowsFor(s: Settings, runningTheme: ThemeId): readonly RowDef[] {
+  const saved: string = s.themeId;
+  const running: string = runningTheme;
+  return saved === running ? ROWS : ROWS_WITH_APPLY;
+}
 
 /** Applies settings to the live ports (not to the save). */
 export function applySettingsLive(s: Services, settings: Settings): void {
@@ -145,8 +167,10 @@ export function adjustSetting(s: Settings, id: SettingId, delta: number): Partia
   }
 }
 
-function rowValue(s: Settings, id: SettingId): { value: string; fraction: number } {
+function rowValue(s: Settings, id: RowId): { value: string; fraction: number } {
   switch (id) {
+    case APPLY_THEME_ROW:
+      return { value: 'RESTART NOW', fraction: 0 };
     case 'difficulty':
       return { value: DIFFICULTY_LABELS[s.difficulty ?? DEFAULT_DIFFICULTY], fraction: 0 };
     case 'master':
@@ -176,9 +200,15 @@ function rowValue(s: Settings, id: SettingId): { value: string; fraction: number
   }
 }
 
-export function buildSettingsVM(s: Settings, cursor: number, note: string): SettingsPanelVM {
+/** `runningTheme` defaults to the saved theme (no restart row). */
+export function buildSettingsVM(
+  s: Settings,
+  cursor: number,
+  note: string,
+  runningTheme: ThemeId = s.themeId,
+): SettingsPanelVM {
   const rows: SettingRowVM[] = [];
-  for (const def of ROWS) {
+  for (const def of rowsFor(s, runningTheme)) {
     const v = rowValue(s, def.id);
     rows.push({ id: def.id, label: def.label, kind: def.kind, value: v.value, fraction: v.fraction });
   }
@@ -206,13 +236,18 @@ export class SettingsController {
     return this.settings;
   }
 
+  private rows(): readonly RowDef[] {
+    return rowsFor(this.settings, this.s.theme().id);
+  }
+
   /** Handles one intent (back is handled by the owner). Returns true when the VM changed. */
   handle(i: UiIntent): boolean {
-    const target = i.pointer ? indexOfId(ROWS, i.itemId) : this.cursor;
+    const rows = this.rows();
+    const target = i.pointer ? indexOfId(rows, i.itemId) : this.cursor;
     switch (i.kind) {
       case 'up':
       case 'down':
-        this.cursor = wrapIndex(this.cursor, i.kind === 'up' ? -1 : 1, ROWS.length);
+        this.cursor = wrapIndex(this.cursor, i.kind === 'up' ? -1 : 1, rows.length);
         this.s.audio.play('uiMove');
         return true;
       case 'left':
@@ -220,7 +255,9 @@ export class SettingsController {
       case 'confirm': {
         if (target < 0) return false;
         this.cursor = target;
-        return this.adjust(ROWS[target]!, i.kind === 'left' ? -1 : 1, i.kind === 'confirm');
+        const def = rows[target]!;
+        if (def.id === APPLY_THEME_ROW) return this.restart();
+        return this.adjust(def, def.id, i.kind === 'left' ? -1 : 1, i.kind === 'confirm');
       }
       case 'back':
       case 'ready':
@@ -230,20 +267,35 @@ export class SettingsController {
   }
 
   vm(): SettingsPanelVM {
-    return buildSettingsVM(this.settings, this.cursor, this.note);
+    return buildSettingsVM(this.settings, this.cursor, this.note, this.s.theme().id);
   }
 
-  private adjust(def: RowDef, delta: number, confirm: boolean): boolean {
+  private restart(): boolean {
+    if (this.s.session.current !== null) {
+      this.note = THEME_RESTART_IN_RUN;
+      this.s.audio.play('uiBack');
+      return true;
+    }
+    this.note = THEME_RESTARTING;
+    this.s.audio.play('uiConfirm');
+    this.s.reloadApp();
+    return true;
+  }
+
+  private adjust(def: RowDef, id: SettingId, delta: number, confirm: boolean): boolean {
     // Confirm activates toggles and choices; a slider only moves with left/right.
     if (confirm && def.kind === 'slider') return false;
-    const patch = adjustSetting(this.settings, def.id, delta);
+    const patch = adjustSetting(this.settings, id, delta);
     if (patch === null) {
-      this.note = def.id === 'theme' ? 'Only one theme is installed.' : '';
+      this.note = '';
       return true;
     }
     this.settings = { ...this.settings, ...patch };
+    const pending = this.rows().length > ROWS.length;
     this.note =
-      def.id === 'theme' ? 'The theme applies on reload.' : def.id === 'difficulty' ? DIFFICULTY_NOTE : '';
+      id === 'theme' ? (pending ? THEME_RESTART_NOTE : '') : id === 'difficulty' ? DIFFICULTY_NOTE : '';
+    // The restart row may just have gone away.
+    this.cursor = Math.min(this.cursor, this.rows().length - 1);
     this.s.save.commitDebounced({ settings: patch });
     applySettingsLive(this.s, this.settings);
     this.s.audio.play('uiConfirm');

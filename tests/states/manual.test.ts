@@ -49,6 +49,7 @@ describe('HOW TO PLAY content', () => {
       'firmware',
       'versus',
       'difficulty',
+      'themes',
       'tips',
     ]);
     for (const p of pages) expect(p.blocks.length).toBeGreaterThan(2);

@@ -5,9 +5,19 @@
  */
 import type { MusicMood } from '../contracts/audio';
 import type { ThemeDef } from '../contracts/theme';
-import { clamp, saturate } from '../core/math';
-import { type InstrumentId, LAYER_FADE, LAYER_THRESHOLDS } from './instrumentIds';
+import { clamp } from '../core/math';
+import {
+  type MusicStyle,
+  type StyleWriter,
+  layerLevel,
+  styledArp,
+  styledBass,
+  styledDrums,
+} from './composerStyles';
+import type { InstrumentId } from './instrumentIds';
 import { SCALES, chordTones, foldIntoOctave, keyRoot } from './theory';
+
+export { layerLevel } from './composerStyles';
 
 export interface NoteEvent {
   instrument: string;
@@ -58,16 +68,9 @@ function hash2(a: number, b: number): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
-/** Velocity multiplier of a layer at intensity x; 0 when the layer is gated off. */
-export function layerLevel(inst: InstrumentId, x: number): number {
-  const thr = LAYER_THRESHOLDS[inst];
-  if (inst === 'lead' ? x <= thr : x < thr) return 0;
-  if (thr === 0) return 1;
-  return 0.45 + 0.55 * saturate((x - thr) / LAYER_FADE);
-}
-
-class ComposerImpl implements SectorComposer {
+class ComposerImpl implements SectorComposer, StyleWriter {
   private readonly theme: ThemeDef;
+  private readonly style: MusicStyle;
   private readonly seed: number;
   private readonly scale: readonly number[];
   private readonly leadScale: readonly number[];
@@ -89,6 +92,7 @@ class ComposerImpl implements SectorComposer {
   constructor(theme: ThemeDef, seed: number) {
     this.theme = theme;
     this.seed = seed >>> 0;
+    this.style = theme.audio.timbre;
     this.scale = SCALES[theme.audio.mode];
     // "A minor/Dorian": melodies borrow the Dorian raised sixth over the minor harmony.
     this.leadScale = theme.audio.mode === 'aeolian' ? SCALES.dorian : this.scale;
@@ -121,13 +125,14 @@ class ComposerImpl implements SectorComposer {
       return this.n;
     }
     this.writeBass(key + rootOffset, barIdx);
-    if (!a.lounge) {
+    if (a.lounge) {
+      this.writeLoungeSnare();
+      this.writeHats(barIdx);
+    } else if (!styledDrums(this, this.style, barIdx)) {
       this.writeKick(barIdx);
       this.writeSnare(barIdx);
-    } else {
-      this.writeLoungeSnare();
+      this.writeHats(barIdx);
     }
-    this.writeHats(barIdx);
     this.writeArp(key, barIdx);
     if (!a.lounge) this.writeLead(key, rootOffset, barIdx);
     return this.n;
@@ -183,12 +188,20 @@ class ComposerImpl implements SectorComposer {
     }
   }
 
-  private seedRng(bar: number, salt: number): void {
+  get x(): number {
+    return this.arr.x;
+  }
+
+  get boss(): boolean {
+    return this.arr.boss;
+  }
+
+  seedRng(bar: number, salt: number): void {
     this.rngState = hash2(hash2(this.seed, bar | 0), salt);
   }
 
   /** mulberry32 step, [0, 1). */
-  private rand(): number {
+  rand(): number {
     this.rngState = (this.rngState + 0x6d2b79f5) | 0;
     let t = this.rngState;
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -196,7 +209,7 @@ class ComposerImpl implements SectorComposer {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
-  private emit(inst: InstrumentId, midi: number, start: number, len: number, vel: number): void {
+  emit(inst: InstrumentId, midi: number, start: number, len: number, vel: number): void {
     if (this.n >= MAX_BAR_EVENTS || vel <= 0) return;
     const out = this.out;
     let e = out[this.n];
@@ -234,6 +247,7 @@ class ComposerImpl implements SectorComposer {
       if (this.rand() < 0.6) this.emit(inst, root + (this.rand() < 0.5 ? 10 : 5), 3.5, 0.45, 0.35 * lvl);
       return;
     }
+    if (styledBass(this, this.style, root, bar)) return;
     if (a.boss) {
       // Driving 16th sub with octave jumps on the off-sixteenths.
       for (let s = 0; s < 16; s++) {
@@ -312,6 +326,7 @@ class ComposerImpl implements SectorComposer {
     const a = this.arr;
     const lvl = layerLevel('arp', a.x);
     if (lvl === 0) return;
+    if (styledArp(this, this.style, foldIntoOctave(key + this.tones[0]!, ARP_LO), this.tones, bar)) return;
     // The pattern shape is fixed per 4-bar phrase so the arpeggio reads as a motif.
     this.seedRng(bar >> 2, 11);
     const shape = Math.floor(this.rand() * 4);

@@ -108,6 +108,8 @@ keys.
   win 3 rounds wins the match. A round lasts up to 90 s, and if time runs out the player with the higher HP
   fraction wins it. Shots hit your opponent for reduced damage, and weaker enemy waves roam the arena as hazards.
   The shop opens between rounds, without the team items.
+- **Themes:** KERNEL PANIC (neon circuit grid), ABYSSAL LIGHT (caustic deep sea) and EMBERFALL (lava under a dying
+  star) change the visuals, music and names, never the rules: **SETTINGS > THEME**, then **RESTART TO APPLY**.
 
 ## Scripts
 
