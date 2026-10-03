@@ -67,6 +67,10 @@ export interface PerfSample {
   readonly longFrames: number;
   readonly cpuP95: number;
   readonly simP95: number;
+  /** p95 of (cpuMs - simMs) per frame: render submit + UI + input, without the fixed-step simulation. */
+  readonly renderP95: number;
+  /** Median sim ms per frame (frame-rate dependent: slow frames run more catch-up ticks). */
+  readonly simP50: number;
   readonly drawCalls: number;
   readonly drawCallsAvg: number;
   readonly triangles: number;
@@ -162,6 +166,7 @@ export function installDevApi(host: DebugHost): DevApi {
       const frame: number[] = [];
       const cpu: number[] = [];
       const sim: number[] = [];
+      const rend: number[] = [];
       let calls = 0;
       let callsSum = 0;
       let tris = 0;
@@ -175,6 +180,7 @@ export function installDevApi(host: DebugHost): DevApi {
           frame.push(s.frameMs);
           cpu.push(s.cpuMs);
           sim.push(s.simMs);
+          rend.push(s.cpuMs - s.simMs);
           elapsed += s.frameMs;
         }
         if (elapsed < ms) return;
@@ -182,6 +188,7 @@ export function installDevApi(host: DebugHost): DevApi {
         const f = frame.slice().sort((a, b) => a - b);
         const c = cpu.slice().sort((a, b) => a - b);
         const m = sim.slice().sort((a, b) => a - b);
+        const r = rend.sort((a, b) => a - b);
         let long = 0;
         for (const x of frame) if (x > LONG_FRAME_MS) long++;
         resolve({
@@ -193,6 +200,8 @@ export function installDevApi(host: DebugHost): DevApi {
           longFrames: long,
           cpuP95: round2(percentile(c, 95)),
           simP95: round2(percentile(m, 95)),
+          renderP95: round2(percentile(r, 95)),
+          simP50: round2(percentile(m, 50)),
           drawCalls: calls,
           drawCallsAvg: round2(frame.length > 0 ? callsSum / frame.length : 0),
           triangles: tris,

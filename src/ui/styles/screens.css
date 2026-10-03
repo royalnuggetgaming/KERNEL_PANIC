@@ -202,6 +202,24 @@
   font-size: 0.85em;
 }
 
+/* 1366x768 / 1280x720 laptops (Chromebooks): 16 rows + RESTART TO APPLY + note + BACK fit without scrolling. */
+@media (max-height: 800px) {
+  .kp-settings {
+    max-height: 96vh;
+    padding-top: 0.8em;
+    padding-bottom: 0.8em;
+  }
+
+  .kp-set-row {
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+  }
+
+  .kp-set-note {
+    margin-top: 0.4em;
+  }
+}
+
 .kp-ctl-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

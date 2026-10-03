@@ -140,9 +140,10 @@ void main() {
   vec2 q = p * 0.38;
 #ifdef LOW_FX
   float silt = kpValueNoise2(p * 0.11 + vec2(3.7, 1.9));
-  // Two ridged value-noise layers stand in for the Voronoi web (ridges near 1 like large F1).
-  float c1 = 1.0 - abs(2.0 * kpValueNoise2(q * 1.6 + vec2(t * 0.09, t * 0.05)) - 1.0);
-  float c2 = 1.0 - abs(2.0 * kpValueNoise2(q * 2.2 + vec2(-t * 0.07, t * 0.08) + 3.1) - 1.0);
+  // Two sharpened ridged value-noise layers stand in for the Voronoi web: pow() keeps only thin ridge lines near 1
+  // (value noise clusters around 0.5, so a plain ridge would light up most of the floor).
+  float c1 = pow(1.0 - abs(2.0 * kpValueNoise2(q * 1.2 + vec2(t * 0.09, t * 0.05)) - 1.0), 5.0);
+  float c2 = pow(1.0 - abs(2.0 * kpValueNoise2(q * 1.7 + vec2(-t * 0.07, t * 0.08) + 3.1) - 1.0), 5.0);
 #else
   float silt = kpFbm2(p * 0.11 + vec2(3.7, 1.9));
   // Two domain-warped Voronoi layers; their cell borders (large F1) form the caustic web.
@@ -167,8 +168,9 @@ void main() {
   vec2 w = vec2(kpValueNoise2(q * 2.0 + vec2(0.0, t * 0.03)), kpValueNoise2(q * 2.0 + vec2(5.2, 1.3) - t * 0.025));
   float heat = smoothstep(0.3, 0.75, kpFbm2(q * 1.8 + 2.2 * w + vec2(t * 0.02, -t * 0.015)));
   // Hex crust plates (edge distance as the seam, hashed centre as the plate id).
-  vec3 hc = kpHex(p * 0.36 + (w - 0.5) * 1.4);
-  vec2 cr = vec2(hc.x * 0.9, kpHash12(hc.yz));
+  // (F2 - F1 is about twice the distance to the shared edge, hence the 2x.)
+  vec3 hc = kpHex(p * 0.24 + (w - 0.5) * 1.4);
+  vec2 cr = vec2(hc.x * 2.0, kpHash12(hc.yz));
 #else
   vec2 w = vec2(kpFbm2(q + vec2(0.0, t * 0.03)), kpFbm2(q + vec2(5.2, 1.3) - vec2(t * 0.025, 0.0)));
   float heat = kpFbm2(q * 1.8 + 2.2 * w + vec2(t * 0.02, -t * 0.015));
