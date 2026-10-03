@@ -50,16 +50,18 @@ export class Toasts {
     }
   }
 
-  push(msg: string, kind: ToastKind, nowMs: number): void {
+  push(msg: string, kind: ToastKind, nowMs: number, durationMs: number = TOAST_MS): void {
     if (this.entries.length >= TOAST_MAX) this.entries.shift();
-    this.entries.push({ msg, kind, expiresAt: nowMs + TOAST_MS });
+    this.entries.push({ msg, kind, expiresAt: nowMs + durationMs });
     this.dirty = true;
   }
 
   /** Drops expired toasts and writes the slots when anything changed. */
   flush(nowMs: number): void {
-    while (this.entries.length > 0 && this.entries[0]!.expiresAt <= nowMs) {
-      this.entries.shift();
+    // Durations differ (a long notice can sit in front of a short one), so every entry is checked.
+    for (let i = this.entries.length - 1; i >= 0; i--) {
+      if (this.entries[i]!.expiresAt > nowMs) continue;
+      this.entries.splice(i, 1);
       this.dirty = true;
     }
     if (!this.dirty) return;

@@ -14,6 +14,7 @@ import { VEHICLES } from '../config/vehicles';
 import { THEMES } from '../themes/registry';
 import { VERSUS } from '../config/versus';
 import { WAVES } from '../config/waves';
+import { chromebookPage } from './manualChromebook';
 import { referencePages } from './manualReference';
 import { hd, item, page, para, pctText } from './manualBlocks';
 import { trimNum } from './powerupText';
@@ -83,7 +84,7 @@ function controlsPage(b: Bindings): ManualPageVM {
     item('Navigate', 'Either player’s move keys'),
     item('Confirm', `${keys(MENU_KEYS.confirm)} or a player’s Fire key`),
     item('Back', `${keys(MENU_KEYS.back)} or a player’s Dash key`),
-    item('Mouse', 'Click any menu item, shop row or button'),
+    item('Mouse / touch', 'Click or tap any menu item, shop row or button'),
     hd('Patch Bay and character select'),
     para(
       'Each player moves their own cursor with their own keys: Fire buys or confirms, Dash undoes the last purchase, Special toggles READY. Player 2 joins at character select by pressing their Fire key.',
@@ -374,6 +375,7 @@ export function buildManualPages(theme: ThemeDef, bindings: Bindings): readonly 
     versusPage(theme),
     difficultyPage(theme),
     themesPage(),
+    chromebookPage(),
     tipsPage(theme),
   ];
 }

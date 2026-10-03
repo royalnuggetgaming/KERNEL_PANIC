@@ -19,6 +19,7 @@ import {
 import type { Services } from '../contracts/services';
 import type { SettingKind, SettingRowVM, SettingsPanelVM } from '../contracts/ui';
 import { DEFAULT_DIFFICULTY } from '../config/difficulty';
+import { QUALITY_PRESETS } from '../config/quality';
 import { getTheme } from '../themes/registry';
 import { indexOfId, wrapIndex, type UiIntent } from './intents';
 
@@ -56,6 +57,9 @@ export const DIFFICULTY_LABELS: Readonly<Record<DifficultyId, string>> = {
 export const THEME_RESTART_NOTE = 'Restart to apply the theme: choose RESTART TO APPLY below.';
 export const THEME_RESTART_IN_RUN = 'Finish or quit this run first: restarting now would end it.';
 export const THEME_RESTARTING = 'Restarting...';
+/** Shown when a quality change switches the LOW_FX (Chromebook) shader variant, a Boot-time define. */
+export const LOW_FX_RESTART_NOTE =
+  'Chromebook shader detail changes after RESTART TO APPLY (the rest is live).';
 
 /** The action row that only exists while a theme change is waiting for a restart. */
 export const APPLY_THEME_ROW = 'applyTheme';
@@ -90,11 +94,15 @@ const ROWS_WITH_APPLY: readonly RowDef[] = [
   { id: APPLY_THEME_ROW, label: 'RESTART TO APPLY', kind: 'action' },
 ];
 
-/** Visible rows: the restart row is appended while the saved theme differs from the running theme. */
-function rowsFor(s: Settings, runningTheme: ThemeId): readonly RowDef[] {
+/**
+ * Visible rows: the restart row is appended while the saved theme differs from the running theme, or the saved
+ * quality's LOW_FX shader variant differs from the running one (both are compile-time defines fixed at Boot).
+ */
+function rowsFor(s: Settings, runningTheme: ThemeId, runningLowFx: boolean): readonly RowDef[] {
   const saved: string = s.themeId;
   const running: string = runningTheme;
-  return saved === running ? ROWS : ROWS_WITH_APPLY;
+  const fxPending = QUALITY_PRESETS[s.quality].lowFx !== runningLowFx;
+  return saved === running && !fxPending ? ROWS : ROWS_WITH_APPLY;
 }
 
 /** Applies settings to the live ports (not to the save). */
@@ -200,15 +208,16 @@ function rowValue(s: Settings, id: RowId): { value: string; fraction: number } {
   }
 }
 
-/** `runningTheme` defaults to the saved theme (no restart row). */
+/** `runningTheme` / `runningLowFx` default to the saved settings (no restart row). */
 export function buildSettingsVM(
   s: Settings,
   cursor: number,
   note: string,
   runningTheme: ThemeId = s.themeId,
+  runningLowFx: boolean = QUALITY_PRESETS[s.quality].lowFx,
 ): SettingsPanelVM {
   const rows: SettingRowVM[] = [];
-  for (const def of rowsFor(s, runningTheme)) {
+  for (const def of rowsFor(s, runningTheme, runningLowFx)) {
     const v = rowValue(s, def.id);
     rows.push({ id: def.id, label: def.label, kind: def.kind, value: v.value, fraction: v.fraction });
   }
@@ -236,8 +245,13 @@ export class SettingsController {
     return this.settings;
   }
 
+  /** The running shader variant (AppEnv.lowFx, absent in fixtures = the saved quality's). */
+  private runningLowFx(): boolean {
+    return this.s.env.lowFx ?? QUALITY_PRESETS[this.settings.quality].lowFx;
+  }
+
   private rows(): readonly RowDef[] {
-    return rowsFor(this.settings, this.s.theme().id);
+    return rowsFor(this.settings, this.s.theme().id, this.runningLowFx());
   }
 
   /** Handles one intent (back is handled by the owner). Returns true when the VM changed. */
@@ -267,7 +281,7 @@ export class SettingsController {
   }
 
   vm(): SettingsPanelVM {
-    return buildSettingsVM(this.settings, this.cursor, this.note, this.s.theme().id);
+    return buildSettingsVM(this.settings, this.cursor, this.note, this.s.theme().id, this.runningLowFx());
   }
 
   private restart(): boolean {
@@ -282,6 +296,15 @@ export class SettingsController {
     return true;
   }
 
+  private noteAfter(id: SettingId): string {
+    const savedTheme: string = this.settings.themeId;
+    const runningTheme: string = this.s.theme().id;
+    if (id === 'theme') return savedTheme !== runningTheme ? THEME_RESTART_NOTE : '';
+    if (id === 'difficulty') return DIFFICULTY_NOTE;
+    const fxPending = QUALITY_PRESETS[this.settings.quality].lowFx !== this.runningLowFx();
+    return id === 'quality' && fxPending ? LOW_FX_RESTART_NOTE : '';
+  }
+
   private adjust(def: RowDef, id: SettingId, delta: number, confirm: boolean): boolean {
     // Confirm activates toggles and choices; a slider only moves with left/right.
     if (confirm && def.kind === 'slider') return false;
@@ -291,9 +314,7 @@ export class SettingsController {
       return true;
     }
     this.settings = { ...this.settings, ...patch };
-    const pending = this.rows().length > ROWS.length;
-    this.note =
-      id === 'theme' ? (pending ? THEME_RESTART_NOTE : '') : id === 'difficulty' ? DIFFICULTY_NOTE : '';
+    this.note = this.noteAfter(id);
     // The restart row may just have gone away.
     this.cursor = Math.min(this.cursor, this.rows().length - 1);
     this.s.save.commitDebounced({ settings: patch });

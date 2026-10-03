@@ -50,6 +50,8 @@ describe('HOW TO PLAY content', () => {
       'versus',
       'difficulty',
       'themes',
+      // v4: the Chromebook page (auto-detect, switching, Search key, tips) sits before Tips.
+      'chromebook',
       'tips',
     ]);
     for (const p of pages) expect(p.blocks.length).toBeGreaterThan(2);

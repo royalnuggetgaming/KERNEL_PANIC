@@ -6,6 +6,8 @@
  *   down from above (noise-scrolled), and drifting marine snow.
  * - CORONA (EMBERFALL): dark space with stars and a huge red giant low on the horizon: a hot disc with FBM
  *   granulation and an animated, flame-streaked corona.
+ * LOW_FX (Chromebook quality, fixed at Boot): 2-octave FBMs (noise chunk), and single simplex layers for the
+ * nebula detail and the star's granulation.
  */
 import { GLSL_COMMON } from './chunks/common';
 import { GLSL_NOISE } from './chunks/noise';
@@ -146,7 +148,11 @@ void main() {
   col += gridC * exp(-max(ang - SUN_R, 0.0) * 3.0) * 0.35;
   // The disc: granulated FBM surface, hot core, darker limb.
   if (ang < SUN_R) {
+#ifdef LOW_FX
+    float gran = 0.5 + 0.5 * kpSimplex3(dir * 38.0 + vec3(t * 0.05, 0.0, -t * 0.04));
+#else
     float gran = 0.5 + 0.5 * kpFbm3(dir * 38.0 + vec3(t * 0.05, 0.0, -t * 0.04));
+#endif
     float limb = sqrt(1.0 - pow(ang / SUN_R, 2.0));
     vec3 hot = mix(gridC, vec3(1.0, 0.62, 0.3), limb * 0.5);
     col = mix(col, hot * (0.6 + 0.6 * gran) * (0.35 + 0.55 * limb), 1.0 - smoothstep(SUN_R - 0.004, SUN_R, ang));
@@ -154,7 +160,11 @@ void main() {
 #else
   // SKY_MODE_NEBULA_GLYPHS (KERNEL PANIC), also the fallback.
   float n1 = 0.5 + 0.5 * kpFbm3(dir * 2.2 + vec3(0.0, uTime * 0.012, 0.0));
+#ifdef LOW_FX
+  float n2 = 0.5 + 0.5 * kpSimplex3(dir * 4.1 + vec3(n1 * 1.7, -uTime * 0.02, 3.3));
+#else
   float n2 = 0.5 + 0.5 * kpFbm3(dir * 4.1 + vec3(n1 * 1.7, -uTime * 0.02, 3.3));
+#endif
   col = skyC * (0.6 + 0.8 * n1);
   col += gridC * pow(n1, 3.0) * 0.55;
   col += accentC * pow(n2 * n1, 4.0) * 0.9;
@@ -175,7 +185,7 @@ export const SKY: ShaderSource<SkyUniforms> = {
   name: 'sky',
   vertex: VERTEX,
   fragment: FRAGMENT,
-  // The SKY_MODE_<mode> define comes from the theme (assets/materials.ts skyDefines).
+  // The SKY_MODE_<mode> define comes from the theme (assets/materials.ts skyDefines); LOW_FX (only when on) from quality.
   defines: {},
   createUniforms: createCommonUniforms,
 };

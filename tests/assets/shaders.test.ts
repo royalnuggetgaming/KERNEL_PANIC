@@ -218,9 +218,20 @@ describe('theme shader modes (fixed at Boot by compile-time defines)', () => {
     const s = stripComments(src);
     const start = s.search(new RegExp(`#(?:el)?if defined\\(${define}\\)`));
     expect(start, `${define} branch`).toBeGreaterThanOrEqual(0);
-    const rest = s.slice(start + 1);
-    const end = rest.search(/^\s*#(elif|else|endif)\b/m);
-    return rest.slice(0, end < 0 ? rest.length : end);
+    // Depth-aware: nested #ifdef LOW_FX blocks (Chromebook variant) inside a mode branch stay in the branch.
+    const lines = s.slice(start).split('\n');
+    let depth = 0;
+    const out: string[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const l = lines[i]!.trim();
+      if (l.startsWith('#if')) depth++;
+      else if (/^#endif\b/.test(l)) {
+        if (depth === 0) break;
+        depth--;
+      } else if (/^#(elif|else)\b/.test(l) && depth === 0) break;
+      out.push(lines[i]!);
+    }
+    return out.join('\n');
   };
 
   it('floor implements GRID, CAUSTICS (animated Voronoi) and LAVA (warped FBM + cracked crust)', () => {

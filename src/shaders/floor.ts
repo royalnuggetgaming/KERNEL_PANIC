@@ -10,6 +10,10 @@
  *   layers, swept by slow light-shaft bands; the sim grid stays as a faint trace.
  * - LAVA (EMBERFALL): domain-warped FBM lava under a cracked Voronoi crust (F2 - F1 seams glow, hotter where the
  *   flow runs hot), kept dark enough for enemy bullets to read.
+ *
+ * LOW_FX (Chromebook quality, fixed at Boot): GRID drops the hex overlay; CAUSTICS uses two ridged value-noise
+ * layers instead of the domain-warped Voronoi pair; LAVA uses a hex crust instead of the 3x3 Voronoi crack search
+ * and one FBM for the heat field. Same palette, same arena read.
  */
 import { GLSL_COMMON } from './chunks/common';
 import { GLSL_LIGHTING } from './chunks/lighting';
@@ -44,6 +48,7 @@ uniform float uCellSize;
 in vec3 vWorld;
 out vec4 fragColor;
 
+#ifndef LOW_FX
 // F2 - F1 Voronoi distance (0 on a cell border) and the nearest cell hash, for the lava crust cracks.
 vec2 kpCrack(vec2 p) {
   vec2 n = floor(p);
@@ -67,6 +72,7 @@ vec2 kpCrack(vec2 p) {
   }
   return vec2(sqrt(d2) - sqrt(d1), id);
 }
+#endif
 
 // Antialiased grid line mask for cells of size 'cell' (1 on the line).
 float kpGridLine(vec2 p, float cell, float width) {
@@ -120,24 +126,32 @@ void main() {
   float flowV = fract(p.y / (minorCell * 6.0) - uTime * (0.35 + nz.b * 0.5) + nz.a);
   float pulse = traceH * smoothstep(0.9, 1.0, flowH) + traceV * smoothstep(0.9, 1.0, flowV);
 
+  col += gridC * (major * (0.9 + 0.6 * beat) + trace * 0.35 + faint + pad * 0.9);
+  col += accentC * pulse * 2.2;
+#ifndef LOW_FX
   vec3 hx = kpHex(p / 2.5);
   float hexLine = 1.0 - smoothstep(0.0, fwidth(hx.x) * 1.5 + 0.015, hx.x);
   float hexPulse = 0.5 + 0.5 * sin(uTime * 1.3 + kpHash12(hx.yz) * KP_TAU);
-
-  col += gridC * (major * (0.9 + 0.6 * beat) + trace * 0.35 + faint + pad * 0.9);
-  col += accentC * pulse * 2.2;
   col += accentC * hexLine * (0.05 + 0.08 * hexPulse);
+#endif
 #elif defined(FLOOR_MODE_CAUSTICS)
   float t = kpWrapTime(uTime, 600.0);
   // Sand ripples and darker silt patches.
-  float silt = kpFbm2(p * 0.11 + vec2(3.7, 1.9));
-  float ripple = 0.5 + 0.5 * sin(dot(p, vec2(0.9, 0.35)) + silt * 6.0);
-  col *= 0.75 + 0.35 * silt + 0.12 * ripple;
-  // Two domain-warped Voronoi layers; their cell borders (large F1) form the caustic web.
   vec2 q = p * 0.38;
+#ifdef LOW_FX
+  float silt = kpValueNoise2(p * 0.11 + vec2(3.7, 1.9));
+  // Two ridged value-noise layers stand in for the Voronoi web (ridges near 1 like large F1).
+  float c1 = 1.0 - abs(2.0 * kpValueNoise2(q * 1.6 + vec2(t * 0.09, t * 0.05)) - 1.0);
+  float c2 = 1.0 - abs(2.0 * kpValueNoise2(q * 2.2 + vec2(-t * 0.07, t * 0.08) + 3.1) - 1.0);
+#else
+  float silt = kpFbm2(p * 0.11 + vec2(3.7, 1.9));
+  // Two domain-warped Voronoi layers; their cell borders (large F1) form the caustic web.
   q += 0.55 * vec2(kpValueNoise2(q * 0.6 + t * 0.12), kpValueNoise2(q * 0.6 - t * 0.1 + 7.3));
   float c1 = kpVoronoi2(q + vec2(t * 0.09, t * 0.05)).x;
   float c2 = kpVoronoi2(q * 1.43 + vec2(-t * 0.07, t * 0.08) + 3.1).x;
+#endif
+  float ripple = 0.5 + 0.5 * sin(dot(p, vec2(0.9, 0.35)) + silt * 6.0);
+  col *= 0.75 + 0.35 * silt + 0.12 * ripple;
   float caust = smoothstep(0.32, 0.78, c1) * smoothstep(0.25, 0.8, c2);
   caust = caust * caust * 2.0 + smoothstep(0.45, 0.85, c1) * 0.2;
   // Slow light-shaft bands sweeping across the seabed.
@@ -149,11 +163,19 @@ void main() {
   float t = kpWrapTime(uTime, 600.0);
   // Domain-warped FBM heat field: where the lava runs hot under the crust.
   vec2 q = p * 0.07;
+#ifdef LOW_FX
+  vec2 w = vec2(kpValueNoise2(q * 2.0 + vec2(0.0, t * 0.03)), kpValueNoise2(q * 2.0 + vec2(5.2, 1.3) - t * 0.025));
+  float heat = smoothstep(0.3, 0.75, kpFbm2(q * 1.8 + 2.2 * w + vec2(t * 0.02, -t * 0.015)));
+  // Hex crust plates (edge distance as the seam, hashed centre as the plate id).
+  vec3 hc = kpHex(p * 0.36 + (w - 0.5) * 1.4);
+  vec2 cr = vec2(hc.x * 0.9, kpHash12(hc.yz));
+#else
   vec2 w = vec2(kpFbm2(q + vec2(0.0, t * 0.03)), kpFbm2(q + vec2(5.2, 1.3) - vec2(t * 0.025, 0.0)));
   float heat = kpFbm2(q * 1.8 + 2.2 * w + vec2(t * 0.02, -t * 0.015));
   heat = smoothstep(0.3, 0.75, heat);
   // Cracked crust: Voronoi plates with glowing F2 - F1 seams.
   vec2 cr = kpCrack(p * 0.36 + (w - 0.5) * 1.4);
+#endif
   float seamW = 0.015 + 0.035 * heat;
   float seam = 1.0 - smoothstep(seamW, seamW + fwidth(cr.x) * 1.5 + 0.02, cr.x);
   float flicker = 0.85 + 0.15 * sin(t * 2.3 + cr.y * 40.0);
@@ -193,7 +215,7 @@ export const FLOOR: ShaderSource<FloorUniforms> = {
   name: 'floor',
   vertex: VERTEX,
   fragment: FRAGMENT,
-  // The FLOOR_MODE_<mode> define comes from the theme (assets/materials.ts floorDefines).
+  // The FLOOR_MODE_<mode> define comes from the theme (assets/materials.ts floorDefines); LOW_FX (only when on) from quality.
   defines: {},
   createUniforms(): FloorUniforms {
     return { ...createCommonUniforms(), uArenaRadius: { value: 32 }, uCellSize: { value: 4 } };

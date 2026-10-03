@@ -392,7 +392,7 @@ export interface UiPort {
   /** Diffs against the last VM; DOM writes are queued until flush(). */
   update<S extends ScreenId>(s: S, vm: ScreenVMs[S]): void;
   hide(s: ScreenId): void;
-  toast(msg: string, kind: ToastKind): void;
+  toast(msg: string, kind: ToastKind, durationMs?: number /* v4: default ui/Toasts TOAST_MS */): void;
   /** Mouse clicks become MenuIntents. Returns an unsubscribe function. */
   onPointerIntent(cb: (i: PointerIntent) => void): () => void;
   /** Applies queued DOM writes once per frame. */

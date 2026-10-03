@@ -28,6 +28,8 @@ export class DamageNumbers {
   private readonly ring: RingSink;
   private thisFrame = 0;
   enabled = true;
+  /** Quality budget (preset digitsPerFrame), at most MAX_DIGITS_PER_FRAME. */
+  maxPerFrame = MAX_DIGITS_PER_FRAME;
 
   constructor(ring: RingSink) {
     this.ring = ring;
@@ -35,7 +37,7 @@ export class DamageNumbers {
 
   /** Returns false when dropped (disabled, per-frame limit, or value < 1). */
   spawn(src: Readonly<DigitSource>, t0: number, tint: number, crit: boolean): boolean {
-    if (!this.enabled || this.thisFrame >= MAX_DIGITS_PER_FRAME) return false;
+    if (!this.enabled || this.thisFrame >= this.maxPerFrame) return false;
     const v = Math.round(src.amount);
     if (v < 1) return false;
     const o = this.ring.claim();

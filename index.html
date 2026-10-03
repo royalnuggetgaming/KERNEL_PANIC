@@ -17,6 +17,13 @@
         height: 100%;
         background: #05060d;
         overflow: hidden;
+        /* Touchscreen Chromebooks: no double-tap zoom, no tap flash, no pull-to-refresh/overscroll. */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+      }
+      #stage {
+        touch-action: none;
       }
       #stage,
       #ui {

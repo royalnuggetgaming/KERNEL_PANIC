@@ -63,6 +63,11 @@ export interface AppEnv {
   /** Throw InvalidTransitionError (DEV/tests) instead of logging and dropping (PROD). */
   readonly strict: boolean;
   readonly version: string;
+  /**
+   * v4 (additive): whether the running build compiled the LOW_FX (Chromebook) shader variant at Boot. Absent in
+   * fixtures; Settings shows RESTART TO APPLY when the saved quality wants the other variant.
+   */
+  readonly lowFx?: boolean;
 }
 
 export interface Services {

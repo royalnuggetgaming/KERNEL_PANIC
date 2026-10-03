@@ -14,7 +14,11 @@ import type {
 import type { Bindings } from './input';
 import type { RunSummary } from './run';
 
-export const QUALITY_LEVELS = ['low', 'medium', 'high', 'ultra'] as const;
+/**
+ * v4 (additive): 'chromebook' is a low-power preset for weak integrated GPUs (Lenovo 500e Chromebook Gen 3 class).
+ * Appended last so older saves keep their values; an unknown level sanitises to the default.
+ */
+export const QUALITY_LEVELS = ['low', 'medium', 'high', 'ultra', 'chromebook'] as const;
 export type QualityLevel = (typeof QUALITY_LEVELS)[number];
 
 export type FrameCap = 'auto' | 60 | 120 | 'uncapped';

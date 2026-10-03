@@ -121,9 +121,14 @@
   color: #9aa9c4;
 }
 
-.kp-menu-box .kp-menu-item:hover,
 .kp-menu-box .kp-menu-item.is-cursor {
   color: var(--kp-text);
+}
+
+@media (hover: hover) {
+  .kp-menu-box .kp-menu-item:hover {
+    color: var(--kp-text);
+  }
 }
 
 .kp-main-menu .kp-menu-item {

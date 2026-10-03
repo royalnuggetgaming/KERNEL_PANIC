@@ -184,10 +184,17 @@ export type SettingsListener = (s: Settings) => void;
 export class SettingsAwareRender implements RenderPort {
   private readonly inner: RenderPort;
   private readonly listeners: readonly SettingsListener[];
+  private readonly adapt: (s: Settings) => Settings;
 
-  constructor(inner: RenderPort, listeners: readonly SettingsListener[]) {
+  /** `adapt` rewrites settings before they apply (the ?quality= test override). */
+  constructor(
+    inner: RenderPort,
+    listeners: readonly SettingsListener[],
+    adapt: (s: Settings) => Settings = (s) => s,
+  ) {
     this.inner = inner;
     this.listeners = listeners;
+    this.adapt = adapt;
   }
 
   get capabilities(): RenderCapabilities {
@@ -230,7 +237,8 @@ export class SettingsAwareRender implements RenderPort {
     this.inner.renderFrozen(dim);
   }
 
-  applySettings(s: Settings): void {
+  applySettings(raw: Settings): void {
+    const s = this.adapt(raw);
     this.inner.applySettings(s);
     for (let i = 0; i < this.listeners.length; i++) this.listeners[i]!(s);
   }

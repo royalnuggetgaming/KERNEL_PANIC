@@ -218,10 +218,16 @@
   color: var(--kp-dim);
 }
 
-.kp-term-cheat.is-cursor,
-.kp-term-cheat:hover {
+.kp-term-cheat.is-cursor {
   border-color: var(--kp-line);
   background: rgba(var(--kp-accent-rgb), 0.08);
+}
+
+@media (hover: hover) {
+  .kp-term-cheat:hover {
+    border-color: var(--kp-line);
+    background: rgba(var(--kp-accent-rgb), 0.08);
+  }
 }
 
 .kp-term-warn {

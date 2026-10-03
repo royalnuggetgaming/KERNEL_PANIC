@@ -5,7 +5,8 @@
  * RGB-split glitch (tint slot ELITE, or uGlitch on non-instanced meshes).
  *
  * Defines (fixed at Boot): INSTANCED (0/1, reads aT/aS via GLSL_INSTANCING), SPIN (0/1, pickups spin and bob),
- * EMISSIVE_MASK_EDGES (0/1, theme emissiveMask === 'edges').
+ * EMISSIVE_MASK_EDGES (0/1, theme emissiveMask === 'edges'), LOW_FX (present only when on, Chromebook quality: the dissolve noise
+ * is only evaluated while dissolving and the corrupted glitch skips its two extra RGB-split edge evaluations).
  *
  * Instanced record: aT = (x, z, yaw, scale); aS = (flash 0..1, spawnT, tint slot, seed).
  * spawnT >= 0: spawn-in dissolve starting at uTime = spawnT. spawnT < 0: death dissolve that started at
@@ -147,8 +148,12 @@ float kpEdge(vec3 b, vec3 fw) {
 }
 
 void main() {
-  float dn = kpValueNoise3(vLocal * 3.1 + vec3(vSeed * 7.0));
   float cut = vDissolve * 1.02;
+#ifdef LOW_FX
+  float dn = cut > 0.0 ? kpValueNoise3(vLocal * 3.1 + vec3(vSeed * 7.0)) : 1.0;
+#else
+  float dn = kpValueNoise3(vLocal * 3.1 + vec3(vSeed * 7.0));
+#endif
   if (cut > 0.0 && dn < cut) discard;
 
   vec3 tintC = kpTintColor(vTint);
@@ -173,9 +178,13 @@ void main() {
     float tq = floor(uTime * 20.0);
     float band = kpHash12(vec2(floor(gl_FragCoord.y / 6.0), tq + vSeed * 13.0));
     float shift = (band - 0.5) * 0.35 * vGlitch;
+#ifdef LOW_FX
+    vec3 split = vec3(edge) * vec3(1.0 + shift * 4.0, 1.0, 1.0 - shift * 4.0) * 1.6;
+#else
     float eR = kpEdge(vBary + vec3(shift, -shift, 0.0), fw);
     float eB = kpEdge(vBary - vec3(shift, -shift, 0.0), fw);
     vec3 split = vec3(eR, edge, eB) * 1.6;
+#endif
     col = mix(col, col * vec3(1.2, 0.6, 1.2) + split * tintC.gbr, vGlitch * 0.6);
     float drop = step(0.94, band);
     col = mix(col, vec3(col.b, col.r, col.g) * 1.8, drop * vGlitch);

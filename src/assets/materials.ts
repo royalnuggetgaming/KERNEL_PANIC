@@ -169,10 +169,20 @@ export function skyDefines(theme: ThemeDef): ShaderDefines {
   return { [`SKY_MODE_${theme.shading.skyMode}`]: 1 };
 }
 
-function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {
+/** LOW_FX is tested with #ifdef in the shaders, so it is only present (= 1) when on. */
+function lowFxDefines(lowFx: boolean): ShaderDefines {
+  return lowFx ? { LOW_FX: 1 } : {};
+}
+
+function sceneSpec(key: SceneMaterialKey, theme: ThemeDef, lowFx: boolean): MaterialSpec {
   const neon = (instanced: 0 | 1, spin: 0 | 1, tint: number): MaterialSpec => ({
     source: NEON_SURFACE,
-    defines: { INSTANCED: instanced, SPIN: spin, EMISSIVE_MASK_EDGES: emissiveDefine(theme) },
+    defines: {
+      INSTANCED: instanced,
+      SPIN: spin,
+      EMISSIVE_MASK_EDGES: emissiveDefine(theme),
+      ...lowFxDefines(lowFx),
+    },
     ...OPAQUE,
     vertexColors: true,
     setup: (u) => {
@@ -201,7 +211,7 @@ function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {
     case 'floor':
       return {
         source: FLOOR,
-        defines: floorDefines(theme),
+        defines: { ...floorDefines(theme), ...lowFxDefines(lowFx) },
         ...OPAQUE,
         vertexColors: false,
         setup: (u) => {
@@ -210,7 +220,13 @@ function sceneSpec(key: SceneMaterialKey, theme: ThemeDef): MaterialSpec {
         },
       };
     case 'sky':
-      return { source: SKY, defines: skyDefines(theme), ...OPAQUE, depthWrite: false, vertexColors: false };
+      return {
+        source: SKY,
+        defines: { ...skyDefines(theme), ...lowFxDefines(lowFx) },
+        ...OPAQUE,
+        depthWrite: false,
+        vertexColors: false,
+      };
     case 'wall':
       return {
         ...additive(FORCE_FIELD, (u) => {
@@ -261,6 +277,11 @@ export interface MaterialRegistryDeps {
   readonly log: Logger;
   /** Post sources (shaders/post, owned by the render agent). */
   readonly post: Readonly<Record<PostMaterialKey, ShaderSource>>;
+  /**
+   * LOW_FX shader variant (Chromebook quality) for floor/sky/neonSurface: one value for every material, fixed at
+   * Boot like the theme modes, so the program count is the same either way. Default false.
+   */
+  readonly lowFx?: boolean;
 }
 
 export interface MaterialRegistry {
@@ -302,7 +323,7 @@ export function createMaterialRegistry(deps: MaterialRegistryDeps): MaterialRegi
         toneMapped: false,
       });
     }
-    const spec = sceneSpec(key as SceneMaterialKey, deps.theme);
+    const spec = sceneSpec(key as SceneMaterialKey, deps.theme, deps.lowFx === true);
     const uniforms = mergeUniforms(spec.source, deps.shared);
     writeRgb(uniforms.uPickupColor, deps.theme.palette.pickup);
     writeRgb(uniforms.uLinkColor, deps.theme.palette.link);

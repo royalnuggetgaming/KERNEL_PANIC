@@ -184,8 +184,8 @@ export function createUiRootWithClock(deps: UiRootDeps, now: UiClock): UiRoot {
     hide(s: ScreenId): void {
       slots[s].want = false;
     },
-    toast(msg: string, kind: ToastKind): void {
-      toasts.push(msg, kind, now());
+    toast(msg: string, kind: ToastKind, durationMs?: number): void {
+      toasts.push(msg, kind, now(), durationMs);
     },
     onPointerIntent(cb: (i: PointerIntent) => void): () => void {
       callbacks = callbacks.concat(cb);

@@ -71,6 +71,7 @@ class AssetLibrary implements ThreeAssetLibrary {
     this.uniforms = createSharedUniforms(deps.theme);
     this.materials = createMaterialRegistry({
       theme: deps.theme,
+      lowFx: deps.quality.lowFx,
       shared: this.uniforms,
       log: deps.log,
       post: {

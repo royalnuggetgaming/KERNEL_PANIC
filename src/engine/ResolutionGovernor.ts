@@ -1,5 +1,6 @@
 /**
- * Resolution governor, a pure policy (plan section 10.4). Ladder: renderScale 1 -> 0.85 -> 0.72 -> 0.6, then
+ * Resolution governor, a pure policy (plan section 10.4). Ladder: renderScale 1 -> 0.85 -> 0.72 -> 0.6 (-> 0.5 on
+ * the Chromebook preset, whose renderScaleFloor is lower), then
  * MSAA 4 -> 2 (only when the preset uses 4x), then a 60 frame cap. Steps down when p95 stays above
  * GOVERNOR.STEP_DOWN_P95_MS for STEP_DOWN_AFTER_S, steps up after STEP_UP_AFTER_S clean, at most one step per
  * MIN_STEP_INTERVAL_S, and evaluates only while Playing. Actions are preallocated (no per-call allocation).
@@ -44,7 +45,9 @@ function buildLadder(preset: QualityPreset): {
 } {
   const down: GovernorAction[] = [];
   const up: GovernorAction[] = [];
+  // Scales below the preset's floor are skipped (only Chromebook goes down to 0.5).
   for (let i = 1; i < ACT_SCALE.length; i++) {
+    if (GOVERNOR.RENDER_SCALES[i]! < preset.renderScaleFloor - 1e-6) break;
     down.push(ACT_SCALE[i]!);
     up.push(ACT_SCALE[i - 1]!);
   }

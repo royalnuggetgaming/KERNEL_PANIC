@@ -4,6 +4,7 @@
  * ?debug=1) the dev API and debug overlay.
  */
 import type { StateId } from '../contracts/states';
+import { QUALITY_PRESETS, effectiveFrameCap } from '../config/quality';
 import type { StateRegistry } from '../engine/StateMachine';
 import { type StateMachine, createStateMachine } from '../engine/StateMachine';
 import { type FrameSample, type GameLoop, createGameLoop } from '../engine/GameLoop';
@@ -31,6 +32,8 @@ export interface GameHandle {
 
 /** Frames between program-count checks after Boot (growth logs a DEV error in PerfMonitor). */
 const PROGRAM_CHECK_FRAMES = 120;
+/** Boot notices (Chromebook auto-detect) stay up longer than ordinary toasts. */
+const NOTICE_MS = 7000;
 
 /** Base states without a world of their own whose 3D backdrop (menu orbit, select stage) the root renders. */
 function drawsBackdrop(stack: readonly StateId[]): boolean {
@@ -63,7 +66,9 @@ export function createGame(app: AppServices): GameHandle {
 
   const applyGovernor = (a: GovernorAction): void => {
     if (a.kind === 'frameCap') {
-      pacer.setCap(a.value === 60 ? 60 : save.data.settings.frameCap);
+      const st = save.data.settings;
+      const preset = QUALITY_PRESETS[app.parsed.quality ?? st.quality];
+      pacer.setCap(a.value === 60 ? 60 : effectiveFrameCap(st.frameCap, preset));
       log.debug('governor: frame cap', { value: a.value });
       return;
     }
@@ -99,6 +104,7 @@ export function createGame(app: AppServices): GameHandle {
           bootDone = true;
           // Boot baseline: every shader program is compiled by the warm-up; later growth is an error.
           perf.setProgramCount(bridge.stats().programs);
+          for (const msg of app.bootNotices.splice(0)) uiRoot.toast(msg, 'info', NOTICE_MS);
         }
       },
       fixedUpdate: (dt) => {

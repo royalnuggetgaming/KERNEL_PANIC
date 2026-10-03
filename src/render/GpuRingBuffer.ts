@@ -1,7 +1,8 @@
 /**
  * Write-once GPU ring buffer (particles, damage digits, shockwaves, decals). Each record is written once at
  * spawn; lifetime/motion is evaluated in the vertex shader from the record (t0, life, ...), and expired
- * records collapse to a degenerate position there. instanceCount stays at capacity. At most 2 update ranges
+ * records collapse to a degenerate position there. instanceCount stays at the active limit (capacity unless a
+ * quality preset lowers it with setLimit: fewer instances drawn, older records recycled sooner). At most 2 update ranges
  * per frame (the ring can wrap once); range objects are persistent (no per-frame allocation).
  */
 import {
@@ -38,6 +39,8 @@ export class GpuRingBuffer {
   private readonly buffer: InstancedInterleavedBuffer;
   private readonly ranges: [UpdateRange, UpdateRange];
   private head = 0;
+  /** Active ring size (<= capacity): claims wrap here and only this many instances are drawn. */
+  private limit: number;
   private pendingStart = -1;
   private pendingCount = 0;
   private written = 0;
@@ -51,6 +54,7 @@ export class GpuRingBuffer {
     name = 'ring',
   ) {
     this.capacity = capacity;
+    this.limit = capacity;
     this.stride = stride;
     this.data = new Float32Array(capacity * stride);
     this.buffer = new InstancedInterleavedBuffer(this.data, stride, 1);
@@ -81,17 +85,37 @@ export class GpuRingBuffer {
     return this.written;
   }
 
+  get activeLimit(): number {
+    return this.limit;
+  }
+
+  /**
+   * Quality budget for pure-FX rings: wraps claims at `n` (clamped to 1..capacity) and draws only `n` instances.
+   * Pending ranges are dropped in favour of one full upload (a settings change, never per frame).
+   */
+  setLimit(n: number): void {
+    const next = Math.max(1, Math.min(this.capacity, Math.floor(n)));
+    if (next === this.limit) return;
+    this.limit = next;
+    this.geometry.instanceCount = next;
+    if (this.head >= next) this.head = 0;
+    this.pendingStart = -1;
+    this.pendingCount = 0;
+    this.buffer.updateRanges.length = 0;
+    this.buffer.needsUpdate = true;
+  }
+
   /**
    * Claims the next record (overwriting the oldest when full) and returns its FLOAT offset into `data`.
    * The caller writes `stride` floats starting there. Claims are contiguous modulo capacity.
    */
   claim(): number {
     const i = this.head;
-    this.head = this.head + 1 === this.capacity ? 0 : this.head + 1;
+    this.head = this.head + 1 === this.limit ? 0 : this.head + 1;
     if (this.pendingStart < 0) {
       this.pendingStart = i;
       this.pendingCount = 1;
-    } else if (this.pendingCount < this.capacity) {
+    } else if (this.pendingCount < this.limit) {
       this.pendingCount++;
     }
     this.written++;
@@ -106,12 +130,12 @@ export class GpuRingBuffer {
     const start = this.pendingStart;
     const count = this.pendingCount;
     const first = this.ranges[0];
-    if (start + count <= this.capacity) {
+    if (start + count <= this.limit) {
       first.start = start * this.stride;
       first.count = count * this.stride;
       list.push(first);
     } else {
-      const tail = this.capacity - start;
+      const tail = this.limit - start;
       first.start = start * this.stride;
       first.count = tail * this.stride;
       const second = this.ranges[1];

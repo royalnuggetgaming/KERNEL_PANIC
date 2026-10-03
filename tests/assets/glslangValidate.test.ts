@@ -94,12 +94,16 @@ function fragmentSource(m: ShaderMaterial): string {
 }
 
 describe.skipIf(!HAS_GLSLANG)('glslangValidator (GLSL ES 3.00 compile)', () => {
-  it.each(Object.values(THEMES))(
-    'compiles both stages of every material ($id)',
-    async (theme) => {
+  // Every theme in the full shader variant and the LOW_FX (Chromebook) variant.
+  const cases = Object.values(THEMES).flatMap((theme) =>
+    (['high', 'chromebook'] as const).map((quality) => ({ id: theme.id, quality, theme })),
+  );
+  it.each(cases)(
+    'compiles both stages of every material ($id, $quality)',
+    async ({ theme, quality }) => {
       const lib = createAssetLibrary({
         theme,
-        quality: QUALITY_PRESETS.high,
+        quality: QUALITY_PRESETS[quality],
         log: NullLogger,
         seed: 7,
       });
