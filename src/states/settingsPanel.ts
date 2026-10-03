@@ -19,11 +19,12 @@ import {
 import type { Services } from '../contracts/services';
 import type { SettingKind, SettingRowVM, SettingsPanelVM } from '../contracts/ui';
 import { DEFAULT_DIFFICULTY } from '../config/difficulty';
-import { QUALITY_PRESETS } from '../config/quality';
+import { CHROMEBOOK_QUALITY, DEFAULT_QUALITY, QUALITY_PRESETS } from '../config/quality';
 import { getTheme } from '../themes/registry';
 import { indexOfId, wrapIndex, type UiIntent } from './intents';
 
 export const SETTING_IDS = [
+  'chromebook',
   'difficulty',
   'master',
   'music',
@@ -72,6 +73,7 @@ interface RowDef {
 }
 
 const ROWS: readonly RowDef[] = [
+  { id: 'chromebook', label: 'CHROMEBOOK MODE', kind: 'toggle' },
   { id: 'difficulty', label: 'DIFFICULTY', kind: 'choice' },
   { id: 'master', label: 'MASTER VOLUME', kind: 'slider' },
   { id: 'music', label: 'MUSIC VOLUME', kind: 'slider' },
@@ -140,6 +142,9 @@ function pair(b: readonly [boolean, boolean], p: 0 | 1, v: boolean): readonly [b
 /** The patch that adjusting row `id` by `delta` (-1 left, +1 right/confirm) produces, or null for no change. */
 export function adjustSetting(s: Settings, id: SettingId, delta: number): Partial<Settings> | null {
   switch (id) {
+    case 'chromebook':
+      // One-touch switch for low-power laptops: ON picks the Chromebook preset, OFF returns to the default.
+      return { quality: s.quality === CHROMEBOOK_QUALITY ? DEFAULT_QUALITY : CHROMEBOOK_QUALITY };
     case 'difficulty':
       return { difficulty: cycle<DifficultyId>(DIFFICULTY_IDS, s.difficulty ?? DEFAULT_DIFFICULTY, delta) };
     case 'master':
@@ -179,6 +184,8 @@ function rowValue(s: Settings, id: RowId): { value: string; fraction: number } {
   switch (id) {
     case APPLY_THEME_ROW:
       return { value: 'RESTART NOW', fraction: 0 };
+    case 'chromebook':
+      return { value: onOff(s.quality === CHROMEBOOK_QUALITY), fraction: 0 };
     case 'difficulty':
       return { value: DIFFICULTY_LABELS[s.difficulty ?? DEFAULT_DIFFICULTY], fraction: 0 };
     case 'master':
@@ -302,7 +309,7 @@ export class SettingsController {
     if (id === 'theme') return savedTheme !== runningTheme ? THEME_RESTART_NOTE : '';
     if (id === 'difficulty') return DIFFICULTY_NOTE;
     const fxPending = QUALITY_PRESETS[this.settings.quality].lowFx !== this.runningLowFx();
-    return id === 'quality' && fxPending ? LOW_FX_RESTART_NOTE : '';
+    return (id === 'quality' || id === 'chromebook') && fxPending ? LOW_FX_RESTART_NOTE : '';
   }
 
   private adjust(def: RowDef, id: SettingId, delta: number, confirm: boolean): boolean {

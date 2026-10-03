@@ -37,12 +37,13 @@ describe('Settings sub-panel', () => {
     const h = await openPanel('settings');
     const { ui, audio, render, input } = h.set;
     expect(ui.vm('mainMenu')?.panel).toBe('settings');
-    // v2: DIFFICULTY is the first row; MASTER VOLUME moved to row 1.
+    // v4: CHROMEBOOK MODE is row 0 and DIFFICULTY row 1, so MASTER VOLUME is row 2.
+    h.press({ player: 'any', kind: 'down' });
     h.press({ player: 'any', kind: 'down' });
     h.press({ player: 'any', kind: 'right' });
     expect(lastSettingsPatch(h)).toEqual({ master: 0.9 });
     expect(audio.rec.last('setVolumes')?.args).toEqual([0.9, 0.7, 0.8]);
-    expect(ui.vm('mainMenu')?.settings?.rows[1]?.value).toBe('90%');
+    expect(ui.vm('mainMenu')?.settings?.rows[2]?.value).toBe('90%');
     ui.click({ screen: 'mainMenu', kind: 'confirm', player: 'any', itemId: 'colorblind' });
     h.frame();
     expect(lastSettingsPatch(h)).toEqual({ colorblind: true });
@@ -68,10 +69,11 @@ describe('Settings sub-panel', () => {
   it('DIFFICULTY cycles CASUAL / NORMAL / HARD, saves and notes that it applies next run', async () => {
     const h = await openPanel('settings');
     const { ui } = h.set;
-    expect(ui.vm('mainMenu')?.settings?.rows[0]).toMatchObject({ id: 'difficulty', value: 'NORMAL' });
+    expect(ui.vm('mainMenu')?.settings?.rows[1]).toMatchObject({ id: 'difficulty', value: 'NORMAL' });
+    h.press({ player: 'any', kind: 'down' });
     h.press({ player: 'any', kind: 'right' });
     expect(lastSettingsPatch(h)).toEqual({ difficulty: 'hard' });
-    expect(ui.vm('mainMenu')?.settings?.rows[0]?.value).toBe('HARD');
+    expect(ui.vm('mainMenu')?.settings?.rows[1]?.value).toBe('HARD');
     expect(ui.vm('mainMenu')?.settings?.note).toBe(DIFFICULTY_NOTE);
     h.press({ player: 'any', kind: 'right' });
     expect(lastSettingsPatch(h)).toEqual({ difficulty: 'casual' });
@@ -81,7 +83,7 @@ describe('Settings sub-panel', () => {
     // Saves from before the setting existed read as NORMAL.
     const legacy: Settings = { ...TEST_SETTINGS };
     delete (legacy as { difficulty?: unknown }).difficulty;
-    expect(buildSettingsVM(legacy, 0, '').rows[0]?.value).toBe('NORMAL');
+    expect(buildSettingsVM(legacy, 0, '').rows[1]?.value).toBe('NORMAL');
   });
 
   it('adjustSetting covers every row; sliders clamp to [0, 1]', () => {
@@ -275,5 +277,20 @@ describe('Controls sub-panel (rebinding)', () => {
     expect(h.set.ui.vm('mainMenu')?.credits.length).toBeGreaterThan(0);
     h.press({ player: 'any', kind: 'back' });
     expect(h.set.ui.vm('mainMenu')?.panel).toBe('none');
+  });
+
+  it('CHROMEBOOK MODE toggles the Chromebook quality preset on and off', async () => {
+    const h = await openPanel('settings');
+    const { ui } = h.set;
+    expect(ui.vm('mainMenu')?.settings?.rows[0]).toMatchObject({ id: 'chromebook', value: 'OFF' });
+    h.press({ player: 'any', kind: 'confirm' });
+    expect(lastSettingsPatch(h)).toEqual({ quality: 'chromebook' });
+    expect(ui.vm('mainMenu')?.settings?.rows[0]?.value).toBe('ON');
+    h.press({ player: 'any', kind: 'confirm' });
+    expect(lastSettingsPatch(h)).toEqual({ quality: 'high' });
+    expect(ui.vm('mainMenu')?.settings?.rows[0]?.value).toBe('OFF');
+    expect(adjustSetting({ ...TEST_SETTINGS, quality: 'low' }, 'chromebook', 1)).toEqual({
+      quality: 'chromebook',
+    });
   });
 });
