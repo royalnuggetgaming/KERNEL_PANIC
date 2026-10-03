@@ -2,8 +2,18 @@
  * GLSL ES 3.0 noise chunk: value noise (2D/3D), simplex 3D, FBM, Voronoi and a sampler for the 256^2 tiling
  * noise DataTexture (uNoiseTex, channels: r = fbm, g = value octave, b = white hash, a = cellular).
  * Requires GLSL_COMMON (hash functions) to be included first.
+ *
+ * LOW_FX (Chromebook quality): a Boot-time define that assets/materials.ts adds to floor/sky/neonSurface only when
+ * on (tested with #ifdef, so it is never declared as 0); the FBMs then drop to 2 octaves.
  */
 export const GLSL_NOISE = /* glsl */ `
+#ifdef LOW_FX
+#define KP_FBM_OCTAVES 2
+#define KP_FBM_NORM 0.75
+#else
+#define KP_FBM_OCTAVES 3
+#define KP_FBM_NORM 0.875
+#endif
 float kpValueNoise2(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
@@ -84,28 +94,28 @@ float kpSimplex3(vec3 v) {
   return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-// 3-octave FBM in [0, 1].
+// 3-octave (LOW_FX: 2) FBM in [0, 1].
 float kpFbm2(vec2 p) {
   float sum = 0.0;
   float amp = 0.5;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < KP_FBM_OCTAVES; i++) {
     sum += amp * kpValueNoise2(p);
     p = kpRot2(0.5) * p * 2.03 + vec2(17.1, 9.2);
     amp *= 0.5;
   }
-  return sum / 0.875;
+  return sum / KP_FBM_NORM;
 }
 
-// 3-octave simplex FBM in about [-1, 1].
+// 3-octave (LOW_FX: 2) simplex FBM in about [-1, 1].
 float kpFbm3(vec3 p) {
   float sum = 0.0;
   float amp = 0.5;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < KP_FBM_OCTAVES; i++) {
     sum += amp * kpSimplex3(p);
     p = p * 2.01 + vec3(11.3, 5.7, 3.1);
     amp *= 0.5;
   }
-  return sum / 0.875;
+  return sum / KP_FBM_NORM;
 }
 
 // Voronoi: x = distance to the nearest feature point, y = cell id hash.

@@ -237,12 +237,15 @@ matchOver -> GameOver victory with winner).
 1. Add the id to `THEME_IDS` in `contracts/ids.ts` (contract change).
 2. Write `src/themes/<id>.ts` exporting one `ThemeDef` (pure data: names, palette, geometry recipe params,
    shading modes, audio params) and register it in `themes/registry.ts` `THEMES`.
-3. If the theme uses a floor/sky mode, enemy family or hull style that is not implemented yet
-   (`CAUSTICS`, `LAVA`, `ABYSS_RAYS`, `CORONA`, `organic`, `mineral`, `sub`, `tug`), implement it in the shader
-   `#if` branches / geometry generators behind the compile-time defines. v1 implements only `GRID`,
-   `NEBULA_GLYPHS`, `platonic`, `sled`, `edges`.
-4. Theme changes apply on reload (defines are fixed at Boot; no runtime recompiles). Mechanics never read the
-   theme: only render/audio/ui/viewModels do.
+3. Every floor mode (`GRID`, `CAUSTICS`, `LAVA`) and sky mode (`NEBULA_GLYPHS`, `ABYSS_RAYS`, `CORONA`) is
+   implemented behind compile-time defines (`assets/materials.ts` floorDefines/skyDefines). The enemy families
+   `organic`/`mineral` and hull styles `sub`/`tug` are still reserved (the geometry builders throw): all three
+   shipped themes use `platonic`/`sled`/`edges`, recoloured by their palettes. Music style follows
+   `audio.timbre` (`audio/timbre.ts` presets + `audio/composerStyles.ts` arrangements).
+4. Theme changes apply on reload: `app/createServices` peeks the saved theme (`SaveStore.peekThemeId`) before
+   building assets, so defines are fixed at Boot and nothing recompiles at runtime; Settings shows RESTART TO
+   APPLY, which calls `services.reloadApp()`. Mechanics never read the theme: only render/audio/ui/viewModels do.
+   Run `tests/render/sectorPalette.test.ts` (colour distances) and `tests/config/themes.test.ts` (completeness).
 
 ## three 0.186 API findings
 

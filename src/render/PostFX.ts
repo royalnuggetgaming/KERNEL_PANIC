@@ -27,6 +27,7 @@ import { requireUniform } from './uniforms';
 export const BLOOM_DOWNSAMPLES = 4;
 /** prefilter level + downsamples. */
 const LEVELS = BLOOM_DOWNSAMPLES + 1;
+const clampLevels = (n: number): number => Math.max(1, Math.min(BLOOM_DOWNSAMPLES, Math.round(n)));
 /** Soft knee as a fraction of the threshold. */
 const KNEE_FRAC = 0.5;
 /** RGBA8 targets clamp at 1: bloom threshold scale in the LDR fallback. */
@@ -45,6 +46,8 @@ export interface PostFXOptions {
   readonly msaa: 0 | 2 | 4;
   readonly bloomRes: number;
   readonly fxaa: boolean;
+  /** Active Kawase downsamples, 1..BLOOM_DOWNSAMPLES (default all; fewer = cheaper, tighter bloom). */
+  readonly bloomLevels?: number;
 }
 
 /** Pure: scene target size then each bloom level (prefilter + downsamples) as [w, h] pairs into out. */
@@ -106,6 +109,7 @@ export class PostFX {
   private height = 1;
   private scale = 1;
   private bloomRes: number;
+  private active = BLOOM_DOWNSAMPLES;
   private samples: number;
   private threshold = 0.8;
   // Uniform handles (resolved once).
@@ -141,6 +145,7 @@ export class PostFX {
     this.float = opts.floatTargets;
     this.samples = opts.msaa;
     this.bloomRes = opts.bloomRes;
+    this.active = clampLevels(opts.bloomLevels ?? BLOOM_DOWNSAMPLES);
     this.sceneTarget = makeTarget(this.float, true, this.samples);
     for (let i = 0; i < LEVELS; i++) {
       this.levels.push(makeTarget(this.float, false, 0));
@@ -229,7 +234,9 @@ export class PostFX {
     this.sceneTarget.dispose();
   }
 
-  setBloomRes(r: number): void {
+  /** Bloom start resolution, plus the active downsample count (no reallocation needed for that). */
+  setBloomRes(r: number, levels: number = BLOOM_DOWNSAMPLES): void {
+    this.active = clampLevels(levels);
     if (r === this.bloomRes) return;
     this.bloomRes = r;
     this.reallocate();
@@ -342,13 +349,14 @@ export class PostFX {
     this.uPreInput.value = this.sceneTarget.texture;
     this.uPreTexel.value = this.sceneTexel;
     this.pass(this.mats.prefilter, lv[0]!);
-    for (let i = 1; i < LEVELS; i++) {
+    const n = this.active;
+    for (let i = 1; i <= n; i++) {
       this.uDownInput.value = lv[i - 1]!.texture;
       this.uDownTexel.value = this.texels[i - 1];
       this.pass(this.mats.down, lv[i]!);
     }
-    for (let i = BLOOM_DOWNSAMPLES - 1; i >= 0; i--) {
-      const src = i === BLOOM_DOWNSAMPLES - 1 ? lv[LEVELS - 1]! : this.ups[i + 1]!;
+    for (let i = n - 1; i >= 0; i--) {
+      const src = i === n - 1 ? lv[n]! : this.ups[i + 1]!;
       this.uUpInput.value = src.texture;
       this.uUpTexel.value = this.texels[i + 1];
       this.uUpSkip.value = lv[i]!.texture;

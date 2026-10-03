@@ -4,12 +4,13 @@
  */
 import { Group, type BufferGeometry, type ShaderMaterial } from 'three';
 import type { BatchSet, GeometryKey, MaterialKey } from '../contracts/render';
+import type { QualityPreset } from '../config/quality';
 import { CAPACITY } from '../config/tuning';
 import { createRng } from '../core/rng';
 import type { SharedUniforms } from './assetTypes';
 import type { GpuRingBuffer } from './GpuRingBuffer';
 import type { InstanceBatch } from './InstanceBatch';
-import { DamageNumbers } from './fx/DamageNumbers';
+import { DamageNumbers, MAX_DIGITS_PER_FRAME } from './fx/DamageNumbers';
 import { FxDirector, type CameraCues } from './fx/FxDirector';
 import { ParticleSystem } from './fx/ParticleSystem';
 import { ShockwaveSystem } from './fx/ShockwaveSystem';
@@ -96,6 +97,16 @@ export class WorldViews {
     const keys = Object.keys(b) as (keyof typeof b)[];
     for (const k of keys) this.root.add(b[k].mesh);
     this.root.add(set.rings.particles.mesh, set.rings.shockwaves.mesh, set.rings.digits.mesh);
+  }
+
+  /** Pure-FX budgets of the quality preset (particle emission + ring sizes, digits per frame). */
+  applyQuality(p: QualityPreset): void {
+    const r = this.set.rings;
+    this.particles.setCap(p.particleCap);
+    r.particles.setLimit(p.particleCap);
+    r.digits.setLimit(p.digitCap);
+    r.shockwaves.setLimit(p.shockwaveCap);
+    this.digits.maxPerFrame = Math.min(MAX_DIGITS_PER_FRAME, p.digitsPerFrame);
   }
 
   sync(ctx: FrameContext, cameraDistance: number, reduceMotion: boolean): void {

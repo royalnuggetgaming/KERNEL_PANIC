@@ -21,12 +21,12 @@ import { QUALITY_PRESETS } from '../../src/config/quality';
 import { CAPACITY } from '../../src/config/tuning';
 import { BOSS_IDS, ENEMY_KINDS, PLAYER_INDICES, VEHICLE_IDS } from '../../src/contracts/ids';
 import type { GeometryKey, MaterialKey } from '../../src/contracts/render';
-import type { ThemeDef } from '../../src/contracts/theme';
 import { createMemoryLogger, NullLogger } from '../../src/core/logger';
 import { BLIT, BLOOM_PREFILTER, KAWASE_DOWN, KAWASE_UP } from '../../src/shaders/post/bloom';
 import { COMPOSITE } from '../../src/shaders/post/composite';
 import { SHARED_UNIFORM_NAMES } from '../../src/shaders/uniformNames';
 import { KERNEL_PANIC } from '../../src/themes/kernelPanic';
+import { THEMES } from '../../src/themes/registry';
 
 const ALL_GEOMETRY_KEYS: readonly GeometryKey[] = [
   ...VEHICLE_IDS.map((v) => `vehicle:${v}` as const),
@@ -122,21 +122,17 @@ describe('shared uniforms and material registry', () => {
     expect(reg.has('floor')).toBe(false);
   });
 
-  it('rejects theme modes that are reserved for future themes', () => {
-    const lava: ThemeDef = { ...KERNEL_PANIC, shading: { ...KERNEL_PANIC.shading, floorMode: 'LAVA' } };
-    const corona: ThemeDef = { ...KERNEL_PANIC, shading: { ...KERNEL_PANIC.shading, skyMode: 'CORONA' } };
-    for (const theme of [lava, corona]) {
-      const reg = createMaterialRegistry({
-        theme,
-        shared: createSharedUniforms(theme),
-        log: NullLogger,
-        post: POST,
-      });
-      expect(() => {
-        reg.create('floor');
-        reg.create('sky');
-      }).toThrow(/reserved/);
-    }
+  // Was 'rejects theme modes that are reserved for future themes': ABYSSAL LIGHT and EMBERFALL now implement them.
+  it.each(Object.values(THEMES))('compiles exactly one floor and one sky mode define for $id', (theme) => {
+    const reg = createMaterialRegistry({
+      theme,
+      shared: createSharedUniforms(theme),
+      log: NullLogger,
+      post: POST,
+    });
+    expect(reg.create('floor').defines).toEqual({ [`FLOOR_MODE_${theme.shading.floorMode}`]: 1 });
+    expect(reg.create('sky').defines).toEqual({ [`SKY_MODE_${theme.shading.skyMode}`]: 1 });
+    reg.dispose();
   });
 });
 

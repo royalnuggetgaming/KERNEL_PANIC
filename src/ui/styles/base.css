@@ -113,6 +113,9 @@
   inset: 0;
   pointer-events: auto;
   cursor: default;
+  /* Touchscreens (Chromebook convertibles): taps click at once, no double-tap zoom or tap flash. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .kp-center {
@@ -242,10 +245,25 @@
   transition: opacity 120ms var(--kp-ease);
 }
 
-.kp-btn:hover,
 .kp-btn.is-on {
   border-color: var(--kp-accent);
   box-shadow: var(--kp-glow);
+}
+
+/* Hover only mirrors the keyboard cursor; touch devices skip it so a tapped item does not stay lit. */
+@media (hover: hover) {
+  .kp-btn:hover {
+    border-color: var(--kp-accent);
+    box-shadow: var(--kp-glow);
+  }
+
+  .kp-arrow:hover {
+    color: var(--kp-accent);
+  }
+
+  .kp-menu-item:hover {
+    color: var(--kp-text);
+  }
 }
 
 .kp-btn-row {
@@ -258,10 +276,6 @@
 .kp-arrow {
   padding: 0 0.45em;
   color: var(--kp-dim);
-}
-
-.kp-arrow:hover {
-  color: var(--kp-accent);
 }
 
 .kp-caret,
@@ -291,10 +305,6 @@
   padding: 0.35em 0.9em 0.35em 0.4em;
   border-left: 2px solid transparent;
   color: var(--kp-dim);
-}
-
-.kp-menu-item:hover {
-  color: var(--kp-text);
 }
 
 .kp-menu-item.is-cursor {

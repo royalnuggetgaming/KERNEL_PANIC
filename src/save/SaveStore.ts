@@ -11,12 +11,14 @@
  * - commitRun idempotency via lastCommittedRunId; 500 ms debounce driven by tick(nowMs), deferred while a run
  *   is live (plan: never write while Playing; flush() on pagehide/hidden still writes); storage-event sync.
  */
-import type { Logger, Result } from '../contracts/ids';
+import type { Logger, Result, ThemeId } from '../contracts/ids';
 import {
   CURRENT_SAVE_VERSION,
   SAVE_KEYS,
   type KeyValueStorage,
   type Migration,
+  type QualityLevel,
+  type Settings,
   type SaveDataV1,
   type SaveDelta,
   type SaveError,
@@ -42,11 +44,23 @@ export interface SaveStoreDeps {
   readonly migrations?: Readonly<Record<number, Migration>>;
   /** External (other-tab) changes are applied only while this returns false. */
   readonly inRun: () => boolean;
+  /**
+   * v4: settings for a brand-new profile (nothing stored in main or backup), e.g. the Chromebook preset picked by
+   * app/createServices on first boot. Called at most once per such load; never applied to an existing save.
+   */
+  readonly freshSettings?: () => Partial<Settings> | null;
 }
 
 export interface SaveStore extends SaveStorePort {
   /** Wire to window 'storage' events (Wave 3). */
   handleStorageEvent(key: string | null): void;
+  /**
+   * The saved theme id read without loading (no writes, no state change), so app/createServices can build the
+   * theme's shaders before Boot. Main save, then backup, then the default theme.
+   */
+  peekThemeId(): ThemeId;
+  /** The saved quality read without loading (main, then backup); null when no readable save exists yet. */
+  peekQuality(): QualityLevel | null;
 }
 
 type WriteResult = Result<true, 'quota' | 'unavailable'>;
@@ -72,6 +86,12 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
   const listeners = new Set<(d: SaveDataV1) => void>();
 
   const decode = (raw: string | null) => decodeEnvelope(raw, migrations);
+
+  const freshProfile = (): SaveDataV1 => {
+    const d = createDefaultSave();
+    const patch = deps.freshSettings?.() ?? null;
+    return patch === null ? d : sanitizeSave({ ...d, settings: { ...d.settings, ...patch } }).data;
+  };
 
   const quarantine = (raw: string): void => {
     try {
@@ -146,7 +166,7 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     const rawMain = kv.get(SAVE_KEYS.main);
     const rawBak = kv.get(SAVE_KEYS.backup);
     if (rawMain === null && rawBak === null) {
-      setLoaded(createDefaultSave());
+      setLoaded(freshProfile());
       status = baseStatus;
       const w = write(data, null, 0);
       if (!w.ok) log.warn('save: could not write the fresh profile', w.error);
@@ -268,8 +288,21 @@ export function createSaveStore(deps: SaveStoreDeps): SaveStore {
     adopt(raw, dec.data, dec.rev);
   };
 
+  const peekSettings = (): Settings | null => {
+    for (const key of [SAVE_KEYS.main, SAVE_KEYS.backup]) {
+      const dec = decode(kv.get(key));
+      if (dec.kind === 'ok') return dec.data.settings;
+      if (dec.kind === 'future') break;
+    }
+    return null;
+  };
+  const peekThemeId = (): ThemeId => (peekSettings() ?? createDefaultSave().settings).themeId;
+  const peekQuality = (): QualityLevel | null => peekSettings()?.quality ?? null;
+
   return {
     load,
+    peekThemeId,
+    peekQuality,
     get data(): SaveDataV1 {
       return data;
     },

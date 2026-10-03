@@ -67,6 +67,28 @@ controls Player 2 over the internet:
 
 - Node.js **>= 22.13** (**24 LTS recommended**; `.nvmrc` pins 24.21.0), only to run or build it yourself
 - A desktop browser with WebGL2 (recent Chrome, Edge, Firefox or Safari) and a keyboard
+- Budget Chromebooks work too: see [Chromebook](#chromebook)
+
+### Chromebook
+
+KERNEL PANIC has a **CHROMEBOOK** quality preset for low-power Chromebooks such as the **Lenovo 500e Chromebook
+Gen 3** (Celeron N4500/N5100, Intel UHD graphics, 11.6" 1366x768 touchscreen).
+
+- **It turns on by itself** the first time the game starts on ChromeOS with 4 or fewer CPU threads, and a message
+  says "Chromebook mode on — change in Settings > Quality". A quality you chose yourself is never changed.
+- **What it changes (looks only, never gameplay):** native screen pixels (DPR 1), no MSAA, quarter-resolution bloom
+  with 2 instead of 4 blur levels, cheaper floor/sky/hull shaders (2-octave noise, no Voronoi layers), up to 2048
+  particles, fewer damage numbers and shockwaves, a 60 FPS cap, and the resolution governor may go down to 50%
+  render scale in busy fights. Enemies, bullets, timing and rules are identical.
+- **Switch it** in **Settings > Quality**. Most of it applies at once; the cheaper shaders switch after
+  **RESTART TO APPLY** (progress is kept).
+- **Keyboard:** no numpad is needed (Player 2 uses the arrows with `.` `/` `,`). The ChromeOS Launcher key is the
+  **Search** key; the game never binds it or Alt, so ChromeOS shortcuts keep working. Pressing Search lets go of
+  held keys, so press your move keys again afterwards.
+- **Touchscreen:** menus, the Patch Bay, Firmware, the TERMINAL and HOW TO PLAY can be tapped. Playing uses the
+  keyboard.
+- **Tips:** play plugged in (ChromeOS slows the CPU on battery), close other tabs and Android apps, play in the
+  Chrome browser (not an Android app), and press the **Fullscreen** key on the top row.
 
 ## Controls
 
@@ -108,6 +130,8 @@ keys.
   win 3 rounds wins the match. A round lasts up to 90 s, and if time runs out the player with the higher HP
   fraction wins it. Shots hit your opponent for reduced damage, and weaker enemy waves roam the arena as hazards.
   The shop opens between rounds, without the team items.
+- **Themes:** KERNEL PANIC (neon circuit grid), ABYSSAL LIGHT (caustic deep sea) and EMBERFALL (lava under a dying
+  star) change the visuals, music and names, never the rules: **SETTINGS > THEME**, then **RESTART TO APPLY**.
 
 ## Scripts
 
@@ -133,6 +157,8 @@ keys.
   Press `` ` `` (Backquote) to toggle the debug overlay. It shows FPS, frame p99, CPU p95, draw calls, triangles,
   shader programs, audio voices, the resolution-governor step and the state stack.
 - `?seed=N` fixes the run seed, so runs with the same inputs are reproducible.
+- `?quality=chromebook` (or `low`, `medium`, `high`, `ultra`) forces a quality preset for this session without
+  saving it, for testing the Chromebook mode on any computer.
 
 ## Performance notes
 
@@ -140,9 +166,9 @@ keys.
   (ProMotion) and 144 Hz.
 - **Settings > Frame cap:** Auto (the display rate, which drops to 60 while playing if frames are missed), 60, 120
   or uncapped.
-- **Quality presets:** Low, Medium, High (the default) and Ultra. A resolution governor lowers the render scale,
-  then MSAA, then caps the frame rate at 60 whenever frame p95 goes over budget, and it steps back up after 10 s
-  of clean frames.
+- **Quality presets:** Low, Medium, High (the default), Ultra and Chromebook (see above). A resolution governor
+  lowers the render scale, then MSAA, then caps the frame rate at 60 whenever frame p95 goes over budget, and it
+  steps back up after 10 s of clean frames.
 - Every shader is compiled while the boot screen is showing. The number of shader programs stays fixed at 20
   after boot, and the per-frame hot paths do not allocate. The game draws with about 20 to 60 draw calls a frame,
   using instanced batches.

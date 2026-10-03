@@ -11,6 +11,7 @@ import { GLSL_LIGHTING } from '../../src/shaders/chunks/lighting';
 import { GLSL_NOISE } from '../../src/shaders/chunks/noise';
 import { DECAL } from '../../src/shaders/decal';
 import { DIGITS, digitCount, SEVEN_SEGMENT } from '../../src/shaders/digits';
+import { THEMES } from '../../src/themes/registry';
 import { FLOOR } from '../../src/shaders/floor';
 import { FORCE_FIELD } from '../../src/shaders/forceField';
 import { MARKER } from '../../src/shaders/marker';
@@ -209,5 +210,59 @@ describe('shader helpers', () => {
     expect(Math.floor(w / 16)).toBe(BEAM_KIND.LASER);
     expect(w % 16).toBe(TINT.ENEMY_SHOT);
     for (const v of Object.values(TINT)) expect(v).toBeLessThan(16);
+  });
+});
+
+describe('theme shader modes (fixed at Boot by compile-time defines)', () => {
+  const branch = (src: string, define: string): string => {
+    const s = stripComments(src);
+    const start = s.search(new RegExp(`#(?:el)?if defined\\(${define}\\)`));
+    expect(start, `${define} branch`).toBeGreaterThanOrEqual(0);
+    // Depth-aware: nested #ifdef LOW_FX blocks (Chromebook variant) inside a mode branch stay in the branch.
+    const lines = s.slice(start).split('\n');
+    let depth = 0;
+    const out: string[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const l = lines[i]!.trim();
+      if (l.startsWith('#if')) depth++;
+      else if (/^#endif\b/.test(l)) {
+        if (depth === 0) break;
+        depth--;
+      } else if (/^#(elif|else)\b/.test(l) && depth === 0) break;
+      out.push(lines[i]!);
+    }
+    return out.join('\n');
+  };
+
+  it('floor implements GRID, CAUSTICS (animated Voronoi) and LAVA (warped FBM + cracked crust)', () => {
+    expect(branch(FLOOR.fragment, 'FLOOR_MODE_GRID')).toContain('kpHex');
+    const caustics = branch(FLOOR.fragment, 'FLOOR_MODE_CAUSTICS');
+    expect(caustics).toMatch(/kpVoronoi2\([^;]*uTime|kpVoronoi2\([^;]*\bt\b/);
+    expect(caustics.match(/kpVoronoi2/g)?.length).toBeGreaterThanOrEqual(2);
+    const lava = branch(FLOOR.fragment, 'FLOOR_MODE_LAVA');
+    expect(lava).toContain('kpCrack');
+    expect(lava.match(/kpFbm2/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(lava).toContain('seam');
+  });
+
+  it('sky implements ABYSS_RAYS (shafts + marine snow) and CORONA, with NEBULA_GLYPHS as the fallback', () => {
+    const abyss = branch(SKY.fragment, 'SKY_MODE_ABYSS_RAYS');
+    expect(abyss).toContain('shafts');
+    expect(abyss).toContain('kpMarineSnow');
+    const corona = branch(SKY.fragment, 'SKY_MODE_CORONA');
+    expect(corona).toContain('corona');
+    expect(corona).toContain('kpFbm3');
+    expect(stripComments(SKY.fragment)).toMatch(/#else[\s\S]*kpGlyphRain\(dir\)[\s\S]*#endif/);
+  });
+
+  it('every theme mode has a branch and fog/shimmer stay uniforms (no scene.fog, no runtime recompile)', () => {
+    for (const t of Object.values(THEMES)) {
+      if (t.shading.floorMode !== 'GRID') branch(FLOOR.fragment, `FLOOR_MODE_${t.shading.floorMode}`);
+      if (t.shading.skyMode !== 'NEBULA_GLYPHS') branch(SKY.fragment, `SKY_MODE_${t.shading.skyMode}`);
+      expect(t.shading.heatShimmer).toBeGreaterThanOrEqual(0);
+    }
+    expect(FLOOR.fragment).toContain('kpApplyFog');
+    expect(THEMES.abyssalLight.shading.fogDensity).toBeGreaterThan(THEMES.kernelPanic.shading.fogDensity);
+    expect(THEMES.emberfall.shading.heatShimmer).toBeGreaterThan(0);
   });
 });

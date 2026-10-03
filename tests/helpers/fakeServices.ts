@@ -18,6 +18,8 @@ import { FakeFsm } from './fakeStates';
 
 export interface FakeServiceSet {
   readonly services: Services;
+  /** services.reloadApp() calls. */
+  readonly reloads: { count: number };
   readonly fsm: FakeFsm;
   readonly input: FakeInputPort;
   readonly audio: NullAudio;
@@ -49,6 +51,7 @@ export function createFakeServices(
   const runs = createFakeRunFactory();
   let seed = o.seed ?? 1000;
   let runCounter = 0;
+  const reloads = { count: 0 };
   const services: Services = {
     fsm,
     input,
@@ -67,9 +70,13 @@ export function createFakeServices(
     env: { debug: false, seedOverride: null, strict: true, version: 'test' },
     newSeed: () => seed++,
     newRunId: () => `run-${String(++runCounter)}`,
+    reloadApp: () => {
+      reloads.count++;
+    },
   };
   return {
     services,
+    reloads,
     fsm,
     input,
     audio,

@@ -1,8 +1,8 @@
 /**
  * Theme data contract: names, palette, geometry recipe params, shader modes, audio params.
- * Themes are pure data; mechanics are theme-neutral. Only KERNEL PANIC exists in v1; the union members
- * for other floor/sky/geometry modes are reserved for future themes and need not be implemented yet.
- * FROZEN after Wave 0.
+ * Themes are pure data; mechanics are theme-neutral. Three themes ship (KERNEL PANIC, ABYSSAL LIGHT, EMBERFALL)
+ * with all floor/sky modes implemented; the 'organic'/'mineral' enemy families and 'sub'/'tug' hull styles are
+ * still reserved (every theme reuses the platonic/sled meshes, recoloured by its palette).
  */
 import type { BossId, EnemyKind, SpecialKind, ThemeId, VehicleId } from './ids';
 

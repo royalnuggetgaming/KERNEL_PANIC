@@ -150,6 +150,7 @@ class RenderBridgeImpl implements RenderBridge {
         floatTargets: this.capabilities.floatTargets,
         msaa: this.preset.msaa,
         bloomRes: this.preset.bloomRes,
+        bloomLevels: this.preset.bloomLevels,
         fxaa: this.preset.fxaa,
       },
     );
@@ -299,7 +300,7 @@ class RenderBridgeImpl implements RenderBridge {
     const live = this.live;
     if (live === null) return;
     live.post.setMsaa(this.preset.msaa);
-    live.post.setBloomRes(this.preset.bloomRes);
+    live.post.setBloomRes(this.preset.bloomRes, this.preset.bloomLevels);
     live.post.setFxaa(this.preset.fxaa);
     live.post.setRenderScale(1);
     live.post.setPost({
@@ -312,7 +313,7 @@ class RenderBridgeImpl implements RenderBridge {
       freeze: 0,
       hurt: 0,
     });
-    live.views.particles.setCap(this.preset.particleCap);
+    live.views.applyQuality(this.preset);
     live.views.fx.setReduceFlashes(s.reduceFlashes);
     live.uniforms.setColorblind(s.colorblind);
     live.uniforms.setReduceFlashes(s.reduceFlashes);

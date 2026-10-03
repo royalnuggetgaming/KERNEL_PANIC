@@ -30,6 +30,46 @@ const PAD_ENV = { a: 0.35, d: 0.6, s: 0.72, r: 0.7 } as const;
 const BASS_ENV = { a: 0.005, d: 0.12, s: 0.7, r: 0.06 } as const;
 const LEAD_ENV = { a: 0.01, d: 0.18, s: 0.6, r: 0.12 } as const;
 
+/** Per-kit drum voicing (timbre.kit): kick sweep/decay/level and snare body wave/pitch/noise level. */
+const KITS = {
+  electro: {
+    k0: 150,
+    k1: 42,
+    kSweep: 0.12,
+    kDecay: 0.42,
+    kGain: 0.9,
+    sWave: 'triangle',
+    s0: 220,
+    s1: 160,
+    sNoise: 0.35,
+    sDecay: 0.18,
+  },
+  soft: {
+    k0: 105,
+    k1: 36,
+    kSweep: 0.2,
+    kDecay: 0.6,
+    kGain: 0.75,
+    sWave: 'sine',
+    s0: 150,
+    s1: 105,
+    sNoise: 0.14,
+    sDecay: 0.3,
+  },
+  metal: {
+    k0: 190,
+    k1: 48,
+    kSweep: 0.07,
+    kDecay: 0.28,
+    kGain: 1,
+    sWave: 'square',
+    s0: 340,
+    s1: 190,
+    sNoise: 0.42,
+    sDecay: 0.13,
+  },
+} as const;
+
 function osc(
   ctx: BaseAudioContext,
   type: OscillatorType,
@@ -67,7 +107,7 @@ export const INSTRUMENTS: Readonly<Record<InstrumentId, InstrumentDef>> = {
   bass: {
     nodes: 4,
     priority: 4,
-    play(ctx, out, midi, when, dur, vel) {
+    play(ctx, out, midi, when, dur, vel, timbre) {
       const g = ctx.createGain();
       g.connect(out);
       const end = envelope(g.gain, when, BASS_ENV, 0.32 * vel, dur);
@@ -75,7 +115,7 @@ export const INSTRUMENTS: Readonly<Record<InstrumentId, InstrumentDef>> = {
       osc(ctx, 'sine', hz, 0, g, when, end + 0.01);
       const pulse = ctx.createOscillator();
       const pg = ctx.createGain();
-      pulse.type = 'square';
+      pulse.type = timbre.bassWave;
       pulse.frequency.value = hz;
       pg.gain.value = 0.28;
       pulse.connect(pg);
@@ -131,13 +171,14 @@ export const INSTRUMENTS: Readonly<Record<InstrumentId, InstrumentDef>> = {
   kick: {
     nodes: 2,
     priority: 5,
-    play(ctx, out, _midi, when, _dur, vel) {
+    play(ctx, out, _midi, when, _dur, vel, timbre) {
+      const k = KITS[timbre.kit];
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.type = 'sine';
-      o.frequency.setValueAtTime(150, when);
-      o.frequency.exponentialRampToValueAtTime(42, when + 0.12);
-      const end = percEnvelope(g.gain, when, 0.9 * vel, 0.002, 0.42);
+      o.frequency.setValueAtTime(k.k0, when);
+      o.frequency.exponentialRampToValueAtTime(k.k1, when + k.kSweep);
+      const end = percEnvelope(g.gain, when, k.kGain * vel, 0.002, k.kDecay);
       o.connect(g);
       g.connect(out);
       o.start(when);
@@ -164,21 +205,22 @@ export const INSTRUMENTS: Readonly<Record<InstrumentId, InstrumentDef>> = {
   snare: {
     nodes: 4,
     priority: 2,
-    play(ctx, out, _midi, when, _dur, vel, _timbre, noise) {
+    play(ctx, out, _midi, when, _dur, vel, timbre, noise) {
+      const k = KITS[timbre.kit];
       const src = ctx.createBufferSource();
       const ng = ctx.createGain();
       src.buffer = noise;
       src.loop = true;
-      const e1 = percEnvelope(ng.gain, when, 0.35 * vel, 0.001, 0.18);
+      const e1 = percEnvelope(ng.gain, when, k.sNoise * vel, 0.001, k.sDecay);
       src.connect(ng);
       ng.connect(out);
       src.start(when, (when * 0.53) % 0.9);
       src.stop(e1 + 0.01);
       const body = ctx.createOscillator();
       const bg = ctx.createGain();
-      body.type = 'triangle';
-      body.frequency.setValueAtTime(220, when);
-      body.frequency.exponentialRampToValueAtTime(160, when + 0.08);
+      body.type = k.sWave;
+      body.frequency.setValueAtTime(k.s0, when);
+      body.frequency.exponentialRampToValueAtTime(k.s1, when + 0.08);
       const e2 = percEnvelope(bg.gain, when, 0.3 * vel, 0.001, 0.1);
       body.connect(bg);
       bg.connect(out);

@@ -227,4 +227,17 @@ describe('theme-independent geometry', () => {
     expect(() => buildEnemyGeometry('shard', sub)).toThrow(/reserved/);
     expect(() => buildBossGeometry('kernel', sub)).toThrow(/reserved/);
   });
+
+  it.each(Object.values(THEMES))('builds every hull, enemy and boss mesh for $id', (theme) => {
+    const all = [
+      ...VEHICLE_IDS.map((v) => buildVehicleGeometry(v, theme)),
+      ...ENEMY_KINDS.map((k) => buildEnemyGeometry(k, theme)),
+      ...BOSS_IDS.map((b) => buildBossGeometry(b, theme)),
+    ];
+    for (const g of all) {
+      expect(g.getAttribute('position').count).toBeGreaterThan(0);
+      expect(g.getAttribute('aEmissive')).toBeDefined();
+      g.dispose();
+    }
+  });
 });

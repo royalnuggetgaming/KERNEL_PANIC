@@ -191,11 +191,18 @@
   letter-spacing: 0.04em;
 }
 
-.kp-manual-toc-item:hover,
 .kp-manual-toc-item.is-cursor {
   border-left-color: var(--kp-accent);
   background: linear-gradient(90deg, rgba(var(--kp-accent-rgb), 0.16), transparent);
   color: var(--kp-text);
+}
+
+@media (hover: hover) {
+  .kp-manual-toc-item:hover {
+    border-left-color: var(--kp-accent);
+    background: linear-gradient(90deg, rgba(var(--kp-accent-rgb), 0.16), transparent);
+    color: var(--kp-text);
+  }
 }
 
 .kp-manual-page {

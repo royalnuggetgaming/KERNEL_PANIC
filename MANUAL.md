@@ -23,7 +23,9 @@ the in-game manual shows your own bindings.
 15. [Firmware & Cores](#firmware-cores)
 16. [VERSUS Mode](#versus-mode)
 17. [Difficulty](#difficulty)
-18. [Tips](#tips)
+18. [Themes](#themes)
+19. [Chromebook](#chromebook)
+20. [Tips](#tips)
 
 ## Goal
 
@@ -53,12 +55,12 @@ These are your current key bindings. Change them in CONTROLS (main menu or pause
 
 ### Menus
 
-|              |                                           |
-| ------------ | ----------------------------------------- |
-| **Navigate** | Either player’s move keys                 |
-| **Confirm**  | ENTER or NUM ENTER or a player’s Fire key |
-| **Back**     | BKSP or ESC or a player’s Dash key        |
-| **Mouse**    | Click any menu item, shop row or button   |
+|                   |                                                |
+| ----------------- | ---------------------------------------------- |
+| **Navigate**      | Either player’s move keys                      |
+| **Confirm**       | ENTER or NUM ENTER or a player’s Fire key      |
+| **Back**          | BKSP or ESC or a player’s Dash key             |
+| **Mouse / touch** | Click or tap any menu item, shop row or button |
 
 ### Patch Bay and character select
 
@@ -346,6 +348,43 @@ Pick a difficulty in SETTINGS before a run (character select shows the current o
 | **HARD**   | Enemy speed +35%, enemy count +75%, damage to you +75%, enemy HP +25%. Close to the original release; for players who know every pattern. |
 
 The difficulty in effect when a run starts stays for the whole run. Cores rewards are the same on every difficulty.
+
+## Themes
+
+Three themes change the look, music and names, never the rules: every craft, enemy, card and number is the same. Pick one in SETTINGS > THEME, then choose RESTART TO APPLY (the game reloads; progress is kept).
+
+|                   |                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **KERNEL PANIC**  | Neon circuit grid inside a crashing server; dark synthwave. Currencies: Bits and Cores.                                       |
+| **ABYSSAL LIGHT** | Caustic-lit seabed in a lightless trench, dense dark water; slow, tense drones and sonar pings. Currencies: Lumen and Pearls. |
+| **EMBERFALL**     | Cracked lava crust under a dying red giant, heat shimmer; hard industrial percussion. Currencies: Scrap and Alloy.            |
+
+## Chromebook
+
+KERNEL PANIC runs on budget Chromebooks such as the Lenovo 500e Chromebook Gen 3 (Intel Celeron, 11.6" 1366x768 touchscreen). The CHROMEBOOK quality setting keeps it smooth there.
+
+|                        |                                                                                                                                                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Turns on by itself** | On the very first launch on a ChromeOS device with 4 or fewer CPU threads, QUALITY is set to CHROMEBOOK and a message says so. A quality you picked yourself is never changed.                                                                              |
+| **What it changes**    | Only looks: native screen pixels, no MSAA, cheaper glow and floor/sky effects, up to 2048 particles, fewer damage numbers and a 60 FPS cap. In busy fights the picture may drop to 50% resolution. Enemies, bullets, timing and rules are exactly the same. |
+| **Switch it**          | SETTINGS > QUALITY. Most of the change is instant; the cheaper floor/sky effects switch after RESTART TO APPLY (progress is kept).                                                                                                                          |
+
+### Keyboard and touch
+
+|                      |                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Search key**       | The ChromeOS Launcher key is the Search key (where Caps Lock usually sits). The game never uses it or Alt, so ChromeOS shortcuts keep working; pressing Search lets go of every held key, so press your move keys again. |
+| **No numpad needed** | Player 2 plays on the arrow keys with . (Fire), / (Dash) and , (Special).                                                                                                                                                |
+| **Touchscreen**      | Tap menus, the Patch Bay, Firmware, TERMINAL and this manual. Playing uses the keyboard.                                                                                                                                 |
+
+### Tips
+
+|                      |                                                                         |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Plug in**          | On battery ChromeOS slows the processor down. Play plugged in.          |
+| **Close other tabs** | Other tabs and Android apps share the memory and the processor.         |
+| **Use Chrome**       | Play in the Chrome browser, not through an Android app.                 |
+| **Fullscreen**       | Press the Fullscreen key on the top row (above 4) for the whole screen. |
 
 ## Tips
 

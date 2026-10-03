@@ -125,8 +125,14 @@ export class MusicGraph {
   private makeBus(id: Exclude<InstrumentId, 'pad'>, musicIn: AudioNode, reverbIn: AudioNode): AudioNode {
     const b = this.timbre.brightness;
     switch (id) {
-      case 'bass':
-        return this.filter('lowpass', 900 * b, 0.9, musicIn);
+      case 'bass': {
+        const f = this.filter('lowpass', 900 * b, 0.9, musicIn);
+        if (this.timbre.bassDrive <= 0) return f;
+        // Industrial: the regular bass is a distorted saw too.
+        const ws = crunch(this.ctx, this.timbre.bassDrive);
+        ws.connect(f);
+        return ws;
+      }
       case 'distBass': {
         const post = this.filter('lowpass', 1700 * b, 1.2, musicIn);
         const ws = crunch(this.ctx, Math.min(1, this.timbre.drive + 0.35));
@@ -141,6 +147,9 @@ export class MusicGraph {
       case 'kick':
         return this.filter('lowpass', 5000, 0.7, musicIn);
       case 'hat':
+        // Soft kit: a muffled shaker; metal kit: a ringing band of noise; electro: bright hats.
+        if (this.timbre.kit === 'soft') return this.filter('bandpass', 3800, 0.9, musicIn);
+        if (this.timbre.kit === 'metal') return this.filter('bandpass', 8500, 3, musicIn);
         return this.filter('highpass', 7000, 0.7, musicIn);
       case 'snare': {
         const f = this.filter('highpass', 900, 0.7, musicIn);

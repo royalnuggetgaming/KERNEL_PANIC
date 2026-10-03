@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Bindings } from '../../src/contracts/input';
 import type { Settings } from '../../src/contracts/save';
-import { adjustSetting, buildSettingsVM, DIFFICULTY_NOTE, SETTING_IDS } from '../../src/states/settingsPanel';
+import {
+  adjustSetting,
+  APPLY_THEME_ROW,
+  buildSettingsVM,
+  DIFFICULTY_NOTE,
+  SETTING_IDS,
+  THEME_RESTART_IN_RUN,
+  THEME_RESTART_NOTE,
+} from '../../src/states/settingsPanel';
 import { SubPanelController } from '../../src/states/subPanels';
 import { TEST_SETTINGS } from '../helpers/fakeSave';
 import { bootToMenu, createHarness, type Harness } from './harness';
@@ -48,9 +56,11 @@ describe('Settings sub-panel', () => {
     ui.click({ screen: 'mainMenu', kind: 'left', player: 'any', itemId: 'quality' });
     h.frame();
     expect(lastSettingsPatch(h)).toEqual({ quality: 'medium' });
+    // v4: three themes; picking one saves it and asks for a restart (was 'Only one theme is installed.').
     ui.click({ screen: 'mainMenu', kind: 'confirm', player: 'any', itemId: 'theme' });
     h.frame();
-    expect(ui.vm('mainMenu')?.settings?.note).toBe('Only one theme is installed.');
+    expect(lastSettingsPatch(h)).toEqual({ themeId: 'abyssalLight' });
+    expect(ui.vm('mainMenu')?.settings?.note).toBe(THEME_RESTART_NOTE);
     h.press({ player: 'any', kind: 'back' });
     expect(ui.vm('mainMenu')?.panel).toBe('none');
   });
@@ -88,6 +98,57 @@ describe('Settings sub-panel', () => {
     expect(vm.rows.find((r) => r.id === 'frameCap')?.value).toBe('120 FPS');
     expect(vm.rows.find((r) => r.id === 'focus1')?.value).toBe('TOGGLE');
     expect(vm.rows).toHaveLength(SETTING_IDS.length);
+  });
+});
+
+describe('THEME row (v4: KERNEL PANIC / ABYSSAL LIGHT / EMBERFALL, restart to apply)', () => {
+  it('cycles all three themes and offers RESTART TO APPLY only while the saved theme differs', async () => {
+    const h = await openPanel('settings');
+    const { ui } = h.set;
+    const rows = (): readonly { id: string; value: string }[] => ui.vm('mainMenu')?.settings?.rows ?? [];
+    expect(rows().some((r) => r.id === APPLY_THEME_ROW)).toBe(false);
+    const titles: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      ui.click({ screen: 'mainMenu', kind: 'right', player: 'any', itemId: 'theme' });
+      h.frame();
+      titles.push(rows().find((r) => r.id === 'theme')?.value ?? '');
+      expect(rows().some((r) => r.id === APPLY_THEME_ROW)).toBe(i < 2);
+    }
+    expect(titles).toEqual(['ABYSSAL LIGHT', 'EMBERFALL', 'KERNEL PANIC']);
+    expect(lastSettingsPatch(h)).toEqual({ themeId: 'kernelPanic' });
+    expect(ui.vm('mainMenu')?.settings?.note).toBe('');
+    ui.click({ screen: 'mainMenu', kind: 'left', player: 'any', itemId: 'theme' });
+    h.frame();
+    expect(lastSettingsPatch(h)).toEqual({ themeId: 'emberfall' });
+    expect(h.set.reloads.count).toBe(0);
+    // Keyboard: the restart row is the last row; confirm reloads through services.reloadApp.
+    h.press({ player: 'any', kind: 'down' });
+    expect(ui.vm('mainMenu')?.settings?.cursor).toBe(rows().length - 1);
+    h.press({ player: 'any', kind: 'confirm' });
+    expect(h.set.reloads.count).toBe(1);
+  });
+
+  it('refuses to restart in the middle of a run', async () => {
+    const h = await openPanel('settings');
+    const { ui } = h.set;
+    ui.click({ screen: 'mainMenu', kind: 'right', player: 'any', itemId: 'theme' });
+    h.frame();
+    const session = h.set.services.session as { current: unknown };
+    session.current = {};
+    ui.click({ screen: 'mainMenu', kind: 'confirm', player: 'any', itemId: APPLY_THEME_ROW });
+    h.frame();
+    expect(h.set.reloads.count).toBe(0);
+    expect(ui.vm('mainMenu')?.settings?.note).toBe(THEME_RESTART_IN_RUN);
+    session.current = null;
+  });
+
+  it('buildSettingsVM appends the restart row only for a pending theme', () => {
+    const vm = buildSettingsVM({ ...TEST_SETTINGS, themeId: 'emberfall' }, 0, '', 'kernelPanic');
+    expect(vm.rows.at(-1)).toMatchObject({ id: APPLY_THEME_ROW, kind: 'action', value: 'RESTART NOW' });
+    expect(vm.rows.find((r) => r.id === 'theme')?.value).toBe('EMBERFALL');
+    expect(buildSettingsVM({ ...TEST_SETTINGS, themeId: 'emberfall' }, 0, '').rows).toHaveLength(
+      SETTING_IDS.length,
+    );
   });
 });
 
