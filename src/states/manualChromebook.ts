@@ -14,16 +14,20 @@ export function chromebookPage(): ManualPageVM {
       'KERNEL PANIC runs on budget Chromebooks such as the Lenovo 500e Chromebook Gen 3 (Intel Celeron, 11.6" 1366x768 touchscreen). The CHROMEBOOK quality setting keeps it smooth there.',
     ),
     item(
-      'Turns on by itself',
-      'On the very first launch on a ChromeOS device with 4 or fewer CPU threads, QUALITY is set to CHROMEBOOK and a message says so. A quality you picked yourself is never changed.',
+      'Turn it on',
+      'SETTINGS > CHROMEBOOK MODE (the first row): set it ON, then choose RESTART TO APPLY. Your progress is kept. Set it OFF to go back to the normal HIGH quality.',
+    ),
+    item(
+      'Auto-detect',
+      'On a brand-new save (the first launch ever in that browser) on a ChromeOS device with 4 or fewer CPU threads, it switches on by itself and a message says so. If the game was opened in that browser before, use the setting.',
     ),
     item(
       'What it changes',
       `Only looks: native screen pixels, no MSAA, cheaper glow and floor/sky effects, up to ${cb.particleCap} particles, fewer damage numbers and a ${String(cb.maxFps)} FPS cap. In busy fights the picture may drop to ${String(cb.renderScaleFloor * 100)}% resolution. Enemies, bullets, timing and rules are exactly the same.`,
     ),
     item(
-      'Switch it',
-      'SETTINGS > QUALITY. Most of the change is instant; the cheaper floor/sky effects switch after RESTART TO APPLY (progress is kept).',
+      'Fine-tune',
+      'SETTINGS > QUALITY also lists CHROMEBOOK next to LOW / MEDIUM / HIGH / ULTRA. Most of a change is instant; the cheaper floor/sky effects switch after RESTART TO APPLY.',
     ),
     hd('Keyboard and touch'),
     item(

@@ -74,8 +74,10 @@ controls Player 2 over the internet:
 KERNEL PANIC has a **CHROMEBOOK** quality preset for low-power Chromebooks such as the **Lenovo 500e Chromebook
 Gen 3** (Celeron N4500/N5100, Intel UHD graphics, 11.6" 1366x768 touchscreen).
 
-- **It turns on by itself** the first time the game starts on ChromeOS with 4 or fewer CPU threads, and a message
-  says "Chromebook mode on — change in Settings > Quality". A quality you chose yourself is never changed.
+- **Turn it on:** **Settings → CHROMEBOOK MODE** (the first row) → **ON**, then **RESTART TO APPLY** (progress is
+  kept). Set it **OFF** to return to the normal High quality. It is also listed under **Settings → Quality**.
+- **Auto-detect:** on a brand-new save (the first launch ever in that browser) on ChromeOS with 4 or fewer CPU
+  threads it switches on by itself and says so. If the game was opened in that browser before, use the setting.
 - **What it changes (looks only, never gameplay):** native screen pixels (DPR 1), no MSAA, quarter-resolution bloom
   with 2 instead of 4 blur levels, cheaper floor/sky/hull shaders (2-octave noise, no Voronoi layers), up to 2048
   particles, fewer damage numbers and shockwaves, a 60 FPS cap, and the resolution governor may go down to 50%
