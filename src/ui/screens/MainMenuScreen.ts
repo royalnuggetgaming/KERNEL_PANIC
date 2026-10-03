@@ -61,7 +61,14 @@ export class MainMenuScreen implements ScreenView<'mainMenu'> {
   render(vm: MainMenuVM): boolean {
     this.title.set(vm.title);
     this.tagline.set(vm.tagline);
-    const panelOpen = this.sub.render(vm.panel, vm.settings, vm.controls, vm.credits, vm.manual);
+    const panelOpen = this.sub.render(
+      vm.panel,
+      vm.settings,
+      vm.controls,
+      vm.credits,
+      vm.manual,
+      vm.terminal ?? null,
+    );
     this.menuShown.set(!panelOpen);
     // A sub-panel (settings/controls/credits) owns the centre: the tagline would sit on top of the 3D logo.
     this.headShown.set(!panelOpen);

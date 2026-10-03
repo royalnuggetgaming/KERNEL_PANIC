@@ -147,6 +147,34 @@ export class TappedInput implements InputPort {
   captureNextKey(cb: (code: KeyCode | null) => void): void {
     this.inner.captureNextKey(cb);
   }
+
+  /** Window (or test double) whose 'paste' events feed onPaste; null = paste unsupported. */
+  pasteTarget: PasteTargetLike | null = null;
+
+  onPaste(cb: (text: string) => void): () => void {
+    const target = this.pasteTarget;
+    if (target === null) return () => undefined;
+    const fn = (e: PasteEventLike): void => {
+      const text = e.clipboardData?.getData('text') ?? '';
+      e.preventDefault();
+      if (text.length > 0) cb(text);
+    };
+    target.addEventListener('paste', fn);
+    return () => {
+      target.removeEventListener('paste', fn);
+    };
+  }
+}
+
+/** The bits of a ClipboardEvent onPaste reads. */
+export interface PasteEventLike {
+  readonly clipboardData: { getData(format: string): string } | null;
+  preventDefault(): void;
+}
+
+export interface PasteTargetLike {
+  addEventListener(type: 'paste', fn: (e: PasteEventLike) => void): void;
+  removeEventListener(type: 'paste', fn: (e: PasteEventLike) => void): void;
 }
 
 /** Settings side effects that live outside the renderer (UI palette, pacer cap, governor preset). */

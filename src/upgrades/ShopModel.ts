@@ -15,9 +15,16 @@ import {
 } from '../contracts/ids';
 import type { ShopApi, ShopVisitSnapshot } from '../contracts/run';
 import type { Rng } from '../contracts/sim';
-import type { FinalChoice, PlayerRunState, PurchaseResult, ShopTx, TeamState } from '../contracts/upgrades';
+import type {
+  FinalChoice,
+  PlayerRunState,
+  PurchaseResult,
+  ShopTx,
+  StatModifier,
+  TeamState,
+} from '../contracts/upgrades';
 import { assertNever } from '../core/assert';
-import { META_EFFECTS, metaLevel } from '../config/metaCatalog';
+import { freeRerolls } from '../config/metaCatalog';
 import { UTILITY_PRICES } from '../config/runCatalog';
 import type { LockedCard } from './offers';
 import { buildSnapshot, type SnapshotCache } from './shopSnapshot';
@@ -64,6 +71,8 @@ export interface ShopModelInit {
   readonly rng: Rng;
   /** Optional hard-cap override (balancing tools and tests); defaults to config STAT_CAPS. */
   readonly caps?: Partial<StatCaps>;
+  /** Run-wide stat extras (TERMINAL cheats) so previews match the sim. */
+  readonly extraMods?: readonly StatModifier[];
 }
 
 export interface ShopResults {
@@ -125,7 +134,7 @@ function wellFormed(tx: ShopTx): boolean {
 }
 
 function createState(init: ShopModelInit): ShopState {
-  const free = metaLevel(init.meta, 'rerollCache') * META_EFFECTS.rerollCachePerLevel;
+  const free = freeRerolls(init.meta);
   const joined: [boolean, boolean] = [init.joined[0], init.joined[1]];
   return {
     mode: init.mode,
@@ -137,12 +146,18 @@ function createState(init: ShopModelInit): ShopState {
     vehicles: [init.vehicles[0], init.vehicles[1]],
     meta: { ...init.meta },
     caps: init.caps,
+    extraMods: init.extraMods,
     players: [initPlayer(init.players[0]), initPlayer(init.players[1])],
     team: initTeam(init.team),
     offers: [[], []],
     offerRng: [
       joined[0] ? init.rng.fork('shop', init.visit, 0) : null,
       joined[1] ? init.rng.fork('shop', init.visit, 1) : null,
+    ],
+    // Separate stream: the Mythic roll never shifts the regular offers of a seed.
+    mythicRng: [
+      joined[0] ? init.rng.fork('mythic', init.visit, 0) : null,
+      joined[1] ? init.rng.fork('mythic', init.visit, 1) : null,
     ],
     rerolls: [0, 0],
     freeRerolls: [free, free],

@@ -162,6 +162,8 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
   private readonly message: TextSlot;
   private readonly difficulty: TextSlot;
   private readonly difficultyClass: ClassSwitch;
+  private readonly cheats: TextSlot;
+  private readonly cheatsShown: Shown;
 
   constructor(ctx: UiContext) {
     const doc = ctx.doc;
@@ -184,6 +186,7 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     const currencyEl = h(doc, 'span', { className: 'kp-unit' });
     const msgEl = h(doc, 'p', { className: 'kp-select-msg kp-warn' });
     const diffEl = h(doc, 'span', { className: 'kp-select-diff-value' });
+    const cheatsEl = h(doc, 'p', { className: 'kp-select-cheats' });
     this.el.appendChild(
       h(
         doc,
@@ -206,6 +209,7 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
         ),
         h(doc, 'div', { className: 'kp-slots' }, this.slots[0].el, this.slots[1].el),
         modeRow,
+        cheatsEl,
         msgEl,
         h(
           doc,
@@ -228,6 +232,8 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     this.message = new TextSlot(msgEl);
     this.difficulty = new TextSlot(diffEl);
     this.difficultyClass = new ClassSwitch(diffEl);
+    this.cheats = new TextSlot(cheatsEl);
+    this.cheatsShown = new Shown(cheatsEl, false);
   }
 
   render(vm: CharacterSelectVM): boolean {
@@ -247,6 +253,9 @@ export class CharacterSelectScreen implements ScreenView<'characterSelect'> {
     this.message.set(vm.message);
     this.difficulty.set(vm.difficulty);
     this.difficultyClass.set('diff-' + vm.difficulty.toLowerCase());
+    const cheats = vm.cheats ?? '';
+    this.cheatsShown.set(cheats !== '');
+    this.cheats.set(cheats);
     return false;
   }
 }

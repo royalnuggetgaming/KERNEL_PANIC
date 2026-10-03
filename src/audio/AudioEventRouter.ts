@@ -266,6 +266,11 @@ class Router implements AudioEventRouter {
       case 'special':
         // The special channel carries the kind-specific sound.
         break;
+      case 'specialReady':
+        // Panned to the player; P2's cue sits a tone higher so co-op partners can tell them apart.
+        q[0] = x;
+        this.play('specialReady', 1, p.player === 0 ? 0 : 200);
+        break;
       case 'reboot':
         q[0] = x;
         this.play('revive', 0.8, 500);

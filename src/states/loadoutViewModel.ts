@@ -4,8 +4,10 @@
  */
 import {
   CARD_IDS,
+  META_UPGRADE_IDS,
   STAT_ROW_IDS,
   type CardId,
+  type MetaUpgradeId,
   type PlayerIndex,
   type StatRowId,
   type TeamItemId,
@@ -14,8 +16,10 @@ import type { PlayerLoadout, RunSessionApi } from '../contracts/run';
 import type { ThemeDef } from '../contracts/theme';
 import type { InstalledItemVM, PauseLoadoutVM } from '../contracts/ui';
 import { cardDef } from '../config/cards';
+import { cheatDef } from '../config/cheats';
+import { metaDef, metaLevel } from '../config/metaCatalog';
 import { statRowDef } from '../config/runCatalog';
-import { INSTALLED_TEAM_ITEMS, cardDesc, statRowTotal, teamTotal } from './powerupText';
+import { INSTALLED_TEAM_ITEMS, cardDesc, metaTotal, statRowTotal, teamTotal } from './powerupText';
 
 /** Compact HUD chip names. */
 const ROW_SHORT: Readonly<Record<StatRowId, string>> = {
@@ -48,6 +52,16 @@ const CARD_SHORT: Readonly<Record<CardId, string>> = {
   sudo: 'SUDO',
   rootAccess: 'ROOT',
   shardCache: 'CACHE',
+  rootOfAllEvil: 'EVIL',
+};
+
+const META_SHORT: Readonly<Record<MetaUpgradeId, string>> = {
+  hullFw: 'HULL',
+  overclockFw: 'OCLK',
+  bootCache: 'BOOT',
+  preCharge: 'PRE',
+  secondBoot: '2BOOT',
+  legendaryPool: 'LEG',
 };
 
 const TEAM_SHORT: Readonly<Record<TeamItemId, string>> = {
@@ -59,7 +73,65 @@ const TEAM_SHORT: Readonly<Record<TeamItemId, string>> = {
 
 export const NO_ITEMS: readonly InstalledItemVM[] = [];
 
-export function installedItems(l: PlayerLoadout, theme: ThemeDef, includeTeam: boolean): InstalledItemVM[] {
+/**
+ * Active Firmware (permanent Hangar upgrades) and cheats of a loadout. `compact` (HUD strip) folds all Firmware
+ * into one "FW" chip whose tooltip lists the lines.
+ */
+function passiveItems(l: PlayerLoadout, theme: ThemeDef, compact: boolean, out: InstalledItemVM[]): void {
+  const n = theme.names;
+  const meta = l.meta;
+  if (meta !== undefined) {
+    const parts: string[] = [];
+    let lines = 0;
+    for (const id of META_UPGRADE_IDS) {
+      const level = metaLevel(meta, id);
+      if (level <= 0) continue;
+      const def = metaDef(id);
+      const total = metaTotal(id, level, n.runCurrency);
+      lines++;
+      if (compact) {
+        parts.push(`${def.label} ${level}: ${total}`);
+        continue;
+      }
+      out.push({
+        id: 'fw:' + id,
+        kind: 'firmware',
+        label: def.label,
+        short: META_SHORT[id],
+        count: def.prices.length > 1 ? String(level) : '',
+        desc: `${n.meta.toUpperCase()} (permanent): ${total}`,
+      });
+    }
+    if (compact && lines > 0)
+      out.push({
+        id: 'fw:all',
+        kind: 'firmware',
+        label: n.meta,
+        short: 'FW',
+        count: String(lines),
+        desc: parts.join(' · '),
+      });
+  }
+  const cheats = l.cheats ?? [];
+  for (const id of cheats) {
+    const c = cheatDef(id);
+    out.push({
+      id: 'cheat:' + id,
+      kind: 'cheat',
+      label: `CHEAT ${c.label}`,
+      short: c.short,
+      count: '',
+      desc: `${c.desc} (cheat run: no ${n.metaCurrency}, no records)`,
+    });
+  }
+}
+
+export function installedItems(
+  l: PlayerLoadout,
+  theme: ThemeDef,
+  includeTeam: boolean,
+  compactFirmware = false,
+): InstalledItemVM[] {
   const out: InstalledItemVM[] = [];
   const currency = theme.names.runCurrency;
   for (const id of STAT_ROW_IDS) {
@@ -103,6 +175,7 @@ export function installedItems(l: PlayerLoadout, theme: ThemeDef, includeTeam: b
       });
     }
   }
+  passiveItems(l, theme, compactFirmware, out);
   return out;
 }
 
@@ -112,6 +185,8 @@ export function loadoutSignature(l: PlayerLoadout): number {
   for (const id of STAT_ROW_IDS) h = (h * 31 + l.rows[id]) | 0;
   for (let i = 0; i < l.cards.length; i++) h = (h * 31 + (l.cards[i] ?? 0)) | 0;
   for (const id of INSTALLED_TEAM_ITEMS) h = (h * 31 + l.team[id]) | 0;
+  if (l.meta !== undefined) for (const id of META_UPGRADE_IDS) h = (h * 31 + metaLevel(l.meta, id)) | 0;
+  h = (h * 31 + (l.cheats?.length ?? 0)) | 0;
   return h;
 }
 

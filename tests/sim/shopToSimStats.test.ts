@@ -81,6 +81,9 @@ describe('shop to sim: stat rows bought through RunSession change the sim', () =
     expect(a.state.players[0].stats.specialTier).toBe(1);
     const radius: number[] = [];
     for (const s of [a, b]) {
+      // lab() freezes the world in 'countdown', where specials are now locked (the meter is kept): use 'idle',
+      // which the rules leave alone and specials may fire in.
+      s.state.run.phase = 'idle';
       s.state.players[0].overdrive = OVERDRIVE.MAX;
       const intents = createIntents();
       intents[0].specialPressed = true;
@@ -93,13 +96,12 @@ describe('shop to sim: stat rows bought through RunSession change the sim', () =
 });
 
 describe('shop to sim: Firmware snapshot at run start', () => {
-  it('Hull FW, Boot Cache, Pre-Charge, Second Boot reach the world; Reroll Cache and Legendary Pool reach the shop', () => {
+  it('Hull FW, Boot Cache, Pre-Charge, Second Boot reach the world; Boot Cache rerolls and Legendary Pool reach the shop', () => {
     const meta: MetaLevels = {
       hullFw: 5,
       bootCache: 4,
       preCharge: 1,
       secondBoot: 1,
-      rerollCache: 2,
       legendaryPool: 1,
     };
     const s = session('coop', 9, meta);

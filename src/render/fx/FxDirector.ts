@@ -16,6 +16,7 @@ import { burstSpec, type ParticleSystem, type XZ } from './ParticleSystem';
 import type { ShockwaveSystem } from './ShockwaveSystem';
 import type { TransientList } from './TransientList';
 import { ContinuousEmitter } from './continuous';
+import { consumeSpecialFx, type SpecialFxSinks } from './specialFx';
 
 export interface CameraCues {
   trauma(amount: number): void;
@@ -73,8 +74,17 @@ export class FxDirector {
   private readonly d: FxDirectorDeps;
   private readonly continuous = new ContinuousEmitter();
 
+  private readonly specialSinks: SpecialFxSinks;
+
   constructor(deps: FxDirectorDeps) {
     this.d = deps;
+    this.specialSinks = {
+      particles: deps.particles,
+      shockwaves: deps.shockwaves,
+      trauma: (a: number): void => {
+        deps.cues.trauma(a);
+      },
+    };
   }
 
   setReduceFlashes(on: boolean): void {
@@ -195,19 +205,12 @@ export class FxDirector {
         case 'shieldBlock':
           sw.spawn(AT, t, 0.3, 2, 0.3, TINT.ACCENT, 0.8);
           break;
+        case 'specialReady':
+          // Drawn by consumeSpecialFx.
+          break;
       }
     }
-    for (let i = 0; i < e.special.count; i++) {
-      const s = e.special.get(i);
-      AT.x = s.x;
-      AT.z = s.z;
-      if (s.kind === 'railburst') cues.trauma(0.25);
-      if (s.kind === 'blinkSwarm') {
-        RING.tint = playerTint(s.player);
-        RING.count = 20;
-        ps.burst(AT, 0.6, t, RING);
-      }
-    }
+    consumeSpecialFx(this.specialSinks, e, t, this.reduceFlashes);
     for (let i = 0; i < e.arc.count; i++) {
       const a = e.arc.get(i);
       const r = this.d.arcs.add();

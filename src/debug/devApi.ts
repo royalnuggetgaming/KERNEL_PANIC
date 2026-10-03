@@ -50,6 +50,8 @@ export interface DebugHost {
   clearWave(): boolean;
   giveShards(p: PlayerIndex, n: number): boolean;
   godMode(on: boolean): void;
+  /** Forces (true) or restores (false) MYTHIC card offers in the Patch Bay. Optional for test doubles. */
+  forceMythic?(on: boolean): void;
   setSeed(n: number | null): void;
   /** Synthetic P1 keydown; resolves with the ms until the sim sampled it (-1 when not Playing). */
   probeInput(): Promise<number>;
@@ -92,6 +94,8 @@ export interface DevApi {
   setWave(w: number): boolean;
   clearWave(): boolean;
   godMode(on: boolean): void;
+  /** Every fresh Patch Bay card slot offers the MYTHIC card while on (screenshots/tests). */
+  forceMythic(on: boolean): void;
   setSeed(n: number | null): void;
   rendererInfo(): RenderStats;
   audioStats(): AudioStats & { readonly unlocked: boolean };
@@ -252,6 +256,9 @@ export function installDevApi(host: DebugHost): DevApi {
     clearWave: () => host.clearWave(),
     godMode: (on) => {
       host.godMode(on);
+    },
+    forceMythic: (on) => {
+      host.forceMythic?.(on);
     },
     setSeed: (n) => {
       host.setSeed(n);

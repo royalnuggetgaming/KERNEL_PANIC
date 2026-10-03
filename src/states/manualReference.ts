@@ -7,9 +7,9 @@ import type { ThemeDef } from '../contracts/theme';
 import type { ManualBlockVM, ManualPageVM } from '../contracts/ui';
 import type { Rarity } from '../contracts/upgrades';
 import { BOSS_COMMON, BOSS_DEFS, FORK_BOMB_SPLITS } from '../config/bosses';
-import { CARDS } from '../config/cards';
+import { CARDS, MYTHIC } from '../config/cards';
 import { CORRUPTED, ENEMY_DEFS } from '../config/enemies';
-import { META_UPGRADES, VEHICLE_UNLOCKS } from '../config/metaCatalog';
+import { META_GROUPS, META_GROUP_OF, META_UPGRADES, VEHICLE_UNLOCKS } from '../config/metaCatalog';
 import { STAT_ROWS, TEAM_ITEMS } from '../config/runCatalog';
 import { COOP, ECONOMY } from '../config/tuning';
 import { OVERFLOW, WAVES } from '../config/waves';
@@ -31,6 +31,7 @@ const RARITY_NAME: Readonly<Record<Rarity, string>> = {
   U: 'Uncommon',
   R: 'Rare',
   L: 'Legendary',
+  M: 'MYTHIC (super rare)',
 };
 
 function levels(n: number): string {
@@ -39,7 +40,9 @@ function levels(n: number): string {
 
 function systemsPage(t: ThemeDef): ManualPageVM {
   const blocks: ManualBlockVM[] = [
-    para('Stat rows are always on sale. Each level adds the listed amount; prices rise with level and wave.'),
+    para(
+      `Stat rows are always on sale. Each level adds the listed amount; prices rise with level and ${t.names.wave.toLowerCase()}.`,
+    ),
   ];
   for (const r of STAT_ROWS) blocks.push(item(r.label, `${statRowDesc(r.id)} (${levels(r.maxLevel)})`));
   blocks.push(item('Repair', repairDesc()));
@@ -55,6 +58,11 @@ function cardsPage(t: ThemeDef, id: string, title: string, rarities: readonly Ra
   }
   if (rarities.includes('L')) {
     blocks.push(para('Legendary cards appear only after you buy the Legendary Pool Firmware.'));
+    blocks.push(
+      para(
+        `MYTHIC: from sector ${MYTHIC.fromSector} on, every fresh card slot has a ${trimNum(MYTHIC.offerChance * 100)}% chance to hold the one Mythic card instead (no Firmware needed). It glows gold in the ${t.names.shop}; grab it if you can afford it.`,
+      ),
+    );
   } else {
     blocks.push(para('Unique cards can be owned once; the others stack up to the listed count.'));
   }
@@ -190,15 +198,26 @@ function firmwarePage(t: ThemeDef): ManualPageVM {
     para(
       `Every run ends at the results screen, which pays ${n.metaCurrency}: 1 per ${ECONOMY.CORES_PER_SHARDS} ${n.runCurrency} earned, +${ECONOMY.CORES_PER_WAVE} per ${n.wave.toLowerCase()} cleared, +${ECONOMY.CORES_PER_BOSS} per boss, +${ECONOMY.CORES_VICTORY_BONUS} for a victory (max ${ECONOMY.CORES_CAP} per run). Abandoning still pays for progress.`,
     ),
-    hd(`${n.meta} (main menu)`),
+    para(
+      `${n.metaCurrency} are earned at the end of every run, even a loss. Spend them in ${n.meta} (main menu) on permanent upgrades: every one applies automatically to every future run, and shows under INSTALLED (tagged FIRMWARE) in the ${n.shop}, the HUD and the pause menu.`,
+    ),
   ];
-  for (const m of META_UPGRADES) {
-    blocks.push(item(m.label, `${metaDesc(m.id, n.runCurrency)} (${levels(m.prices.length)})`));
+  for (const g of META_GROUPS) {
+    blocks.push(hd(`${n.meta}: ${g}`));
+    for (const m of META_UPGRADES)
+      if (META_GROUP_OF[m.id] === g)
+        blocks.push(item(m.label, `${metaDesc(m.id, n.runCurrency)} (${levels(m.prices.length)})`));
   }
+  blocks.push(hd('Craft'));
   blocks.push(
     item(
       'Craft unlocks',
-      `${n.vehicles.specter} ${VEHICLE_UNLOCKS.specter} ${n.metaCurrency}, ${n.vehicles.tinker} ${VEHICLE_UNLOCKS.tinker} ${n.metaCurrency}. RESPEC refunds all ${n.meta}.`,
+      `${n.vehicles.specter} ${VEHICLE_UNLOCKS.specter} ${n.metaCurrency}, ${n.vehicles.tinker} ${VEHICLE_UNLOCKS.tinker} ${n.metaCurrency}. RESPEC refunds all ${n.meta} (unlocks stay).`,
+    ),
+  );
+  blocks.push(
+    para(
+      'There is also a TERMINAL on the main menu. Rumour says typing the right words into it does strange things...',
     ),
   );
   return page('firmware', `${n.meta} & ${n.metaCurrency}`, blocks);
@@ -214,7 +233,7 @@ export function referencePages(t: ThemeDef): ReferencePages {
     powerups: [
       systemsPage(t),
       cardsPage(t, 'cardsA', 'Powerups: Patch Cards (Common, Uncommon)', ['C', 'U']),
-      cardsPage(t, 'cardsB', 'Powerups: Patch Cards (Rare, Legendary)', ['R', 'L']),
+      cardsPage(t, 'cardsB', 'Powerups: Patch Cards (Rare, Legendary, Mythic)', ['R', 'L', 'M']),
       teamPage(t),
     ],
     world: [enemiesPage(t), bossesPage(t), sectorsPage(t), firmwarePage(t)],

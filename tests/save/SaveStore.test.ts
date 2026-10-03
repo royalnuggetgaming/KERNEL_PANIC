@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import corruptRaw from '../fixtures/saves/corrupt.txt?raw';
 import futureRaw from '../fixtures/saves/future-v99.json?raw';
 import overRaw from '../fixtures/saves/v1-overleveled.json?raw';
-import validRaw from '../fixtures/saves/v1-valid.json?raw';
+import validRaw from '../fixtures/saves/v2-valid.json?raw';
 import type { RunSummary } from '../../src/contracts/run';
-import { SAVE_KEYS, type SaveDataV1 } from '../../src/contracts/save';
+import { CURRENT_SAVE_VERSION, SAVE_KEYS, type SaveDataV1 } from '../../src/contracts/save';
 import { createMemoryLogger } from '../../src/core/logger';
 import { createDefaultSave } from '../../src/save/defaults';
 import { decodeEnvelope } from '../../src/save/envelope';
@@ -111,13 +111,13 @@ describe('SaveStore load chain', () => {
     expect(again.data.meta).toEqual({ hullFw: 1 });
   });
 
-  it('loads a valid v1 save without rewriting it', () => {
+  it('loads a valid current-version save without rewriting it', () => {
     const mem = new MemoryStorage();
     mem.rawSet(SAVE_KEYS.main, validRaw);
     const h = harness(mem);
     const r = h.store.load();
     expect(r.status).toBe('ok');
-    expect(r.data.cores).toBe(137);
+    expect(r.data.cores).toBe(152);
     expect(mem.writes).toHaveLength(0);
   });
 
@@ -126,21 +126,23 @@ describe('SaveStore load chain', () => {
     mem.rawSet(SAVE_KEYS.main, overRaw);
     const r = harness(mem).store.load();
     expect(r.status).toBe('ok');
-    expect(r.data.cores).toBe(280);
-    expect(stored(mem).meta).toEqual({ hullFw: 5, rerollCache: 2, preCharge: 1 });
+    // 10 held + 300 Reroll Cache (retired: refunded in full by the v2 migration) + 100 over-levelled Hull FW
+    // + 50 for the unknown id. v1 kept 180 of the Reroll Cache spend; v2 refunds all of it.
+    expect(r.data.cores).toBe(460);
+    expect(stored(mem).meta).toEqual({ hullFw: 5, preCharge: 1 });
     expect(mem.rawGet(SAVE_KEYS.backup)).toBe(overRaw);
   });
 
   it('a crc mismatch falls back to .bak and quarantines the corrupt blob', () => {
     const mem = new MemoryStorage();
-    const tampered = validRaw.replace('"cores": 137', '"cores": 999999');
+    const tampered = validRaw.replace('"cores": 152', '"cores": 999999');
     mem.rawSet(SAVE_KEYS.main, tampered);
     mem.rawSet(SAVE_KEYS.backup, validRaw);
     const r = harness(mem).store.load();
     expect(r.status).toBe('restoredBackup');
-    expect(r.data.cores).toBe(137);
+    expect(r.data.cores).toBe(152);
     expect(mem.rawGet(SAVE_KEYS.corrupt)).toBe(tampered);
-    expect(stored(mem).cores).toBe(137);
+    expect(stored(mem).cores).toBe(152);
   });
 
   it('a missing main with a good .bak restores the backup', () => {
@@ -148,7 +150,7 @@ describe('SaveStore load chain', () => {
     mem.rawSet(SAVE_KEYS.backup, validRaw);
     const r = harness(mem).store.load();
     expect(r.status).toBe('restoredBackup');
-    expect(r.data.cores).toBe(137);
+    expect(r.data.cores).toBe(152);
   });
 
   it('main and .bak both corrupt: defaults, quarantine, status reset', () => {
@@ -209,7 +211,7 @@ describe('SaveStore writes', () => {
     expect(h.mem.writes.map((w) => w.key)).toEqual([SAVE_KEYS.backup, SAVE_KEYS.main]);
     expect(h.mem.rawGet(SAVE_KEYS.backup)).toBe(first);
     const env = JSON.parse(h.mem.rawGet(SAVE_KEYS.main)!) as { rev: number; v: number };
-    expect(env.v).toBe(1);
+    expect(env.v).toBe(CURRENT_SAVE_VERSION);
     expect(env.rev).toBe(2);
   });
 
@@ -248,12 +250,12 @@ describe('SaveStore writes', () => {
     const b = harness(mem);
     b.store.load();
     expect(b.store.commit({ coresDelta: 50, unlock: 'specter' }).ok).toBe(true);
-    const r = a.store.commit({ coresDelta: -20, meta: { magnetFw: 1 }, spentDelta: { magnetFw: 15 } });
+    const r = a.store.commit({ coresDelta: -20, meta: { hullFw: 1 }, spentDelta: { hullFw: 20 } });
     expect(r.ok).toBe(true);
     const s = stored(mem);
     expect(s.cores).toBe(30);
     expect(s.unlocks).toContain('specter');
-    expect(s.meta).toEqual({ magnetFw: 1 });
+    expect(s.meta).toEqual({ hullFw: 1 });
     expect(a.store.data).toEqual(s);
   });
 

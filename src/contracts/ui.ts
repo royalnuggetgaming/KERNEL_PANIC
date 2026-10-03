@@ -6,6 +6,9 @@ import type { PlayerIndex, RunMode, RunOutcome, VehicleId } from './ids';
 import type { Action, KeyCode, MenuIntent } from './input';
 import type { ShopItemStatus } from './run';
 import type { PurchaseResult } from './upgrades';
+import type { TerminalVM } from './terminal';
+
+export type { TerminalCheatVM, TerminalVM } from './terminal';
 
 export type ScreenId =
   'boot' | 'mainMenu' | 'characterSelect' | 'hud' | 'shop' | 'hangar' | 'pause' | 'gameOver';
@@ -65,7 +68,7 @@ export interface ControlsPanelVM {
   readonly message: string;
 }
 
-export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual';
+export type SubPanel = 'none' | 'settings' | 'controls' | 'credits' | 'manual' | 'terminal';
 
 // ---------------------------------------------------------------- manual (HOW TO PLAY) and installed powerups
 
@@ -92,9 +95,9 @@ export interface ManualVM {
 
 /** One installed powerup (stat row level, patch card stacks or team item level). */
 export interface InstalledItemVM {
-  /** 'row:<id>', 'card:<id>' or 'team:<id>'. */
+  /** 'row:<id>', 'card:<id>', 'team:<id>', 'fw:<id>' (Firmware) or 'cheat:<id>'. */
   readonly id: string;
-  readonly kind: 'stat' | 'card' | 'team';
+  readonly kind: 'stat' | 'card' | 'team' | 'firmware' | 'cheat';
   /** Display name ("Thrusters"). */
   readonly label: string;
   /** Compact HUD chip name ("THR"). */
@@ -136,6 +139,7 @@ export interface MainMenuVM {
   readonly metaCurrency: string;
   readonly cores: number;
   readonly version: string;
+  readonly terminal?: TerminalVM | null; // TERMINAL panel while open (absent in old fixtures)
 }
 
 export interface StatBarVM {
@@ -175,6 +179,7 @@ export interface CharacterSelectVM {
   readonly message: string;
   /** v2: the difficulty the run will start with (from settings), e.g. 'CASUAL'. */
   readonly difficulty: string;
+  readonly cheats?: string; // "CHEATS ON: ..." when TERMINAL cheats apply to the run, else ''
 }
 
 export interface HudPlayerVM {
@@ -202,6 +207,12 @@ export interface HudPlayerVM {
   readonly loadout: readonly InstalledItemVM[];
   /** Changes whenever `loadout` changes (the HUD rebuilds the strip only then). */
   readonly loadoutKey: number;
+  /** Special name + live key, e.g. 'RAILBURST [E]'. */
+  readonly specialLabel: string;
+  /** Overdrive meter as a whole percentage 0..100. */
+  readonly specialPercent: number;
+  /** Remaining fraction of the running special (0 when none is running). */
+  readonly specialActiveFrac: number;
 }
 
 export interface HudVM {
@@ -239,7 +250,7 @@ export interface ShopRowVM {
 }
 
 export interface ShopCardVM extends ShopRowVM {
-  readonly rarity: 'C' | 'U' | 'R' | 'L';
+  readonly rarity: 'C' | 'U' | 'R' | 'L' | 'M';
   readonly locked: boolean;
 }
 
@@ -286,7 +297,8 @@ export interface ShopVM {
 }
 
 export interface HangarItemVM extends ShopRowVM {
-  readonly kind: 'meta' | 'unlock' | 'respec';
+  readonly kind: 'meta' | 'unlock' | 'respec' | 'cheat';
+  readonly group?: string; // section heading above the first row of a group ('SURVIVAL', ...)
 }
 
 export interface HangarVM {
@@ -298,6 +310,7 @@ export interface HangarVM {
   readonly respecRefund: number;
   readonly message: string;
   readonly readOnly: boolean;
+  readonly intro?: string; // plain explanation of Cores and Firmware under the title
 }
 
 export interface PauseVM {

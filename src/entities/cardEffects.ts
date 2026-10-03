@@ -3,7 +3,7 @@
  * Vampire Code heal, Nanoshield recharge and the Overheat flag. Chain Arc (and the Tinker arc pistol chain) run
  * on hit through arcChain(), called by sim/collision.ts. Card effects target enemies only (never PvP).
  */
-import { NO_HANDLE, type PlayerIndex } from '../contracts/ids';
+import { CARD_IDS, NO_HANDLE, type PlayerIndex } from '../contracts/ids';
 import type { Intents } from '../contracts/input';
 import {
   PROJECTILE_KINDS,
@@ -19,7 +19,10 @@ import { SIM } from '../config/tuning';
 import { CARD_BIT, cardStacks, hasCard } from './cardBits';
 import { HIT_IN, applyBossDamage, applyDamage, hitEnemy } from './damage';
 import { nearestTarget, spawnProjectile } from './projectiles';
-import { emitPlayer } from './simEventsOut';
+import { emitHit, emitPlayer } from './simEventsOut';
+
+/** MYTHIC ROOT OF ALL EVIL stack index (CARD_IDS order). */
+const MYTHIC_BIT = CARD_IDS.indexOf('rootOfAllEvil');
 
 /** Area card effects deal damage every N ticks (0.1 s) instead of every tick. */
 export const DAMAGE_TICK_EVERY = 12;
@@ -159,6 +162,15 @@ export function chainArcFromShot(
   from: Readonly<EnemyEntity>,
   s: Readonly<ProjectileEntity>,
 ): void {
+  if (hasCard(w.players[owner], MYTHIC_BIT)) {
+    // ROOT OF ALL EVIL: every weapon hit chains (no roll, so no extra sim RNG draws).
+    const m = CARD_PARAMS.rootOfAllEvil;
+    ARC[0] = from.x;
+    ARC[1] = from.z;
+    ARC[2] = s.damage * m.arcDamageMul;
+    runArc(w, owner, m.arcTargets, m.arcRange, from.slot);
+    return;
+  }
   if (!chainArcRoll(w, owner)) return;
   const c = CARD_PARAMS.chainArc;
   ARC[0] = from.x;
@@ -302,6 +314,27 @@ function stepNanoshield(p: PlayerEntity, dt: number): void {
   }
 }
 
+/**
+ * ROOT OF ALL EVIL purge field: deletes enemy bullets inside the radius (every purgeEvery ticks, a spark per
+ * bullet) and burns enemies inside it on damage ticks. Bounded by the enemy-shot and enemy pools.
+ */
+function stepMythic(w: WorldState, p: PlayerEntity, damageTick: boolean): void {
+  const m = CARD_PARAMS.rootOfAllEvil;
+  if (w.tick % m.purgeEvery === 0) {
+    const r2 = m.purgeRadius * m.purgeRadius;
+    const es = w.enemyShots;
+    for (let i = es.count - 1; i >= 0; i--) {
+      const s = es.active[i]!;
+      const dx = s.x - p.x;
+      const dz = s.z - p.z;
+      if (dx * dx + dz * dz > r2) continue;
+      emitHit(w, s.x, s.z, 0, false, 2, p.index);
+      es.despawn(s);
+    }
+  }
+  if (damageTick) areaDamage(w, p.index, p.x, p.z, m.purgeRadius, m.dps * DAMAGE_TICK_S);
+}
+
 export const stepCardEffects: SimSystem = (w: WorldState, _intents: Intents, dt: number): void => {
   const damageTick = w.tick % DAMAGE_TICK_EVERY === 0;
   for (let i = 0; i < 2; i++) {
@@ -317,5 +350,6 @@ export const stepCardEffects: SimSystem = (w: WorldState, _intents: Intents, dt:
     if (hasCard(p, CARD_BIT.microMissiles)) stepMissiles(w, p, dt);
     if (hasCard(p, CARD_BIT.afterimage)) stepAfterimage(w, p, dt, damageTick);
     if (hasCard(p, CARD_BIT.vampireCode)) stepVampire(w, p);
+    if (hasCard(p, MYTHIC_BIT)) stepMythic(w, p, damageTick);
   }
 };

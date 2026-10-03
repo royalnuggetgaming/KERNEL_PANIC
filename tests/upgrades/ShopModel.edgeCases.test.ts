@@ -55,3 +55,19 @@ describe('ECON: wallet clamp holds on every path', () => {
     expect(wallet(shop, 0)).toBeLessThanOrEqual(ECONOMY.WALLET_MAX);
   });
 });
+
+describe('solo shop: no dead team purchases', () => {
+  it('offers only the Spare Kernel in solo (no link beam, no partner to revive); co-op keeps all four', () => {
+    const solo = makeShop({ mode: 'solo', p0: { wallet: 1000 } });
+    solo.update(16);
+    expect(solo.snapshot().players[0].team.map((t) => t.id)).toEqual(['spareKernel']);
+    const coop = makeShop({ p0: { wallet: 1000 }, p1: { wallet: 1000 } });
+    coop.update(16);
+    expect(coop.snapshot().players[0].team.map((t) => t.id)).toEqual([
+      'spareKernel',
+      'linkAmp',
+      'linkRange',
+      'reviveProtocol',
+    ]);
+  });
+});

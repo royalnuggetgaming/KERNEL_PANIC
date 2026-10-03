@@ -4,6 +4,7 @@
  * (regenerate with `UPDATE_MANUAL=1 npx vitest run tests/states/manualDoc.test.ts`).
  */
 import type { ManualBlockVM, ManualPageVM } from '../contracts/ui';
+import { CHEATS } from '../config/cheats';
 
 function cell(text: string): string {
   return text.replace(/\|/g, '\\|');
@@ -38,8 +39,33 @@ function renderBlocks(blocks: readonly ManualBlockVM[], out: string[]): void {
   if (inTable) out.push('');
 }
 
-/** The whole manual as Markdown (title, intro, table of contents, one section per page). */
-export function manualMarkdown(title: string, pages: readonly ManualPageVM[]): string {
+/**
+ * The TERMINAL cheat-code spoiler section (MANUAL.md only; the in-game manual just hints that a terminal
+ * exists), inside a collapsed <details> block.
+ */
+export function cheatSpoilerMarkdown(metaCurrency: string): readonly string[] {
+  const out: string[] = [
+    '## SPOILERS: Terminal cheat codes',
+    '',
+    '<details>',
+    '<summary>Click to reveal the codes (spoilers!)</summary>',
+    '',
+    `Open **TERMINAL** on the main menu and type a code, then Enter (case does not matter; Escape closes). A right code unlocks the cheat for good and switches it on for your next runs; switch cheats on/off in the terminal (Up/Down + Enter, or click) or in the FIRMWARE hangar. Type \`OFF\` to switch all off. **Cheat runs pay no ${metaCurrency} and never count for records or the leaderboard.** Cheats never apply in VERSUS.`,
+    '',
+    '| Code | Cheat | Effect |',
+    '| --- | --- | --- |',
+  ];
+  for (const c of CHEATS) out.push(`| \`${c.code}\` | ${cell(c.label)} | ${cell(c.desc)} |`);
+  out.push('', '</details>', '');
+  return out;
+}
+
+/** The whole manual as Markdown (title, intro, table of contents, one section per page, optional appendix). */
+export function manualMarkdown(
+  title: string,
+  pages: readonly ManualPageVM[],
+  appendix: readonly string[] = [],
+): string {
   const out: string[] = [
     `# ${title}: How to Play`,
     '',
@@ -57,6 +83,7 @@ export function manualMarkdown(title: string, pages: readonly ManualPageVM[]): s
     out.push(`## ${p.title}`, '');
     renderBlocks(p.blocks, out);
   }
+  out.push(...appendix);
   while (out.length > 0 && out[out.length - 1] === '') out.pop();
   return out.join('\n') + '\n';
 }

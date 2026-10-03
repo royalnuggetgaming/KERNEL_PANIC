@@ -14,7 +14,7 @@ the in-game manual shows your own bindings.
 6. [Bits & the Patch Bay](#bits-the-patch-bay)
 7. [Powerups: Systems (Patch Bay)](#powerups-systems-patch-bay)
 8. [Powerups: Patch Cards (Common, Uncommon)](#powerups-patch-cards-common-uncommon)
-9. [Powerups: Patch Cards (Rare, Legendary)](#powerups-patch-cards-rare-legendary)
+9. [Powerups: Patch Cards (Rare, Legendary, Mythic)](#powerups-patch-cards-rare-legendary-mythic)
 10. [Powerups: Team & Utility](#powerups-team-utility)
 11. [Downed, Revive & Spare Kernels](#downed-revive-spare-kernels)
 12. [Enemies](#enemies)
@@ -148,7 +148,7 @@ The next pages list every powerup.
 
 ## Powerups: Systems (Patch Bay)
 
-Stat rows are always on sale. Each level adds the listed amount; prices rise with level and wave.
+Stat rows are always on sale. Each level adds the listed amount; prices rise with level and cycle.
 
 |                    |                                                                |
 | ------------------ | -------------------------------------------------------------- |
@@ -185,7 +185,7 @@ Stat rows are always on sale. Each level adds the listed amount; prices rise wit
 
 Unique cards can be owned once; the others stack up to the listed count.
 
-## Powerups: Patch Cards (Rare, Legendary)
+## Powerups: Patch Cards (Rare, Legendary, Mythic)
 
 ### Rare
 
@@ -206,7 +206,15 @@ Unique cards can be owned once; the others stack up to the listed count.
 | **SUDO**        | Your special fires 2 times per use              |
 | **ROOT ACCESS** | Combo tier +1 permanently (more score and Bits) |
 
+### MYTHIC (super rare)
+
+|                      |                                                                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ROOT OF ALL EVIL** | MYTHIC: +100% fire rate, +50% damage, +4 pierce; every hit chains to 3 enemies (60% damage); a 3.2 u purge field deletes enemy bullets and burns enemies (60 damage/s) |
+
 Legendary cards appear only after you buy the Legendary Pool Firmware.
+
+MYTHIC: from sector 2 on, every fresh card slot has a 0.5% chance to hold the one Mythic card instead (no Firmware needed). It glows gold in the Patch Bay; grab it if you can afford it.
 
 ## Powerups: Team & Utility
 
@@ -230,14 +238,14 @@ Team items are shared: either player can pay from their own wallet and both bene
 
 ## Downed, Revive & Spare Kernels
 
-|                     |                                                                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Downed**          | At 0 HP you are DOWNED: you can crawl slowly and a bleed-out timer starts (12 s, shorter each time you go down in the same cycle).                                       |
-| **Revive**          | Your partner revives you by staying within 2.5 u of you for 2 s. You come back with 40% HP and brief invulnerability. Progress slowly decays if they step away.          |
-| **Spare Kernels**   | If you bleed out, or everyone is down, a Spare Kernel is spent automatically to reboot a player. The team starts with 1 and can hold 3; buy more in the team row.        |
-| **Offline ghost**   | Bled out with no Spare Kernels left? You become an OFFLINE ghost: you still fly around, collect Bits at 50% and touching enemies MARKS them (+20% damage taken for 4 s). |
-| **Wave-end reboot** | When the cycle is cleared, downed players return at 40% HP and offline players at 30% HP.                                                                                |
-| **Game over**       | The run ends only when nobody is left standing and no Spare Kernels remain.                                                                                              |
+|                      |                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Downed**           | At 0 HP you are DOWNED: you can crawl slowly and a bleed-out timer starts (12 s, shorter each time you go down in the same cycle).                                       |
+| **Revive**           | Your partner revives you by staying within 2.5 u of you for 2 s. You come back with 40% HP and brief invulnerability. Progress slowly decays if they step away.          |
+| **Spare Kernels**    | If you bleed out, or everyone is down, a Spare Kernel is spent automatically to reboot a player. The team starts with 1 and can hold 3; buy more in the team row.        |
+| **Offline ghost**    | Bled out with no Spare Kernels left? You become an OFFLINE ghost: you still fly around, collect Bits at 50% and touching enemies MARKS them (+20% damage taken for 4 s). |
+| **Cycle-end reboot** | When the cycle is cleared, downed players return at 40% HP and offline players at 30% HP.                                                                                |
+| **Game over**        | The run ends only when nobody is left standing and no Spare Kernels remain.                                                                                              |
 
 ## Enemies
 
@@ -282,20 +290,36 @@ Bosses drop a big pile of Bits. In OVERFLOW they return every 5 cycles.
 
 Every run ends at the results screen, which pays Cores: 1 per 10 Bits earned, +3 per cycle cleared, +15 per boss, +40 for a victory (max 400 per run). Abandoning still pays for progress.
 
-### Firmware (main menu)
+Cores are earned at the end of every run, even a loss. Spend them in Firmware (main menu) on permanent upgrades: every one applies automatically to every future run, and shows under INSTALLED (tagged FIRMWARE) in the Patch Bay, the HUD and the pause menu.
 
-|                    |                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| **Hull FW**        | +5% max HP per level, permanently (5 levels)                                            |
-| **Boot Cache**     | Start every run with +25 Bits per level (4 levels)                                      |
-| **Reroll Cache**   | Each level: +1 free Patch Bay reroll per visit (2 levels)                               |
-| **Magnet FW**      | +10% pickup radius per level, permanently (3 levels)                                    |
-| **Overclock FW**   | +3% fire rate per level, permanently (5 levels)                                         |
-| **Field Medic**    | -10% revive time per level, permanently (3 levels)                                      |
-| **Pre-Charge**     | Your special starts every run 50% charged (1 level)                                     |
-| **Second Boot**    | Start every run with +1 Spare Kernel (1 level)                                          |
-| **Legendary Pool** | Legendary patch cards (FORK(), SUDO, ROOT ACCESS) can appear in the Patch Bay (1 level) |
-| **Craft unlocks**  | SPECTER 60 Cores, TINKER 90 Cores. RESPEC refunds all Firmware.                         |
+### Firmware: SURVIVAL
+
+|                 |                                                                |
+| --------------- | -------------------------------------------------------------- |
+| **Hull FW**     | +5% max HP, -5% revive time per level, every run (5 levels)    |
+| **Second Boot** | Start every run with +1 Spare Kernel (an extra life) (1 level) |
+
+### Firmware: FIREPOWER
+
+|                  |                                                     |
+| ---------------- | --------------------------------------------------- |
+| **Overclock FW** | +3% fire rate per level, every run (5 levels)       |
+| **Pre-Charge**   | Your special starts every run 50% charged (1 level) |
+
+### Firmware: ECONOMY
+
+|                    |                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Boot Cache**     | Start every run with +25 Bits and +8% pickup radius per level; levels 2 and 4 add a free Patch Bay reroll each visit (4 levels) |
+| **Legendary Pool** | Legendary patch cards (FORK(), SUDO, ROOT ACCESS) can appear in the Patch Bay (1 level)                                         |
+
+### Craft
+
+|                   |                                                                                |
+| ----------------- | ------------------------------------------------------------------------------ |
+| **Craft unlocks** | SPECTER 60 Cores, TINKER 90 Cores. RESPEC refunds all Firmware (unlocks stay). |
+
+There is also a TERMINAL on the main menu. Rumour says typing the right words into it does strange things...
 
 ## VERSUS Mode
 
@@ -325,15 +349,35 @@ The difficulty in effect when a run starts stays for the whole run. Cores reward
 
 ## Tips
 
-|                             |                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| **Keep moving**             | Most damage comes from standing still. Circle the arena and leave yourself an exit.  |
-| **Dash through, not away**  | Dashing through a bullet wall or a Dart lunge is safer than running from it.         |
-| **Watch the rings**         | Every spawn shows a warning ring at a portal about a second ahead.                   |
-| **Flank Wardens**           | Their front shield blocks shots: get behind or beside them.                          |
-| **Pop Forks away from you** | They split into small, fast Shards.                                                  |
-| **Use the beam**            | In CO-OP the Link Beam shreds crowds; keep your partner at medium range.             |
-| **Buy early damage**        | Payload, Overclock and a good card in the first visits make every later wave easier. |
-| **Save a revive**           | Keep a Spare Kernel for the boss cycles.                                             |
-| **Laptop keyboards**        | If a key drops out when both players hold keys, run CONTROLS > KEY TEST and rebind.  |
-| **Stuck?**                  | Spend Cores on Firmware between runs; every run pays out.                            |
+|                             |                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| **Keep moving**             | Most damage comes from standing still. Circle the arena and leave yourself an exit.   |
+| **Dash through, not away**  | Dashing through a bullet wall or a Dart lunge is safer than running from it.          |
+| **Watch the rings**         | Every spawn shows a warning ring at a portal about a second ahead.                    |
+| **Flank Wardens**           | Their front shield blocks shots: get behind or beside them.                           |
+| **Pop Forks away from you** | They split into small, fast Shards.                                                   |
+| **Use the beam**            | In CO-OP the Link Beam shreds crowds; keep your partner at medium range.              |
+| **Buy early damage**        | Payload, Overclock and a good card in the first visits make every later cycle easier. |
+| **Save a revive**           | Keep a Spare Kernel for the boss cycles.                                              |
+| **Laptop keyboards**        | If a key drops out when both players hold keys, run CONTROLS > KEY TEST and rebind.   |
+| **Stuck?**                  | Spend Cores on Firmware between runs; every run pays out.                             |
+
+## SPOILERS: Terminal cheat codes
+
+<details>
+<summary>Click to reveal the codes (spoilers!)</summary>
+
+Open **TERMINAL** on the main menu and type a code, then Enter (case does not matter; Escape closes). A right code unlocks the cheat for good and switches it on for your next runs; switch cheats on/off in the terminal (Up/Down + Enter, or click) or in the FIRMWARE hangar. Type `OFF` to switch all off. **Cheat runs pay no Cores and never count for records or the leaderboard.** Cheats never apply in VERSUS.
+
+| Code          | Cheat        | Effect                                           |
+| ------------- | ------------ | ------------------------------------------------ |
+| `IDDQD`       | GOD MODE     | Enemies, bullets and bosses cannot hurt you      |
+| `GLASSCANNON` | GLASS CANNON | 1 max HP, x5 damage                              |
+| `BITRAIN`     | BIT RAIN     | +500 starting Bits, x2.5 Bit pickups             |
+| `TURBO`       | TURBO        | x2 move speed, fire rate and bullet speed        |
+| `BULLETSTORM` | BULLET STORM | +4 bullets per shot in a wide fan                |
+| `BLINKBLINK`  | BLINK BLINK  | +3 dash charges, dash cooldown -60%              |
+| `FULLCHARGE`  | FULL CHARGE  | Special starts full and charges x3 faster        |
+| `SUDORMRF`    | SUDO RM -RF  | Start every run with the Mythic ROOT OF ALL EVIL |
+
+</details>

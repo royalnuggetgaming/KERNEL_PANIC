@@ -295,6 +295,17 @@ export class FakeInputPort implements InputPort {
     this.captureCb = cb;
     this.rec.record('captureNextKey');
   }
+  private pasteCb: ((text: string) => void) | null = null;
+  onPaste(cb: (text: string) => void): () => void {
+    this.pasteCb = cb;
+    return () => {
+      if (this.pasteCb === cb) this.pasteCb = null;
+    };
+  }
+  /** Simulates a clipboard paste (only delivered while someone is subscribed). */
+  paste(text: string): void {
+    this.pasteCb?.(text);
+  }
 }
 
 export class FakeLoop implements LoopControl {

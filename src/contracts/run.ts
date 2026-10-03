@@ -4,6 +4,7 @@
  */
 import type {
   CardId,
+  CheatId,
   LoadoutPick,
   MetaLevels,
   PlayerIndex,
@@ -32,6 +33,8 @@ export interface RunConfig {
   readonly themeId: ThemeId;
   /** Difficulty snapshot taken at run start (like meta); never changes mid-run. Absent = 'normal'. */
   readonly difficulty?: DifficultyId;
+  /** TERMINAL cheats active this run (never in versus). Non-empty => no Cores, no records. Absent = none. */
+  readonly cheats?: readonly CheatId[];
 }
 
 export interface RunFlags {
@@ -187,6 +190,10 @@ export interface PlayerLoadout {
   readonly cards: ArrayLike<number>;
   /** Shared team item levels (Spare Kernel = kernels held); all zero in versus. */
   readonly team: Readonly<Record<TeamItemId, number>>;
+  /** Firmware snapshot of the run (same for both players); absent in old doubles. */
+  readonly meta?: MetaLevels;
+  /** Cheats active this run; absent/empty = none. */
+  readonly cheats?: readonly CheatId[];
 }
 
 export interface RunSessionApi {

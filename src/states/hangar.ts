@@ -11,7 +11,15 @@ import type { HangarVM } from '../contracts/ui';
 import { metaDef, metaLevel } from '../config/metaCatalog';
 import { metaBuy, metaRespec, metaUnlock, type MetaFailure, type MetaResult } from '../upgrades/MetaShop';
 import { indexOfId, wrapIndex, type UiIntent } from './intents';
-import { META_ITEM_PREFIX, RESPEC_ITEM, UNLOCK_ITEM_PREFIX, buildHangarVM } from './viewModels';
+import { cheatDef } from '../config/cheats';
+import { cheatIdOf, cheatToggleDelta, cheatsOf } from './cheatState';
+import {
+  CHEAT_ITEM_PREFIX,
+  META_ITEM_PREFIX,
+  RESPEC_ITEM,
+  UNLOCK_ITEM_PREFIX,
+  buildHangarVM,
+} from './viewModels';
 
 function metaIdOf(itemId: string): MetaUpgradeId | null {
   if (!itemId.startsWith(META_ITEM_PREFIX)) return null;
@@ -132,6 +140,16 @@ export class HangarController {
       this.respecArmed = false;
       if (this.settle((d) => metaBuy(d, meta)))
         this.message = `${metaDef(meta).label} upgraded to level ${metaLevel(s.save.data.meta, meta)}`;
+      return;
+    }
+    const cheat = cheatIdOf(itemId, CHEAT_ITEM_PREFIX);
+    if (cheat !== null) {
+      this.respecArmed = false;
+      if (this.commit(cheatToggleDelta(s.save.data, cheat))) {
+        const on = cheatsOf(s.save.data).enabled.includes(cheat);
+        this.message = `${cheatDef(cheat).label} ${on ? 'ON: next runs pay no ' + n.metaCurrency : 'OFF'}`;
+        s.audio.play(on ? 'uiBuy' : 'uiBack');
+      }
       return;
     }
     const vehicle = vehicleOf(itemId);

@@ -7,7 +7,7 @@
 import type { CardId, MetaUpgradeId, StatRowId, TeamItemId } from '../contracts/ids';
 import type { NumericStat, StatModifier } from '../contracts/upgrades';
 import { CARD_PARAMS, cardDef } from '../config/cards';
-import { META_EFFECTS, metaDef } from '../config/metaCatalog';
+import { META_EFFECTS, freeRerolls, metaDef } from '../config/metaCatalog';
 import { REPAIR, TEAM_ITEMS, UTILITY_PRICES, statRowDef, teamItemDef } from '../config/runCatalog';
 import { SPECIAL_TIER_BONUS } from '../config/specials';
 import { COOP } from '../config/tuning';
@@ -171,6 +171,14 @@ function cardEffect(id: CardId, runCurrency: string): string {
       return `Combo tier +${CARD_PARAMS.rootAccess.tierBonus} permanently (more score and ${runCurrency})`;
     case 'shardCache':
       return `Instantly gain ${CARD_PARAMS.shardCache.shards} ${runCurrency} (free)`;
+    case 'rootOfAllEvil': {
+      const c = CARD_PARAMS.rootOfAllEvil;
+      return (
+        `MYTHIC: ${modifiersText(def.modifiers)}; every hit chains to ${c.arcTargets} enemies ` +
+        `(${pct(c.arcDamageMul)} damage); a ${trimNum(c.purgeRadius)} u purge field deletes enemy bullets ` +
+        `and burns enemies (${c.dps} damage/s)`
+      );
+    }
     case 'pierce':
       return `${modifiersText(def.modifiers)}: shots pass through one more enemy`;
     case 'ricochet':
@@ -250,20 +258,20 @@ export function metaDesc(id: MetaUpgradeId, runCurrency = 'Bits'): string {
   const per = def.prices.length > 1 ? ' per level' : '';
   switch (id) {
     case 'bootCache':
-      return `Start every run with +${META_EFFECTS.bootCacheShards} ${runCurrency}${per}`;
-    case 'rerollCache':
-      return `Each level: +${META_EFFECTS.rerollCachePerLevel} free Patch Bay reroll per visit`;
+      return (
+        `Start every run with +${META_EFFECTS.bootCacheShards} ${runCurrency} and ${modifiersText(def.modifiers)}${per}; ` +
+        `levels ${META_EFFECTS.bootCacheRerollEvery} and ${META_EFFECTS.bootCacheRerollEvery * 2} add a free ` +
+        'Patch Bay reroll each visit'
+      );
     case 'preCharge':
       return `Your special starts every run ${META_EFFECTS.preChargeOverdrive}% charged`;
     case 'secondBoot':
-      return `Start every run with +${META_EFFECTS.secondBootKernels} Spare Kernel`;
+      return `Start every run with +${META_EFFECTS.secondBootKernels} Spare Kernel (an extra life)`;
     case 'legendaryPool':
       return 'Legendary patch cards (FORK(), SUDO, ROOT ACCESS) can appear in the Patch Bay';
     case 'hullFw':
-    case 'magnetFw':
     case 'overclockFw':
-    case 'fieldMedic':
-      return `${modifiersText(def.modifiers)}${per}, permanently`;
+      return `${modifiersText(def.modifiers)}${per}, every run`;
   }
 }
 
@@ -271,26 +279,28 @@ export function metaTotal(id: MetaUpgradeId, level: number, runCurrency = 'Bits'
   if (level <= 0) return '';
   const def = metaDef(id);
   switch (id) {
-    case 'bootCache':
-      return `+${META_EFFECTS.bootCacheShards * level} starting ${runCurrency}`;
-    case 'rerollCache':
-      return `${META_EFFECTS.rerollCachePerLevel * level} free rerolls per visit`;
+    case 'bootCache': {
+      const rerolls = freeRerolls({ bootCache: level });
+      const reroll = rerolls > 0 ? `, ${rerolls} free reroll${rerolls > 1 ? 's' : ''}/visit` : '';
+      return `+${META_EFFECTS.bootCacheShards * level} starting ${runCurrency}, ${modifiersText(def.modifiers, level)}${reroll}`;
+    }
     case 'preCharge':
     case 'secondBoot':
     case 'legendaryPool':
       return 'active';
     case 'hullFw':
-    case 'magnetFw':
     case 'overclockFw':
-    case 'fieldMedic':
       return modifiersText(def.modifiers, level);
   }
 }
 
 export function metaNext(id: MetaUpgradeId, level: number, runCurrency = 'Bits'): string {
   const def = metaDef(id);
+  if (def.prices.length === 1 && level <= 0) return 'one-time purchase';
   const total = (l: number): string =>
-    def.modifiers.length > 0 ? amountsText(def.modifiers, l) : metaTotal(id, l, runCurrency);
+    def.modifiers.length > 0 && id !== 'bootCache'
+      ? amountsText(def.modifiers, l)
+      : metaTotal(id, l, runCurrency);
   return levelStep(total, level, def.prices.length);
 }
 

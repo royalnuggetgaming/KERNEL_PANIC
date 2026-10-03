@@ -80,10 +80,13 @@ export function computeStats(
   cards: Uint8Array,
   team: Readonly<Record<TeamItemId, number>>,
   capsOverride?: Partial<StatCaps>,
+  extra?: readonly StatModifier[],
 ): DerivedStats {
   const caps = resolveCaps(capsOverride);
   const base = vehicleBaseStats(vehicle);
   resetPools();
+  // Run-wide extras (TERMINAL cheats), applied once.
+  if (extra !== undefined) applyModifiers(extra, 1);
   for (const m of META_UPGRADES) applyModifiers(m.modifiers, safeCount(metaLevel(meta, m.id)));
   for (const r of STAT_ROWS) applyModifiers(r.perLevel, safeCount(rows[r.id]));
   for (const c of CARDS) applyModifiers(c.modifiers, safeCount(cards[c.bit]));

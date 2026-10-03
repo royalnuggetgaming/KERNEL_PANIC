@@ -31,7 +31,7 @@ export function rowIsCapped(s: ShopState, p: PlayerIndex, id: StatRowId): boolea
   const player = s.players[p];
   const before = statsOf(s, p, player);
   const rows = { ...player.rows, [id]: player.rows[id] + 1 };
-  const after = computeStats(s.vehicles[p], s.meta, rows, player.cards, s.team.levels, s.caps);
+  const after = computeStats(s.vehicles[p], s.meta, rows, player.cards, s.team.levels, s.caps, s.extraMods);
   return statsEqual(before, after);
 }
 
@@ -42,7 +42,7 @@ export function cardIsCapped(s: ShopState, p: PlayerIndex, def: CardDef): boolea
   const before = statsOf(s, p, player);
   const cards = player.cards.slice();
   cards[def.bit] = (cards[def.bit] ?? 0) + 1;
-  const after = computeStats(s.vehicles[p], s.meta, player.rows, cards, s.team.levels, s.caps);
+  const after = computeStats(s.vehicles[p], s.meta, player.rows, cards, s.team.levels, s.caps, s.extraMods);
   return statsEqual(before, after);
 }
 

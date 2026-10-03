@@ -34,6 +34,7 @@ export function createDefaultSave(): SaveDataV1 {
     lastMode: 'solo',
     records: { runs: 0, victories: 0, bestWave: 0, bestScore: 0, versusMatches: 0, leaderboard: [] },
     lastCommittedRunId: null,
+    cheats: { unlocked: [], enabled: [] },
   };
 }
 

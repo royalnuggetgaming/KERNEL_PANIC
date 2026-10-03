@@ -241,4 +241,21 @@ describe('AudioEventRouter', () => {
       expect(c.gain).toBeGreaterThan(0);
     }
   });
+
+  it('voices the special-ready cue panned to the player, P2 a tone higher', () => {
+    const { calls, router, events } = setup();
+    for (const player of [0, 1] as const) {
+      const e = events.player.push();
+      e.player = player;
+      e.what = 'specialReady';
+      e.amount = 0;
+      e.x = player === 0 ? -16 : 16;
+      e.z = 0;
+    }
+    router.route(events);
+    expect(calls.map((c) => c.id)).toEqual(['specialReady', 'specialReady']);
+    expect(calls[0]!.pan).toBeLessThan(0);
+    expect(calls[1]!.pan).toBeGreaterThan(0);
+    expect(calls[1]!.detune).toBeGreaterThan(calls[0]!.detune);
+  });
 });

@@ -49,6 +49,7 @@ export function createSpecialState(): SpecialState {
     tier: 0,
     fireAcc: 0,
     pendingCasts: 0,
+    readyCued: false,
   };
 }
 

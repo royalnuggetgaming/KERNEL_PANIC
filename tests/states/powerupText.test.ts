@@ -92,7 +92,12 @@ describe('powerup description table', () => {
     expect(teamDesc('reviveProtocol')).toContain(`instead of ${COOP.REVIVE_TIME} s`);
     expect(metaDesc('bootCache')).toContain(`+${META_EFFECTS.bootCacheShards} Bits`);
     const hull = metaDef('hullFw').modifiers[0]!.value;
-    expect(metaNext('hullFw', 1)).toBe(`now +${pct(hull)} → next +${pct(hull * 2)}`);
+    // v3: Hull FW also carries the merged Field Medic revive-time bonus, so the full phrase is shown.
+    expect(metaNext('hullFw', 1)).toContain(`now +${pct(hull)} max HP`);
+    expect(metaNext('hullFw', 1)).toContain(`next +${pct(hull * 2)} max HP`);
+    expect(metaNext('hullFw', 1)).toContain('revive time');
+    expect(metaNext('bootCache', 1)).toContain('next +50 starting Bits');
+    expect(metaNext('bootCache', 1)).toContain('1 free reroll/visit');
     expect(metaNext('legendaryPool', 1)).toBe('MAX: active');
     expect(repairDesc()).toContain(pct(REPAIR.healFrac));
   });

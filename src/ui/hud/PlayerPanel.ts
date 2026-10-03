@@ -1,5 +1,5 @@
 /**
- * One player's HUD corner: name + life state, HP bar, dash pips, Overdrive bar, wallet, score, combo, bleed-out
+ * One player's HUD corner: name + life state, HP bar, dash pips, the special gauge (SpecialGauge), wallet, score, combo, bleed-out
  * and revive bars (co-op), round-win pips (versus), the installed-powerup strip (rebuilt only when its key changes). Bars and flags update every render through transforms and
  * class toggles; numeric text only when `text` is true (the Hud's 10 Hz gate) and only on change.
  */
@@ -10,6 +10,7 @@ import { ClassSwitch, Flag, NumSlot, Shown, TextSlot, ViewPool, h } from '../dom
 import { formatCombo, formatHp, formatShards, playerTag } from '../format';
 import { InstalledList } from '../widgets/InstalledList';
 import { Meter } from '../widgets/Meter';
+import { SpecialGauge } from './SpecialGauge';
 
 const LIFE_LABEL: Readonly<Record<HudPlayerVM['life'], string>> = {
   alive: '',
@@ -60,7 +61,7 @@ export class PlayerPanel {
   private readonly hpMeter: Meter;
   private readonly hpText: TextSlot;
   private readonly dash: ViewPool<DashPip>;
-  private readonly overdrive: Meter;
+  private readonly special: SpecialGauge;
   private readonly odReady: Flag;
   private readonly wallet: NumSlot;
   private readonly score: NumSlot;
@@ -92,7 +93,7 @@ export class PlayerPanel {
     const comboEl = h(doc, 'span', { className: 'kp-pp-combo-text' });
 
     this.hpMeter = new Meter(doc, 'kp-pp-hp');
-    this.overdrive = new Meter(doc, 'kp-pp-od');
+    this.special = new SpecialGauge(doc);
     this.comboMeter = new Meter(doc, 'kp-pp-combo-bar');
     this.bleed = new Meter(doc, 'kp-pp-bleed');
     this.revive = new Meter(doc, 'kp-pp-revive');
@@ -134,9 +135,8 @@ export class PlayerPanel {
         { className: 'kp-pp-row' },
         h(doc, 'span', { className: 'kp-pp-key', text: 'DASH' }),
         dashEl,
-        h(doc, 'span', { className: 'kp-pp-key', text: 'OVR' }),
-        this.overdrive.el,
       ),
+      this.special.el,
       h(
         doc,
         'div',
@@ -199,7 +199,7 @@ export class PlayerPanel {
       else if (i === vm.dashCharges) m.set(vm.dashFrac);
       else m.set(0);
     }
-    this.overdrive.set(vm.overdriveFrac);
+    this.special.render(vm);
     this.odReady.set(vm.overdriveFrac >= 1);
     const comboOn = vm.combo >= 2;
     this.comboShown.set(comboOn);

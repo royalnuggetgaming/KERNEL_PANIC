@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Migration } from '../../src/contracts/save';
-import { MIGRATIONS, migrate } from '../../src/save/migrations';
+import { CURRENT_SAVE_VERSION } from '../../src/contracts/save';
+import { MIGRATIONS, RETIRED_FIRMWARE_V2, migrate, migrateV1toV2 } from '../../src/save/migrations';
 
 interface V1 {
   cores: number;
@@ -32,7 +33,7 @@ describe('migrate', () => {
     const once = migrate(input, 1, REGISTRY, 3) as V3;
     expect(migrate(once, 3, REGISTRY, 3)).toBe(once);
     expect(input).toEqual({ cores: 9 });
-    expect(migrate(input, 1)).toBe(input); // production registry: v1 is current
+    expect(migrate(input, CURRENT_SAVE_VERSION)).toBe(input); // production registry: already current
   });
 
   it('throws on a missing step, a newer version or a bad version', () => {
@@ -42,8 +43,38 @@ describe('migrate', () => {
     expect(() => migrate({}, 1.5)).toThrow(RangeError);
   });
 
-  it('the production registry is empty and frozen for v1', () => {
-    expect(Object.keys(MIGRATIONS)).toEqual([]);
+  it('the production registry has exactly the v1 -> v2 step and is frozen', () => {
+    expect(CURRENT_SAVE_VERSION).toBe(2);
+    expect(Object.keys(MIGRATIONS)).toEqual(['1']);
     expect(Object.isFrozen(MIGRATIONS)).toBe(true);
+  });
+});
+
+describe('v1 -> v2 (Firmware merge)', () => {
+  it('refunds every Core recorded for the retired lines and drops their levels', () => {
+    const v1 = {
+      cores: 40,
+      meta: { hullFw: 2, magnetFw: 3, rerollCache: 2, fieldMedic: 1, legendaryPool: 1 },
+      firmwareSpent: { hullFw: 55, magnetFw: 95, rerollCache: 180, fieldMedic: 30, legendaryPool: 120 },
+      settings: { master: 0.5 },
+    };
+    const out = migrateV1toV2(v1) as Record<string, unknown>;
+    expect(out.cores).toBe(40 + 95 + 180 + 30);
+    expect(out.meta).toEqual({ hullFw: 2, legendaryPool: 1 });
+    expect(out.firmwareSpent).toEqual({ hullFw: 55, legendaryPool: 120 });
+    expect(out.cheats).toEqual({ unlocked: [], enabled: [] });
+    expect(out.settings).toEqual({ master: 0.5 });
+    // Pure: the input is untouched.
+    expect(v1.meta.magnetFw).toBe(3);
+    expect(RETIRED_FIRMWARE_V2).toEqual(['rerollCache', 'magnetFw', 'fieldMedic']);
+  });
+
+  it('never loses value on odd input and passes garbage through for sanitizeSave', () => {
+    expect(migrateV1toV2(null)).toBeNull();
+    expect(migrateV1toV2([1])).toEqual([1]);
+    const odd = migrateV1toV2({ cores: 'x', firmwareSpent: { magnetFw: -5, fieldMedic: 12.7 } }) as {
+      cores: number;
+    };
+    expect(odd.cores).toBe(12);
   });
 });

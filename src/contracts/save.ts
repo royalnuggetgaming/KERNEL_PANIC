@@ -1,7 +1,16 @@
 /**
  * Persistence contracts (localStorage envelope, delta commits). FROZEN after Wave 0.
  */
-import type { LoadoutPick, MetaLevels, MetaUpgradeId, Result, RunMode, ThemeId, VehicleId } from './ids';
+import type {
+  CheatId,
+  LoadoutPick,
+  MetaLevels,
+  MetaUpgradeId,
+  Result,
+  RunMode,
+  ThemeId,
+  VehicleId,
+} from './ids';
 import type { Bindings } from './input';
 import type { RunSummary } from './run';
 
@@ -66,9 +75,21 @@ export interface SaveDataV1 {
   readonly lastMode: RunMode;
   readonly records: SaveRecords;
   readonly lastCommittedRunId: string | null;
+  /** Terminal cheat codes (v2). Optional for fixtures; sanitizeSave always fills it. */
+  readonly cheats?: CheatSave;
 }
 
-export const CURRENT_SAVE_VERSION = 1;
+/** Cheats typed into the TERMINAL (unlocked) and the ones switched on for the next runs (enabled). */
+export interface CheatSave {
+  readonly unlocked: readonly CheatId[];
+  readonly enabled: readonly CheatId[];
+}
+
+/**
+ * v2: Firmware lines merged (Magnet FW + Reroll Cache -> Boot Cache, Field Medic -> Hull FW) with a full Core
+ * refund of the removed lines, plus the `cheats` section. The data type keeps its SaveDataV1 name.
+ */
+export const CURRENT_SAVE_VERSION = 2;
 
 export const SAVE_KEYS = {
   main: 'linkline.save',
@@ -100,6 +121,8 @@ export interface SaveDelta {
   readonly lastMode?: RunMode;
   /** Updates records/leaderboard. */
   readonly run?: RunSummary;
+  /** Replaces the cheat section (TERMINAL / Hangar toggles). */
+  readonly cheats?: CheatSave;
   /** Respec: reset meta levels to 0 and firmwareSpent to 0 (the refund goes in coresDelta). */
   readonly respec?: true;
 }
@@ -123,7 +146,8 @@ export interface StorageLike {
 }
 
 export interface SaveStorePort {
-  load(): { readonly data: SaveDataV1; readonly status: SaveStatus };
+  /** `migratedFrom`: the older save version the profile was just upgraded from (v3, additive; absent = none). */
+  load(): { readonly data: SaveDataV1; readonly status: SaveStatus; readonly migratedFrom?: number };
   readonly data: SaveDataV1;
   readonly status: SaveStatus;
   commit(d: SaveDelta): Result<SaveDataV1, SaveError>;

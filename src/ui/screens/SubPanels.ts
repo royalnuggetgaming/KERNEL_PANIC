@@ -1,9 +1,10 @@
 /** Settings / Controls / Credits / HOW TO PLAY sub-panels shared by MainMenu and Pause (not FSM states). */
-import type { ControlsPanelVM, ManualVM, SettingsPanelVM, SubPanel } from '../../contracts/ui';
+import type { ControlsPanelVM, ManualVM, SettingsPanelVM, SubPanel, TerminalVM } from '../../contracts/ui';
 import { Shown, TextSlot, ViewPool, button, h } from '../dom';
 import { ControlsPanel } from './ControlsPanel';
 import { ManualPanel } from './ManualPanel';
 import { SettingsPanel } from './SettingsPanel';
+import { TerminalPanel } from './TerminalPanel';
 
 class CreditLine {
   readonly el: HTMLParagraphElement;
@@ -25,6 +26,8 @@ export class SubPanels {
   private readonly creditsShown: Shown;
   private readonly manual: ManualPanel;
   private readonly manualShown: Shown;
+  private readonly terminal: TerminalPanel;
+  private readonly terminalShown: Shown;
 
   constructor(doc: Document) {
     this.settings = new SettingsPanel(doc);
@@ -40,6 +43,7 @@ export class SubPanels {
     );
     this.credits = new ViewPool(creditList, () => new CreditLine(doc));
     this.manual = new ManualPanel(doc);
+    this.terminal = new TerminalPanel(doc);
     this.el = h(
       doc,
       'div',
@@ -48,7 +52,9 @@ export class SubPanels {
       this.controls.el,
       creditsEl,
       this.manual.el,
+      this.terminal.el,
     );
+    this.terminalShown = new Shown(this.terminal.el, false);
     this.manualShown = new Shown(this.manual.el, false);
     this.settingsShown = new Shown(this.settings.el, false);
     this.controlsShown = new Shown(this.controls.el, false);
@@ -62,7 +68,11 @@ export class SubPanels {
     controls: ControlsPanelVM | null,
     credits: readonly string[],
     manual: ManualVM | null = null,
+    terminal: TerminalVM | null = null,
   ): boolean {
+    const showTerminal = panel === 'terminal' && terminal !== null;
+    this.terminalShown.set(showTerminal);
+    if (showTerminal) this.terminal.render(terminal);
     const showSettings = panel === 'settings' && settings !== null;
     const showControls = panel === 'controls' && controls !== null;
     const showCredits = panel === 'credits';
@@ -78,6 +88,6 @@ export class SubPanels {
       this.credits.ensure(credits.length);
       for (let i = 0; i < credits.length; i++) this.credits.get(i).text.set(credits[i]!);
     }
-    return showSettings || showControls || showCredits || showManual;
+    return showSettings || showControls || showCredits || showManual || showTerminal;
   }
 }

@@ -18,6 +18,7 @@ export const CARD_EFFECT = {
   sudo: 1 << 10,
   rootAccess: 1 << 11,
   shardCache: 1 << 12,
+  rootOfAllEvil: 1 << 13,
 } as const;
 
 /** Card behaviour numbers. */
@@ -35,7 +36,15 @@ export const CARD_PARAMS = {
   sudo: { casts: 2 },
   rootAccess: { tierBonus: 1 },
   shardCache: { shards: 25 },
+  /**
+   * MYTHIC: every weapon hit arcs to `arcTargets` enemies for `arcDamageMul`; a purge field of `purgeRadius`
+   * around the craft deletes enemy bullets (checked every `purgeEvery` ticks) and burns enemies inside.
+   */
+  rootOfAllEvil: { arcTargets: 3, arcDamageMul: 0.6, arcRange: 8, purgeRadius: 3.2, purgeEvery: 2, dps: 60 },
 } as const;
+
+/** Mythic offers: chance per fresh offer slot, from this sector on (not gated by the Legendary Pool). */
+export const MYTHIC = { offerChance: 0.005, fromSector: 2 } as const;
 
 function card(
   id: CardId,
@@ -141,6 +150,20 @@ export const CARDS: readonly CardDef[] = [
     ...card('shardCache', 'Shard Cache', '+25 Shards', 'C', 255, false, [], CARD_EFFECT.shardCache),
     requiresMeta: null,
   },
+  card(
+    'rootOfAllEvil',
+    'ROOT OF ALL EVIL',
+    'x2 fire rate, +50% damage, +4 pierce; every hit chains; a purge field deletes bullets',
+    'M',
+    1,
+    true,
+    [
+      { stat: 'fireRate', op: 'mul', value: 2 },
+      { stat: 'damageMul', op: 'add', value: 0.5 },
+      { stat: 'pierce', op: 'flat', value: 4 },
+    ],
+    CARD_EFFECT.rootOfAllEvil,
+  ),
 ];
 
 export function cardDef(id: CardId): CardDef {
@@ -150,10 +173,11 @@ export function cardDef(id: CardId): CardDef {
 }
 
 /** Price by rarity before wave inflation. Shard Cache is always free. */
-export const CARD_PRICES = { C: 45, U: 75, R: 120, L: 190 } as const satisfies Readonly<
+export const CARD_PRICES = { C: 45, U: 75, R: 120, L: 190, M: 250 } as const satisfies Readonly<
   Record<Rarity, number>
 >;
 
+/** Rarities drawn by weight (Mythic has its own per-slot roll, see MYTHIC). */
 export const RARITIES: readonly Rarity[] = ['C', 'U', 'R', 'L'];
 
 /** Rarity weights [C, U, R, L] by sector (index 0 = sector 1). */

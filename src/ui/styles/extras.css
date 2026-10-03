@@ -1,0 +1,277 @@
+/* v3 additions: Hangar sections, MYTHIC cards, Firmware/cheat installed chips, the TERMINAL. Imported by screens.css. */
+
+/* ------------------------------------------------------------------ hangar sections */
+
+.kp-hangar-msg {
+  margin-top: 0.3em;
+  padding-top: 0.3em;
+  border-top: 1px solid var(--kp-line);
+}
+
+.kp-hangar-intro {
+  margin: 0.2em 0 0.6em;
+  padding: 0.45em 0.7em;
+  border-left: 3px solid var(--kp-accent);
+  background: rgba(var(--kp-accent-rgb), 0.07);
+  color: var(--kp-text);
+  font-size: 0.86em;
+  line-height: 1.35;
+}
+
+.kp-hangar-group {
+  margin: 0.7em 0 0.2em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px solid var(--kp-line);
+  color: var(--kp-accent);
+  font-size: 0.78em;
+  letter-spacing: 0.18em;
+}
+
+.kp-hangar-entry:first-child .kp-hangar-group {
+  margin-top: 0.1em;
+}
+
+.kp-hangar-entry.hk-cheat .kp-hangar-group,
+.kp-hangar-entry.hk-cheat .kp-row-label {
+  color: #ff7de9;
+}
+
+/* ------------------------------------------------------------------ mythic card */
+
+@keyframes kp-mythic-hue {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes kp-mythic-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px rgba(255, 215, 90, 0.55),
+      inset 0 0 12px rgba(255, 215, 90, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(255, 215, 90, 0.95),
+      inset 0 0 18px rgba(255, 120, 240, 0.35);
+  }
+}
+
+.kp-row-card.rar-m {
+  border: 1px solid #ffd75a;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 215, 90, 0.2),
+    rgba(255, 90, 220, 0.14),
+    rgba(90, 220, 255, 0.16)
+  );
+  animation: kp-mythic-glow 1.6s ease-in-out infinite;
+}
+
+.kp-row-card.rar-m .kp-row-level {
+  background: linear-gradient(90deg, #ffd75a, #ff5ae0, #5ae0ff, #ffd75a);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 700;
+  animation: kp-mythic-hue 2.4s linear infinite;
+}
+
+.kp-row-card.rar-m .kp-row-label {
+  color: #ffe9a8;
+  text-shadow: 0 0 8px rgba(255, 215, 90, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kp-row-card.rar-m,
+  .kp-row-card.rar-m .kp-row-level {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ installed: firmware / cheats */
+
+.kp-inst.inst-fw {
+  border-color: rgba(125, 255, 154, 0.6);
+}
+
+.kp-inst.inst-fw .kp-inst-name {
+  color: var(--kp-good);
+}
+
+.kp-inst.inst-cheat {
+  border-color: rgba(255, 125, 233, 0.7);
+  color: #ff9df0;
+}
+
+/* ------------------------------------------------------------------ terminal */
+
+.kp-terminal {
+  width: min(46em, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  overflow: hidden;
+}
+
+/* Only the cheat list scrolls: the prompt, the warning and CLOSE always stay on screen (1280x720). */
+.kp-terminal > * {
+  flex: 0 0 auto;
+}
+
+.kp-terminal > .kp-term-cheatbox {
+  flex: 0 1 auto;
+  min-height: 4.5em;
+  overflow-y: auto;
+}
+
+.kp-term-screen {
+  padding: 0.6em 0.8em;
+  border: 1px solid rgba(125, 255, 154, 0.45);
+  background: rgba(0, 10, 4, 0.9);
+  color: #7dff9a;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  line-height: 1.35;
+  text-shadow: 0 0 6px rgba(125, 255, 154, 0.55);
+}
+
+.kp-term-line {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.kp-term-line.is-echo {
+  color: #c8ffd4;
+}
+
+.kp-term-line.is-granted {
+  color: #ffd75a;
+  text-shadow: 0 0 8px rgba(255, 215, 90, 0.8);
+}
+
+.kp-term-line.is-denied {
+  color: var(--kp-danger);
+  text-shadow: 0 0 8px rgba(var(--kp-danger-rgb), 0.8);
+}
+
+.kp-term-prompt {
+  margin: 0.3em 0 0;
+  white-space: pre;
+}
+
+.kp-term-ps1 {
+  color: var(--kp-accent);
+}
+
+@keyframes kp-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.kp-term-caret {
+  animation: kp-caret 1s steps(1) infinite;
+}
+
+.kp-term-prompt:not(.is-cursor) .kp-term-caret {
+  opacity: 0.25;
+  animation: none;
+}
+
+.kp-terminal.flash-denied .kp-term-screen {
+  border-color: var(--kp-danger);
+}
+
+.kp-terminal.flash-granted .kp-term-screen {
+  border-color: #ffd75a;
+}
+
+.kp-term-sub {
+  margin: 0.2em 0;
+  color: var(--kp-dim);
+  font-size: 0.75em;
+  letter-spacing: 0.12em;
+}
+
+.kp-term-cheat {
+  display: grid;
+  grid-template-columns: 4em 11em 9em 1fr;
+  gap: 0.5em;
+  align-items: baseline;
+  padding: 0.2em 0.4em;
+  cursor: pointer;
+  font-size: 0.88em;
+  border: 1px solid transparent;
+}
+
+.kp-term-cheat.is-on .kp-term-state {
+  color: var(--kp-good);
+}
+
+.kp-term-cheat .kp-term-state {
+  color: var(--kp-dim);
+}
+
+.kp-term-cheat.is-cursor,
+.kp-term-cheat:hover {
+  border-color: var(--kp-line);
+  background: rgba(var(--kp-accent-rgb), 0.08);
+}
+
+.kp-term-warn {
+  margin: 0;
+  font-size: 0.82em;
+}
+
+.kp-term-hint {
+  margin: 0;
+  font-size: 0.75em;
+  letter-spacing: 0.06em;
+}
+
+/* ------------------------------------------------------------------ character select cheats banner */
+
+.kp-select-cheats {
+  margin: 0.3em auto;
+  padding: 0.25em 0.8em;
+  border: 1px solid rgba(255, 125, 233, 0.6);
+  color: #ff9df0;
+  font-size: 0.85em;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .kp-term-cheat {
+    grid-template-columns: 3.5em 1fr;
+  }
+
+  .kp-term-code,
+  .kp-term-desc {
+    grid-column: 2;
+  }
+}
+
+@media (max-height: 800px) {
+  .kp-terminal {
+    gap: 0.25em;
+    max-height: 80vh;
+  }
+
+  .kp-term-screen {
+    padding: 0.4em 0.6em;
+    font-size: 0.78em;
+    line-height: 1.25;
+  }
+
+  .kp-term-cheat,
+  .kp-hangar-intro {
+    font-size: 0.78em;
+  }
+}

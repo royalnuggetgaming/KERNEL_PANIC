@@ -1,5 +1,5 @@
 /**
- * MainMenu: PLAY, HOW TO PLAY (manual sub-panel), Firmware hangar, Settings / Controls / Credits sub-panels over the attract backdrop
+ * MainMenu: PLAY, HOW TO PLAY (manual sub-panel), Firmware hangar, TERMINAL (cheat codes), Settings / Controls / Credits sub-panels over the attract backdrop
  * (MenuBackdrop orbit, voxel title), music 'menu'. The Cores balance follows other-tab save changes.
  */
 import type { Services } from '../contracts/services';
@@ -8,7 +8,15 @@ import type { MainMenuVM, MenuItemVM, SubPanel } from '../contracts/ui';
 import { IntentReader, indexOfId, wrapIndex, type UiIntent } from './intents';
 import { CREDITS, SubPanelController } from './subPanels';
 
-export const MAIN_MENU_ITEM_IDS = ['play', 'manual', 'hangar', 'settings', 'controls', 'credits'] as const;
+export const MAIN_MENU_ITEM_IDS = [
+  'play',
+  'manual',
+  'hangar',
+  'terminal',
+  'settings',
+  'controls',
+  'credits',
+] as const;
 type MainMenuItemId = (typeof MAIN_MENU_ITEM_IDS)[number];
 
 function menuItems(s: Services): readonly MenuItemVM[] {
@@ -25,8 +33,9 @@ function menuItems(s: Services): readonly MenuItemVM[] {
       id: 'hangar',
       label: n.meta.toUpperCase(),
       enabled: true,
-      hint: `Spend ${n.metaCurrency} on permanent upgrades and unlocks`,
+      hint: `Spend ${n.metaCurrency} (earned every run) on permanent upgrades and unlocks`,
     },
+    { id: 'terminal', label: 'TERMINAL', enabled: true, hint: 'Access codes... if you know any' },
     { id: 'settings', label: 'SETTINGS', enabled: true, hint: 'Audio, graphics, autofire, accessibility' },
     { id: 'controls', label: 'CONTROLS', enabled: true, hint: 'Rebind keys and run the key test' },
     { id: 'credits', label: 'CREDITS', enabled: true, hint: '' },
@@ -54,7 +63,8 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
   enter(): void {
     const s = this.s;
     this.items = menuItems(s);
-    this.cursor = 0;
+    // Coming back (from FIRMWARE, a run, ...) keeps the cursor on the item that was used last.
+    this.cursor = Math.min(this.cursor, this.items.length - 1);
     this.leaving = false;
     this.panels.close();
     s.input.setContext('menu');
@@ -117,6 +127,7 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
         this.leaving = s.fsm.request('UpgradesShop', { mode: 'meta' });
         return;
       case 'manual':
+      case 'terminal':
       case 'settings':
       case 'controls':
       case 'credits':
@@ -142,6 +153,7 @@ class MainMenuStateImpl implements GameState<'MainMenu'> {
       controls: this.panels.controlsVM(),
       credits: CREDITS,
       manual: this.panels.manualVM(),
+      terminal: this.panels.terminalVM(),
       metaCurrency: theme.names.metaCurrency,
       cores: s.save.data.cores,
       version: s.env.version,

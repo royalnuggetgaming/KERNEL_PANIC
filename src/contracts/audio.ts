@@ -38,6 +38,7 @@ export const SFX_IDS = [
   'uiBack',
   'uiBuy',
   'uiDeny',
+  'specialReady',
 ] as const;
 export type SfxId = (typeof SFX_IDS)[number];
 

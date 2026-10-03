@@ -6,7 +6,7 @@
 import type { CardId } from '../contracts/ids';
 import type { CardDef, Rarity } from '../contracts/upgrades';
 import type { Rng } from '../contracts/sim';
-import { CARDS, OFFERS_PER_VISIT, RARITIES, RARITY_WEIGHTS } from '../config/cards';
+import { CARDS, MYTHIC, OFFERS_PER_VISIT, RARITIES, RARITY_WEIGHTS } from '../config/cards';
 import { cardPrice } from './pricing';
 
 export interface LockedCard {
@@ -29,6 +29,33 @@ export interface OfferContext {
 }
 
 const SHARD_CACHE = CARDS.find((c) => c.id === 'shardCache')!;
+const MYTHIC_CARDS: readonly CardDef[] = CARDS.filter((c) => c.rarity === 'M');
+
+/** Debug-only override of the Mythic chance per slot (null = MYTHIC.offerChance). Never set in normal play. */
+let mythicChanceOverride: number | null = null;
+
+/** Debug: force (1), forbid (0) or restore (null) Mythic offers. Values are clamped to [0, 1]. */
+export function setMythicChanceOverride(chance: number | null): void {
+  mythicChanceOverride =
+    chance === null || !Number.isFinite(chance) ? null : Math.min(1, Math.max(0, chance));
+}
+
+/** Mythic chance per fresh offer slot for a sector (0 before MYTHIC.fromSector). */
+export function mythicChance(sector: 1 | 2 | 3): number {
+  if (mythicChanceOverride !== null) return mythicChanceOverride;
+  return sector >= MYTHIC.fromSector ? MYTHIC.offerChance : 0;
+}
+
+/**
+ * One Mythic roll for a fresh slot: exactly one draw from `rng` per call (so the stream stays aligned), and a
+ * Mythic card only when one is still eligible (unique, not owned, not already offered).
+ */
+function rollMythic(rng: Rng, ctx: OfferContext, taken: ReadonlySet<CardId>): CardDef | null {
+  const hit = rng.next() < mythicChance(ctx.sector);
+  if (!hit) return null;
+  for (const c of MYTHIC_CARDS) if (!taken.has(c.id) && isCardEligible(c, ctx.owned, true)) return c;
+  return null;
+}
 
 /** Whether a card may be drawn as a fresh offer for this owner. */
 export function isCardEligible(card: CardDef, owned: Uint8Array, legendaryPool: boolean): boolean {
@@ -65,8 +92,15 @@ function drawOne(
   return SHARD_CACHE;
 }
 
-/** 3 offers without replacement (a locked card keeps slot 0 at its original price), rarity fallback, Shard Cache. */
-export function drawOffers(rng: Rng, ctx: OfferContext): readonly [CardOffer, CardOffer, CardOffer] {
+/**
+ * 3 offers without replacement (a locked card keeps slot 0 at its original price), rarity fallback, Shard Cache.
+ * With `mythicRng`, each fresh slot first rolls for the Mythic card (MYTHIC.offerChance from sector 2).
+ */
+export function drawOffers(
+  rng: Rng,
+  ctx: OfferContext,
+  mythicRng: Rng | null = null,
+): readonly [CardOffer, CardOffer, CardOffer] {
   const weights = rarityWeights(ctx.sector, ctx.legendaryPool);
   const taken = new Set<CardId>();
   const offers: CardOffer[] = [];
@@ -76,7 +110,9 @@ export function drawOffers(rng: Rng, ctx: OfferContext): readonly [CardOffer, Ca
   }
   const scratch: CardDef[] = [];
   while (offers.length < OFFERS_PER_VISIT) {
-    const card = drawOne(rng, ctx, weights, taken, scratch);
+    const card =
+      (mythicRng === null ? null : rollMythic(mythicRng, ctx, taken)) ??
+      drawOne(rng, ctx, weights, taken, scratch);
     if (card.id !== 'shardCache') taken.add(card.id);
     offers.push({ id: card.id, price: cardPrice(card.id, ctx.wave), locked: false });
   }

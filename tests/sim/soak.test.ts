@@ -20,14 +20,16 @@ const TICKS = 72_000;
  * Final stateHash per (mode, seed) after TICKS ticks. Update deliberately when the sim changes.
  * Last update: the v2 balance pass (slower, fewer, weaker enemies and bosses on NORMAL) and the difficulty
  * (hashed, and scaling budget / HP / speed / damage) change every trajectory. casual/hard rows added.
+ * v3: CARD_IDS gained the Mythic card (every player's hashed cardStacks is one entry longer) and the Mythic
+ * offer roll can change what the autopilot buys, so every hash moved.
  */
 const GOLDEN: Readonly<Record<string, number>> = {
-  'coop:1': 649527971,
-  'solo:2': 3192251004,
-  'versus:3': 317669827,
-  'coop-god:4': 4235647592,
-  'coop-casual:5': 178468313,
-  'coop-hard:6': 423065953,
+  'coop:1': 3872421283,
+  'solo:2': 1483008732,
+  'versus:3': 3041341827,
+  'coop-god:4': 459812024,
+  'coop-casual:5': 2149020681,
+  'coop-hard:6': 2793377457,
 };
 
 function finite(...xs: number[]): boolean {

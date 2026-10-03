@@ -6,11 +6,19 @@
  */
 import type { SaveStatus } from '../contracts/save';
 import type { Services } from '../contracts/services';
-import type { ControlsPanelVM, ManualPageVM, ManualVM, SettingsPanelVM, SubPanel } from '../contracts/ui';
+import type {
+  ControlsPanelVM,
+  ManualPageVM,
+  ManualVM,
+  SettingsPanelVM,
+  SubPanel,
+  TerminalVM,
+} from '../contracts/ui';
 import { ControlsController } from './controlsPanel';
 import type { UiIntent } from './intents';
 import { buildManualPages } from './manualPages';
 import { SettingsController } from './settingsPanel';
+import { TerminalController } from './terminal';
 
 export const CREDITS: readonly string[] = [
   'KERNEL PANIC',
@@ -41,6 +49,7 @@ export class SubPanelController {
   panel: SubPanel = 'none';
   readonly settings: SettingsController;
   readonly controls: ControlsController;
+  readonly terminal: TerminalController;
   private dirty = false;
   private readonly s: Services;
   /** Save status when the panel opened (or last checked): a change to memoryOnly means a write failed. */
@@ -56,6 +65,10 @@ export class SubPanelController {
     this.controls.onChange = () => {
       this.dirty = true;
     };
+    this.terminal = new TerminalController(s);
+    this.terminal.onChange = () => {
+      this.dirty = true;
+    };
   }
 
   get isOpen(): boolean {
@@ -64,7 +77,9 @@ export class SubPanelController {
 
   open(p: SubPanel): void {
     this.controls.close();
+    this.terminal.stop();
     this.panel = p;
+    if (p === 'terminal') this.terminal.start();
     this.seenStatus = this.s.save.status;
     if (p === 'settings') this.settings.open();
     if (p === 'controls') this.controls.open();
@@ -78,6 +93,7 @@ export class SubPanelController {
 
   close(): void {
     this.controls.close();
+    this.terminal.stop();
     if (this.panel !== 'none') {
       this.s.save.flush();
       this.checkWrites();
@@ -93,6 +109,7 @@ export class SubPanelController {
     if (this.panel === 'settings') changed = this.settings.handle(i);
     else if (this.panel === 'controls') changed = this.controls.handle(i);
     else if (this.panel === 'manual') changed = this.handleManual(i);
+    else if (this.panel === 'terminal') changed = this.terminal.handle(i);
     const wantsBack = i.kind === 'back' && (!i.pointer || i.itemId === 'back');
     if (!changed && wantsBack && !(this.panel === 'controls' && this.controls.modal)) {
       this.close();
@@ -114,6 +131,11 @@ export class SubPanelController {
   tick(): void {
     if (this.panel === 'none') return;
     if (this.panel === 'controls' && this.controls.tick()) this.dirty = true;
+    if (this.panel === 'terminal' && this.terminal.wantsClose) {
+      this.s.audio.play('uiBack');
+      this.close();
+      return;
+    }
     this.checkWrites();
   }
 
@@ -137,6 +159,10 @@ export class SubPanelController {
 
   controlsVM(): ControlsPanelVM | null {
     return this.panel === 'controls' ? this.controls.vm() : null;
+  }
+
+  terminalVM(): TerminalVM | null {
+    return this.panel === 'terminal' ? this.terminal.vm() : null;
   }
 
   manualVM(): ManualVM | null {

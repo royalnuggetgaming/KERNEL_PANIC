@@ -75,6 +75,9 @@ export function hudPlayerVM(patch: Partial<HudPlayerVM> = {}): HudPlayerVM {
     roundWins: 0,
     loadout: [],
     loadoutKey: 0,
+    specialLabel: 'RAILBURST [E]',
+    specialPercent: 30,
+    specialActiveFrac: 0,
     ...patch,
   };
 }

@@ -11,6 +11,7 @@ import type { SimSystem, WorldState } from '../contracts/world';
 import { DEG2RAD, TAU } from '../core/math';
 import { COOP, DASH, MOVEMENT, STAT_CAPS } from '../config/tuning';
 import { VERSUS } from '../config/versus';
+import { CHEATS } from '../config/cheats';
 import { beginRam, clampGhostToView, clampToArena, shedLeeches, stepRam } from './playerDash';
 import { emitPlayer } from './simEventsOut';
 
@@ -32,9 +33,18 @@ export function playerSpawnPosition(mode: RunMode, index: PlayerIndex, out: { x:
   else out.x = side * 3;
 }
 
+/**
+ * Absolute dash-charge ceiling: computeStats already clamps stats.dashCharges to the run's caps (a BLINK BLINK
+ * cheat run raises them), so this only guards against corrupt stats.
+ */
+const DASH_CHARGES_CEIL = CHEATS.reduce<number>(
+  (m, c) => Math.max(m, c.caps.dashChargesMax ?? 0),
+  STAT_CAPS.dashChargesMax,
+);
+
 function maxDashCharges(p: Readonly<PlayerEntity>): number {
   const c = Math.floor(p.stats.dashCharges);
-  return c < 1 ? 1 : c > STAT_CAPS.dashChargesMax ? STAT_CAPS.dashChargesMax : c;
+  return c < 1 ? 1 : c > DASH_CHARGES_CEIL ? DASH_CHARGES_CEIL : c;
 }
 
 /** Sets stats; max-HP increases heal by the delta, decreases clamp hp to >= 1. Also clamps dash charges. */

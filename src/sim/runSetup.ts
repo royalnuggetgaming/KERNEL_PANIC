@@ -18,6 +18,8 @@ import type { DerivedStats, PlayerRunState, TeamState } from '../contracts/upgra
 import type { WorldConfig, WorldPlayerInit } from '../contracts/world';
 import { invariant } from '../core/assert';
 import { META_EFFECTS, metaLevel } from '../config/metaCatalog';
+import { cheatRunMods, type CheatRunMods } from '../config/cheats';
+import { cardDef } from '../config/cards';
 import { DEFAULT_DIFFICULTY, DIFFICULTY } from '../config/difficulty';
 import { COOP } from '../config/tuning';
 import { computeStats, emptyRowLevels, emptyTeamLevels } from '../upgrades/stats';
@@ -61,9 +63,31 @@ export function vehiclesOf(config: RunConfig): readonly [VehicleId, VehicleId] {
   return [pickOf(config, 0)?.vehicle ?? ABSENT_VEHICLE, pickOf(config, 1)?.vehicle ?? ABSENT_VEHICLE];
 }
 
-/** Run-start stats: vehicle base + Firmware snapshot, no rows, cards or team items yet. */
-export function startStats(vehicle: VehicleId, meta: MetaLevels): DerivedStats {
-  return computeStats(vehicle, meta, emptyRowLevels(), new Uint8Array(CARD_IDS.length), emptyTeamLevels());
+/** Cheats of a run (none in versus: both players would be equal anyway and matches must stay fair). */
+export function runCheats(config: RunConfig): CheatRunMods {
+  return config.mode === 'versus' ? cheatRunMods(undefined) : cheatRunMods(config.cheats);
+}
+
+/** Cards every joined player starts with (cheats), as stack counts. */
+export function startCards(cheats: CheatRunMods): Uint8Array {
+  const cards = new Uint8Array(CARD_IDS.length);
+  for (const id of cheats.startCards) cards[cardDef(id).bit] = 1;
+  return cards;
+}
+
+/** Run-start stats: vehicle base + Firmware snapshot (+ cheats and their starting cards), no rows or team items. */
+export function startStats(vehicle: VehicleId, meta: MetaLevels, cheats?: CheatRunMods): DerivedStats {
+  if (!cheats?.any)
+    return computeStats(vehicle, meta, emptyRowLevels(), new Uint8Array(CARD_IDS.length), emptyTeamLevels());
+  return computeStats(
+    vehicle,
+    meta,
+    emptyRowLevels(),
+    startCards(cheats),
+    emptyTeamLevels(),
+    cheats.caps,
+    cheats.modifiers,
+  );
 }
 
 /** Boot Cache: +25 starting Shards per level. */
@@ -85,12 +109,13 @@ export function startOverdrive(meta: MetaLevels): number {
 /** Builds the WorldConfig of a run from its RunConfig (validated first). */
 export function buildWorldConfig(config: RunConfig): WorldConfig {
   validateRunConfig(config);
-  const overdrive = startOverdrive(config.meta);
+  const cheats = runCheats(config);
+  const overdrive = Math.max(startOverdrive(config.meta), cheats.startOverdrive);
   const init = (p: PlayerIndex): WorldPlayerInit | null => {
     const pick = pickOf(config, p);
     return pick === null
       ? null
-      : { vehicle: pick.vehicle, stats: startStats(pick.vehicle, config.meta), overdrive };
+      : { vehicle: pick.vehicle, stats: startStats(pick.vehicle, config.meta, cheats), overdrive };
   };
   const p0 = init(0);
   invariant(p0 !== null, 'RunConfig: player 0 is always joined');
@@ -98,9 +123,11 @@ export function buildWorldConfig(config: RunConfig): WorldConfig {
     seed: config.seed,
     mode: config.mode,
     players: [p0, init(1)],
-    startShards: startShards(config.meta),
+    startShards: startShards(config.meta) + cheats.startShards,
     startKernels: startKernels(config.meta),
     difficulty: config.difficulty ?? DEFAULT_DIFFICULTY,
+    ...(cheats.god ? { god: true } : {}),
+    ...(cheats.caps !== undefined ? { caps: cheats.caps } : {}),
   };
 }
 

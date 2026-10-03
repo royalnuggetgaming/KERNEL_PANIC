@@ -20,6 +20,7 @@ import type {
   FinalChoice,
   PlayerRunState,
   PurchaseResult,
+  StatModifier,
   TeamSnapshot,
   TeamState,
   TxLogEntry,
@@ -61,10 +62,14 @@ export interface ShopState {
   readonly vehicles: readonly [VehicleId, VehicleId];
   readonly meta: MetaLevels;
   readonly caps: Partial<StatCaps> | undefined;
+  /** Run-wide stat extras (TERMINAL cheats). */
+  readonly extraMods: readonly StatModifier[] | undefined;
   readonly players: [PlayerRunState, PlayerRunState];
   team: TeamState;
   readonly offers: [OfferSlot[], OfferSlot[]];
   readonly offerRng: [Rng | null, Rng | null];
+  /** Per-player Mythic roll stream (forked apart from offerRng). */
+  readonly mythicRng: [Rng | null, Rng | null];
   /** Paid rerolls this visit (price escalation). */
   readonly rerolls: [number, number];
   readonly freeRerolls: [number, number];
@@ -144,7 +149,7 @@ export function initTeam(t: Readonly<TeamState>): TeamState {
 }
 
 export function statsOf(s: ShopState, p: PlayerIndex, player: Readonly<PlayerRunState>): DerivedStats {
-  return computeStats(s.vehicles[p], s.meta, player.rows, player.cards, s.team.levels, s.caps);
+  return computeStats(s.vehicles[p], s.meta, player.rows, player.cards, s.team.levels, s.caps, s.extraMods);
 }
 
 /**

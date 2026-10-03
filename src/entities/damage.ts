@@ -234,6 +234,8 @@ export function damagePlayer(
     if (w.mode !== 'versus' || source === p.index) return 0;
     dmg *= kind === 'pvpSpecial' ? VERSUS.PVP_SPECIAL_DAMAGE_MUL : VERSUS.PVP_DAMAGE_MUL;
   } else {
+    // IDDQD cheat: world damage is ignored entirely.
+    if (w.config.god === true) return 0;
     // World damage (enemies, bosses, hazards) follows the run's difficulty.
     dmg *= difficultyDef(w.config.difficulty).damage;
   }

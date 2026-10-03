@@ -124,6 +124,8 @@ export interface SpecialState {
   fireAcc: number;
   /** SUDO: pending second cast count. */
   pendingCasts: number;
+  /** The meter was full last tick (the 'specialReady' cue fires once per fill). */
+  readyCued: boolean;
 }
 
 export const TRAIL_POINTS = 32;
